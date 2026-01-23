@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: notes-postgres
+    network_mode: host
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: notes_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    container_name: notes-minio
+    network_mode: host
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    network_mode: host
+    entrypoint: >
+      /bin/sh -c " /usr/bin/mc config host add myminio http://localhost:9000 minioadmin minioadmin; /usr/bin/mc mb myminio/notes-bucket; /usr/bin/mc anonymous set public myminio/notes-bucket; exit 0; "
+
+volumes:
+  postgres_data:
+  minio_data:
