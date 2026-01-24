@@ -39,7 +39,7 @@ export function HomeFolderGrid({ folders }: HomeFolderGridProps) {
                 {folders.slice(0, 10).map((folder) => (
                     <Link
                         key={folder.id}
-                        href={`/users/${folder.userId}`}
+                        href={`/my-files?folderId=${folder.id}`}
                         className="group relative"
                     >
                         {/* iOS-Style Glass Folder Card */}

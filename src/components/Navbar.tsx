@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
-import { BookOpen, Menu, X, Upload, Trophy, User, LogOut, Home, Shield, Bookmark } from "lucide-react";
+import { BookOpen, Menu, X, Upload, Trophy, LogOut, Home, Shield, Bookmark, Folder } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 
 interface NavbarProps {
     user?: {
@@ -24,9 +25,9 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
     const navLinks = [
         { href: "/", label: "Home", icon: Home },
         { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
+        { href: "/my-files", label: "My Files", icon: Folder, authRequired: true },
         { href: "/bookmarks", label: "Bookmarks", icon: Bookmark, authRequired: true },
         { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
-        ...(user ? [{ href: `/users/${user.id}`, label: "Profile", icon: User }] : []),
         ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: Shield, adminOnly: true }] : []),
     ];
 
@@ -95,12 +96,23 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
 
                         {user ? (
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-2xl bg-gradient-to-r from-orange-500/12 to-pink-500/12 border border-white/30 shadow-inner">
-                                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-lg shadow-green-500/50" />
-                                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                                        {user.name?.split(" ")[0]}
-                                    </span>
-                                </div>
+                                {/* Profile Photo Button */}
+                                <Link
+                                    href={`/users/${user.id}`}
+                                    className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-white/30 hover:ring-orange-400/50 transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg"
+                                    aria-label="View Profile"
+                                    title="View Profile"
+                                >
+                                    <Image
+                                        src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                                        alt={user.name || "Profile"}
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
+                                    {/* Online indicator */}
+                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900" />
+                                </Link>
 
                                 {onSignOut && (
                                     <button

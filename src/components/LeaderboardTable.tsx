@@ -67,7 +67,8 @@ export function LeaderboardTable() {
                                 alt={user.name || "User avatar"}
                                 width={40}
                                 height={40}
-                                className="rounded-full bg-gray-200"
+                                className="w-10 h-10 rounded-full bg-gray-200 object-cover"
+                                unoptimized
                             />
                             <div className="flex-1">
                                 <h3 className="font-semibold group-hover:text-blue-600 transition-colors">

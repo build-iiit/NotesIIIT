@@ -83,22 +83,36 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
     }, [pdfDoc, pageNum, updateScale]); // Depend on doc/page to recalculate when they change
 
 
-    // 3. Render Page
+    // 3. Render Page - with proper cancellation handling
     useEffect(() => {
+        let cancelled = false;
+
         const renderPage = async () => {
             if (!pdfDoc || !canvasRef.current || scale === 0) return;
 
             // Cancel previous render if any
             if (renderTaskRef.current) {
-                renderTaskRef.current.cancel();
+                try {
+                    renderTaskRef.current.cancel();
+                    await renderTaskRef.current.promise;
+                } catch {
+                    // Cancelled renders throw, which is expected
+                }
+                renderTaskRef.current = null;
             }
+
+            // Check if we were cancelled while waiting
+            if (cancelled) return;
 
             try {
                 const page = await pdfDoc.getPage(pageNum);
+                if (cancelled) return;
+
                 const viewport = page.getViewport({ scale });
                 const canvas = canvasRef.current;
-                const context = canvas.getContext("2d");
+                if (!canvas) return;
 
+                const context = canvas.getContext("2d");
                 if (!context) return;
 
                 // Set dimensions
@@ -118,13 +132,21 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
             } catch (err: unknown) {
                 if (err instanceof Error && err.name !== "RenderingCancelledException") {
                     console.error("Error rendering page:", err);
-                    // Don't set error on cancel
-                    setError("Failed to render page");
+                    if (!cancelled) {
+                        setError("Failed to render page");
+                    }
                 }
             }
         };
 
         renderPage();
+
+        return () => {
+            cancelled = true;
+            if (renderTaskRef.current) {
+                renderTaskRef.current.cancel();
+            }
+        };
     }, [pdfDoc, pageNum, scale]);
 
     const changePage = useCallback((offset: number) => {
@@ -208,14 +230,14 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
                 <canvas ref={canvasRef} className="max-w-full" />
             </div>
 
-            {/* Controls */}
+            {/* Controls - Liquid Glass Theme */}
             <div className="space-y-4">
                 {/* Navigation and Page Jump */}
-                <div className="flex gap-4 items-center justify-center flex-wrap">
+                <div className="flex gap-3 items-center justify-center flex-wrap backdrop-blur-xl bg-white/30 dark:bg-black/30 rounded-2xl p-4 border border-white/20 dark:border-white/10 shadow-lg">
                     <button
                         onClick={() => changePage(-1)}
                         disabled={pageNum <= 1}
-                        className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50 hover:bg-blue-600 transition-colors"
+                        className="px-4 py-2 rounded-xl text-sm font-medium text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/40 via-white/20 to-white/30 dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-300 shadow-[0_4px_16px_0_rgba(0,0,0,0.08)] border border-white/30 dark:border-white/15 hover:border-orange-300/50 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
                     >
                         Previous
                     </button>
@@ -227,27 +249,27 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
                             value={pageJumpInput}
                             onChange={(e) => setPageJumpInput(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handlePageJump()}
-                            placeholder="Page #"
+                            placeholder="Page"
                             min={1}
                             max={pdfDoc?.numPages}
-                            className="w-20 px-2 py-1 border border-gray-300 dark:border-zinc-700 rounded text-center bg-white dark:bg-zinc-800"
+                            className="w-20 px-3 py-2 rounded-xl text-center text-sm backdrop-blur-xl bg-white/40 dark:bg-black/30 border border-white/30 dark:border-white/15 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-400/50 text-gray-800 dark:text-gray-200 placeholder-gray-500"
                         />
                         <button
                             onClick={handlePageJump}
-                            className="px-3 py-1 bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 rounded transition-colors text-sm"
+                            className="px-3 py-2 rounded-xl text-sm font-medium text-gray-800 dark:text-gray-200 backdrop-blur-xl bg-white/40 dark:bg-black/30 border border-white/30 dark:border-white/15 hover:bg-white/50 dark:hover:bg-white/10 transition-all"
                         >
                             Go
                         </button>
                     </div>
 
-                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                    <span className="font-medium text-gray-800 dark:text-gray-200 px-3">
                         Page {pageNum} of {pdfDoc?.numPages || "--"}
                     </span>
 
                     <button
                         onClick={() => changePage(1)}
                         disabled={!pdfDoc || pageNum >= (pdfDoc.numPages || 0)}
-                        className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50 hover:bg-blue-600 transition-colors"
+                        className="px-4 py-2 rounded-xl text-sm font-medium text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/40 via-white/20 to-white/30 dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-300 shadow-[0_4px_16px_0_rgba(0,0,0,0.08)] border border-white/30 dark:border-white/15 hover:border-orange-300/50 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
                     >
                         Next
                     </button>
@@ -257,13 +279,13 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
                         <button
                             onClick={handleToggleBookmark}
                             disabled={toggleBookmarkMutation.isPending}
-                            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                            className="p-2 rounded-xl backdrop-blur-xl bg-white/40 dark:bg-black/30 border border-white/30 dark:border-white/15 hover:bg-white/50 dark:hover:bg-white/10 transition-all disabled:opacity-50"
                             title={isCurrentPageBookmarked ? "Remove bookmark (B)" : "Bookmark this page (B)"}
                         >
                             {isCurrentPageBookmarked ? (
                                 <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                             ) : (
-                                <Star className="w-5 h-5 text-gray-400" />
+                                <Star className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                             )}
                         </button>
                     )}
@@ -271,10 +293,10 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
 
                 {/* Bookmarks List */}
                 {noteId && bookmarks && bookmarks.length > 0 && (
-                    <div className="bg-gray-50 dark:bg-zinc-800 rounded-lg p-3 border border-gray-200 dark:border-zinc-700">
-                        <div className="flex items-center gap-2 mb-2">
+                    <div className="backdrop-blur-xl bg-white/30 dark:bg-black/30 rounded-2xl p-4 border border-white/20 dark:border-white/10 shadow-lg">
+                        <div className="flex items-center gap-2 mb-3">
                             <Bookmark className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                 Bookmarks ({bookmarks.length})
                             </span>
                         </div>
@@ -283,9 +305,9 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
                                 <button
                                     key={bookmark.id}
                                     onClick={() => onPageChange(bookmark.pageNumber)}
-                                    className={`px-3 py-1 rounded text-sm transition-colors ${bookmark.pageNumber === pageNum
-                                        ? "bg-blue-500 text-white"
-                                        : "bg-white dark:bg-zinc-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-600"
+                                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${bookmark.pageNumber === pageNum
+                                        ? "bg-gradient-to-r from-orange-500/80 to-pink-500/80 text-white shadow-lg"
+                                        : "backdrop-blur-xl bg-white/40 dark:bg-black/30 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/15 hover:bg-white/50 dark:hover:bg-white/10"
                                         }`}
                                 >
                                     Page {bookmark.pageNumber}

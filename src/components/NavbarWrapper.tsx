@@ -1,18 +1,22 @@
-import { auth, signOut } from "@/auth";
+"use client";
+
+import { api } from "@/app/_trpc/client";
 import { Navbar } from "./Navbar";
+import { signOut } from "next-auth/react";
 
-export async function NavbarWrapper() {
-    const session = await auth();
+export function NavbarWrapper() {
+    const { data: user } = api.auth.getMe.useQuery(undefined, {
+        refetchOnWindowFocus: false,
+    });
 
-    const handleSignOut = async () => {
-        "use server";
-        await signOut();
+    const handleSignOut = () => {
+        signOut();
     };
 
     return (
         <Navbar
-            user={session?.user}
-            onSignOut={session?.user ? handleSignOut : undefined}
+            user={user}
+            onSignOut={user ? handleSignOut : undefined}
         />
     );
 }

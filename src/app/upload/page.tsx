@@ -225,7 +225,7 @@ export default function UploadPage() {
                         </div>
                         {/* File Upload Zone */}
                         <div>
-                            <label className="block text-sm font-semibold text-white mb-2">
+                            <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
                                 PDF File *
                             </label>
 
@@ -247,24 +247,24 @@ export default function UploadPage() {
                                         required
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
-                                    <Upload className="h-12 w-12 text-white/70 mx-auto mb-4" />
-                                    <p className="text-white font-medium mb-1">
+                                    <Upload className="h-12 w-12 text-gray-500 dark:text-gray-400 mx-auto mb-4" />
+                                    <p className="text-gray-800 dark:text-white font-medium mb-1">
                                         Drop your PDF here, or click to browse
                                     </p>
-                                    <p className="text-white/60 text-sm">
+                                    <p className="text-gray-500 dark:text-gray-400 text-sm">
                                         PDF files only
                                     </p>
                                 </div>
                             ) : (
                                 <div className="bg-white/10 border border-white/20 rounded-lg p-4 flex items-center gap-4">
-                                    <div className="bg-white/20 p-3 rounded-lg">
-                                        <FileText className="h-8 w-8 text-white" />
+                                    <div className="bg-gray-200 dark:bg-white/20 p-3 rounded-lg">
+                                        <FileText className="h-8 w-8 text-gray-700 dark:text-white" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-white font-medium truncate">
+                                        <p className="text-gray-800 dark:text-white font-medium truncate">
                                             {file.name}
                                         </p>
-                                        <p className="text-white/60 text-sm">
+                                        <p className="text-gray-500 dark:text-gray-400 text-sm">
                                             {formatFileSize(file.size)}
                                         </p>
                                     </div>
@@ -274,7 +274,7 @@ export default function UploadPage() {
                                         disabled={uploading}
                                         className="relative flex items-center justify-center p-2 rounded-lg backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95] disabled:opacity-50"
                                     >
-                                        <X className="h-5 w-5 text-white" />
+                                        <X className="h-5 w-5 text-gray-700 dark:text-white" />
                                     </button>
                                 </div>
                             )}
@@ -283,11 +283,11 @@ export default function UploadPage() {
                         {/* Upload Progress */}
                         {uploading && (
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm text-white">
+                                <div className="flex items-center justify-between text-sm text-gray-800 dark:text-white">
                                     <span className="font-medium">{getStepMessage()}</span>
                                     <span>{uploadProgress}%</span>
                                 </div>
-                                <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                                <div className="h-2 bg-gray-200 dark:bg-white/20 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-300 ease-out"
                                         style={{ width: `${uploadProgress}%` }}
@@ -322,7 +322,7 @@ export default function UploadPage() {
                     </form>
                 </div>
 
-                <p className="mt-6 text-center text-xs text-white/60">
+                <p className="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
                     &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
                 </p>
             </div>

@@ -2,10 +2,10 @@
 
 import { UserStatsCard } from "@/components/UserStatsCard";
 import { UserNotesGrid } from "@/components/UserNotesGrid";
-import { FileExplorer } from "@/components/FileExplorer";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
-import { FileText, Eye, TrendingUp, Trophy, Award, Sparkles, Medal, Edit } from "lucide-react";
+import { FileText, Eye, TrendingUp, Trophy, Award, Sparkles, Medal, Edit, Folder } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 
 
@@ -133,8 +133,14 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                 </div>
 
                 {isOwnProfile && (
-                    <div className="mb-12">
-                        <FileExplorer userId={user.id} />
+                    <div className="mb-12 flex justify-center">
+                        <Link
+                            href="/my-files"
+                            className="flex items-center gap-3 px-6 py-3 rounded-xl font-semibold text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.05] active:scale-[0.95]"
+                        >
+                            <Folder className="h-5 w-5 text-orange-500" />
+                            View My Files
+                        </Link>
                     </div>
                 )}
 

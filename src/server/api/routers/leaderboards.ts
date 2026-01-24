@@ -1,4 +1,5 @@
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { getPresignedDownloadUrl } from "@/lib/s3";
 
 type TopContributorRaw = {
     id: string;
@@ -53,16 +54,21 @@ export const leaderboardsRouter = createTRPCRouter({
             LIMIT 10;
         `;
 
-        // Map to match frontend expectations
-        // Frontend expects: { _count: { notes: number }, ...user }
-        // We'll adapt the frontend to use "totalScore" or map it here.
-        // Let's adapt the frontend component to be smarter.
-        // For now, return a shape that includes both.
-        return users.map(u => ({
-            ...u,
-            _count: { notes: Number(u.noteCount) },
-            totalScore: Number(u.totalScore)
-        }));
+        // Map to match frontend expectations and resolve S3 URLs
+        const usersWithResolvedImages = await Promise.all(
+            users.map(async (u) => {
+                const imageUrl = u.image && !u.image.startsWith("http")
+                    ? await getPresignedDownloadUrl(u.image)
+                    : u.image;
+                return {
+                    ...u,
+                    image: imageUrl,
+                    _count: { notes: Number(u.noteCount) },
+                    totalScore: Number(u.totalScore)
+                };
+            })
+        );
+        return usersWithResolvedImages;
     }),
     /**
      * Trending notes based on Hacker News algorithm.

@@ -28,8 +28,18 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-100/50 via-gray-200 to-orange-100 dark:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] dark:from-zinc-950 dark:via-[#1a0b2e] dark:to-[#2e100b] min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative overflow-x-hidden`}
       >
+        {/* High contrast gradient background - vivid colors at edges, neutral center */}
+        <div className="fixed inset-0 -z-10">
+          {/* Base layer - pure colors */}
+          <div className="absolute inset-0 bg-white dark:bg-black" />
+          {/* Top gradient - vibrant orange/pink */}
+          <div className="absolute top-0 left-0 right-0 h-[45vh] bg-gradient-to-b from-orange-300/50 via-rose-200/30 to-transparent dark:from-orange-700/35 dark:via-rose-600/20 dark:to-transparent" />
+          {/* Bottom gradient - vibrant purple */}
+          <div className="absolute bottom-0 left-0 right-0 h-[45vh] bg-gradient-to-t from-purple-300/50 via-fuchsia-200/30 to-transparent dark:from-purple-800/35 dark:via-fuchsia-600/20 dark:to-transparent" />
+        </div>
+
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

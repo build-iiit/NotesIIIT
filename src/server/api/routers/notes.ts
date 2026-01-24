@@ -143,7 +143,8 @@ export const notesRouter = createTRPCRouter({
         .input(z.object({
             id: z.string(),
             title: z.string().min(1),
-            description: z.string().optional()
+            description: z.string().optional(),
+            folderId: z.string().nullable().optional(), // null = root, undefined = no change
         }))
         .mutation(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
@@ -153,12 +154,26 @@ export const notesRouter = createTRPCRouter({
                 throw new Error("UNAUTHORIZED");
             }
 
+            // Build update data - only include folderId if explicitly provided
+            const updateData: { title: string; description?: string; folderId?: string | null } = {
+                title: input.title,
+                description: input.description,
+            };
+
+            if (input.folderId !== undefined) {
+                // Verify folder ownership if not root
+                if (input.folderId !== null) {
+                    const folder = await ctx.prisma.folder.findUnique({ where: { id: input.folderId } });
+                    if (!folder || folder.userId !== ctx.session.user.id) {
+                        throw new Error("Folder not found or unauthorized");
+                    }
+                }
+                updateData.folderId = input.folderId;
+            }
+
             return ctx.prisma.note.update({
                 where: { id: input.id },
-                data: {
-                    title: input.title,
-                    description: input.description,
-                },
+                data: updateData,
             });
         }),
 
@@ -222,5 +237,36 @@ export const notesRouter = createTRPCRouter({
             ]);
 
             return { success: true, message: "View tracked successfully" };
+        }),
+
+    /**
+     * Move a note to a different folder.
+     * Auth: Author only
+     */
+    moveToFolder: protectedProcedure
+        .input(z.object({
+            noteId: z.string(),
+            folderId: z.string().nullable(), // null = root (no folder)
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const note = await ctx.prisma.note.findUnique({ where: { id: input.noteId } });
+            if (!note) throw new Error("Note not found");
+
+            if (note.authorId !== ctx.session.user.id) {
+                throw new Error("UNAUTHORIZED");
+            }
+
+            // If moving to a folder, verify it belongs to the user
+            if (input.folderId) {
+                const folder = await ctx.prisma.folder.findUnique({ where: { id: input.folderId } });
+                if (!folder || folder.userId !== ctx.session.user.id) {
+                    throw new Error("Folder not found or unauthorized");
+                }
+            }
+
+            return ctx.prisma.note.update({
+                where: { id: input.noteId },
+                data: { folderId: input.folderId },
+            });
         }),
 });

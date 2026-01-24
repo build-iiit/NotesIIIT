@@ -4,18 +4,23 @@ import { use, useState } from "react";
 import { api } from "@/app/_trpc/client";
 import { useRouter } from "next/navigation";
 import DeleteNoteButton from "@/components/DeleteNoteButton";
+import { Folder } from "lucide-react";
 
 export default function EditNotePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const router = useRouter();
     const [note] = api.notes.getById.useSuspenseQuery({ id });
     const [currentUser] = api.auth.getMe.useSuspenseQuery();
+    const { data: folders } = api.folders.getAllFlat.useQuery(undefined, {
+        enabled: !!currentUser,
+    });
     const updateNote = api.notes.update.useMutation();
     const getUploadUrl = api.notes.getUploadUrl.useMutation();
     const addVersion = api.versions.addVersion.useMutation();
 
     const [title, setTitle] = useState(note?.title || "");
     const [description, setDescription] = useState(note?.description || "");
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(note?.folderId || null);
     const [uploading, setUploading] = useState(false);
 
     if (!note) return <div>Note not found</div>;
@@ -50,7 +55,12 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     const handleUpdateMetadata = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await updateNote.mutateAsync({ id, title, description });
+            await updateNote.mutateAsync({
+                id,
+                title,
+                description,
+                folderId: selectedFolderId,
+            });
             router.push(`/notes/${id}`);
         } catch (error) {
             console.error(error);
@@ -94,41 +104,65 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     };
 
     return (
-        <div className="min-h-screen p-8 max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">Edit Note</h1>
+        <div className="min-h-screen p-8 max-w-2xl mx-auto pt-24">
+            <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Edit Note</h1>
 
             <section className="mb-12">
-                <h2 className="text-xl font-semibold mb-4">Metadata</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Metadata</h2>
                 <form onSubmit={handleUpdateMetadata} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium mb-1">Title</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Title</label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700"
+                            className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 text-gray-900 dark:text-white"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Description</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 h-32"
+                            className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 h-32 text-gray-900 dark:text-white"
                         />
                     </div>
+
+                    {/* Folder Selection */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <Folder className="h-4 w-4 text-orange-500" />
+                            Folder
+                        </label>
+                        <select
+                            value={selectedFolderId || ""}
+                            onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                            className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 text-gray-900 dark:text-white"
+                        >
+                            <option value="">📁 Root (No Folder)</option>
+                            {folders?.map((folder) => (
+                                <option key={folder.id} value={folder.id}>
+                                    📂 {folder.name}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Move this note to a different folder
+                        </p>
+                    </div>
+
                     <button
                         type="submit"
                         disabled={updateNote.isPending}
-                        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+                        className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-lg disabled:opacity-50 hover:from-orange-600 hover:to-pink-600 transition-all font-medium"
                     >
                         {updateNote.isPending ? "Saving..." : "Save Changes"}
                     </button>
                 </form>
             </section>
 
-            <section className="border-t pt-8">
-                <h2 className="text-xl font-semibold mb-4">Upload New Version</h2>
+            <section className="border-t border-gray-200 dark:border-zinc-700 pt-8">
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Upload New Version</h2>
                 <p className="text-gray-500 mb-4 text-sm">
                     Upload a new PDF to replace the current version. History will be preserved.
                 </p>
