@@ -28,33 +28,25 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8 sm:p-24 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-      <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-
       {session?.user ? (
         <div className="flex flex-col items-center gap-8 w-full z-10">
-          <div className="flex flex-col items-center gap-2 mb-4">
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-bold">Welcome, {session.user.name?.split(" ")[0]}!</h1>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut();
-                }}
-              >
-                <button className="text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 relative px-4 py-2 rounded-full backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95] cursor-pointer">
-                  Sign Out
-                </button>
-              </form>
-            </div>
-            <div className="flex gap-4">
-              <a href="/leaderboard" className="text-blue-600 hover:underline">View Leaderboard</a>
-              <span className="text-gray-300">|</span>
-              <a href={`/users/${session.user.id}`} className="text-blue-600 hover:underline">Your Profile</a>
-            </div>
-            <p className="text-gray-500 mt-2">Explore the latest notes</p>
+          <div className="flex flex-col items-center gap-4 mb-4 text-center">
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-pink-600 bg-clip-text text-transparent">
+              Welcome, {session.user.name?.split(" ")[0]}!
+            </h1>
+
+            <p className="text-lg text-gray-600 dark:text-gray-300 italic max-w-lg">
+              &quot;{[
+                "Notes so good, you might actually pass.",
+                "Study smarter, not... well, just study.",
+                "Your GPA called, it needs these notes.",
+                "Because re-watching the lecture at 2x speed isn't enough.",
+                "Sharing is caring (and improves your karma).",
+                "The night before the exam is a pathway to many abilities some consider to be unnatural.",
+                "Knowledge is power. Notes are the battery.",
+                "Don't panic. Just read the notes."
+              ][Math.floor(Math.random() * 8)]}&quot;
+            </p>
           </div>
 
           {/* Folder Grid */}

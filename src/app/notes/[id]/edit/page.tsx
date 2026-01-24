@@ -26,6 +26,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     // Course & Semester State
     const [selectedCourseId, setSelectedCourseId] = useState<string>(note?.courseId || "");
     const [selectedSemester, setSelectedSemester] = useState<string>(note?.semester || "");
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(note?.folderId || null);
     const [courseSearch, setCourseSearch] = useState(note?.course ? `${note.course.code} - ${note.course.name}` : note?.courseId ? `Course ${note.courseId}` : "");
     const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
     const [isSemesterDropdownOpen, setIsSemesterDropdownOpen] = useState(false);

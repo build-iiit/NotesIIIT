@@ -92,7 +92,7 @@ export function NotesFeed() {
                                 {note.title}
                             </h3>
                             <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
-                                <span>By {note.author.name || "Unknown"}</span>
+                                <span>By {(note as { author?: { name?: string } }).author?.name || "Unknown"}</span>
                                 <span>•</span>
                                 <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                             </p>

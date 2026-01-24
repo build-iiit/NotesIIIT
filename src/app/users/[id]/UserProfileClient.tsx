@@ -7,9 +7,9 @@ import { UserStatsCard } from "@/components/UserStatsCard";
 import { UserNotesGrid, type Note } from "@/components/UserNotesGrid";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FileExplorer } from "@/components/FileExplorer"; // Features from main
-import { 
-    FileText, Eye, TrendingUp, Trophy, Award, 
-    Sparkles, Medal, Edit, Folder, Search 
+import {
+    FileText, Eye, TrendingUp, Trophy, Award,
+    Sparkles, Medal, Edit, Folder, Search
 } from "lucide-react";
 
 // Types from main for safety and search logic
@@ -55,8 +55,6 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
         <div className="min-h-screen pb-12 relative overflow-hidden">
             {/* UI from Feature-additions: Background Decorations */}
             <div className="fixed top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-600/5 -z-20" />
-            <div className="fixed top-20 -left-20 w-96 h-96 bg-purple-400/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob -z-10" />
-            <div className="fixed top-40 -right-20 w-96 h-96 bg-blue-400/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000 -z-10" />
 
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header Section */}
@@ -68,11 +66,12 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                                 src={user.backgroundImage}
                                 alt="Profile Background"
                                 fill
-                                className="object-cover opacity-60 backdrop-blur-sm"
+                                className="object-cover"
                                 priority
+                                unoptimized
                             />
                         )}
-                        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+                        {/* <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" /> */}
                     </div>
 
                     <div className="relative pt-24 text-center">
@@ -85,6 +84,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                                     alt={user.name || "User"}
                                     fill
                                     className="object-cover"
+                                    unoptimized
                                 />
                             </div>
                             <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white dark:border-zinc-900 rounded-full shadow-lg" />
@@ -149,7 +149,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
 
                         {/* Feature: File Explorer (The functional search/explorer from main) */}
                         <div className="backdrop-blur-2xl bg-white/10 dark:bg-black/5 rounded-3xl border border-white/20 dark:border-white/5 p-1 shadow-inner">
-                             <FileExplorer /> 
+                            <FileExplorer userId={user.id} />
                         </div>
                     </div>
                 )}

@@ -54,7 +54,7 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
     if (!comments || !voteStats) return <div className="p-4 text-gray-600 dark:text-gray-400">Loading interactions...</div>;
 
     return (
-        <div className="w-96 flex flex-col h-[800px] backdrop-blur-xl bg-white/30 dark:bg-black/40 border-l border-white/20 dark:border-white/10 shadow-2xl overflow-hidden">
+        <div className="w-96 flex flex-col h-[800px] backdrop-blur-xl bg-white/30 dark:bg-black/40 border-l border-white/20 dark:border-white/10 shadow-2xl overflow-hidden rounded-3xl">
             {/* Header */}
             <div className="p-4 border-b border-white/20 dark:border-white/10 backdrop-blur-xl bg-white/20 dark:bg-black/30">
                 <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -68,8 +68,8 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                     <button
                         onClick={() => handleVote("UP")}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 backdrop-blur-xl border ${voteStats.userVote === "UP"
-                                ? "bg-green-500/20 border-green-400/50 text-green-600 dark:text-green-400 shadow-lg shadow-green-500/20"
-                                : "bg-white/30 dark:bg-black/30 border-white/30 dark:border-white/15 text-gray-600 dark:text-gray-400 hover:bg-green-500/10 hover:border-green-400/30"
+                            ? "bg-green-500/20 border-green-400/50 text-green-600 dark:text-green-400 shadow-lg shadow-green-500/20"
+                            : "bg-white/30 dark:bg-black/30 border-white/30 dark:border-white/15 text-gray-600 dark:text-gray-400 hover:bg-green-500/10 hover:border-green-400/30"
                             }`}
                     >
                         <ThumbsUp className={`w-5 h-5 ${voteStats.userVote === "UP" ? "fill-current" : ""}`} />
@@ -79,8 +79,8 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                     <button
                         onClick={() => handleVote("DOWN")}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 backdrop-blur-xl border ${voteStats.userVote === "DOWN"
-                                ? "bg-red-500/20 border-red-400/50 text-red-600 dark:text-red-400 shadow-lg shadow-red-500/20"
-                                : "bg-white/30 dark:bg-black/30 border-white/30 dark:border-white/15 text-gray-600 dark:text-gray-400 hover:bg-red-500/10 hover:border-red-400/30"
+                            ? "bg-red-500/20 border-red-400/50 text-red-600 dark:text-red-400 shadow-lg shadow-red-500/20"
+                            : "bg-white/30 dark:bg-black/30 border-white/30 dark:border-white/15 text-gray-600 dark:text-gray-400 hover:bg-red-500/10 hover:border-red-400/30"
                             }`}
                     >
                         <ThumbsDown className={`w-5 h-5 ${voteStats.userVote === "DOWN" ? "fill-current" : ""}`} />

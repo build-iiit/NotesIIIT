@@ -30,10 +30,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
 
     // Find current version
     const currentVersion = note.versions.find(v => v.id === note.currentVersionId) || note.versions[0];
-    let s3Url = currentVersion?.s3Key;
-    if (s3Url && !s3Url.startsWith("http") && !s3Url.startsWith("/")) {
-        s3Url = `/${s3Url}`;
-    }
+    const s3Url = note.fileUrl; // Use presigned URL from API
 
     return (
         <>
