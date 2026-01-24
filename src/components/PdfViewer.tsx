@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-import { Star, Bookmark, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, Bookmark } from "lucide-react";
 import { api } from "@/app/_trpc/client";
-import { TextNoteOverlay } from "./annotations/TextNoteOverlay";
-import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
 
 // Set worker URL to the CDN matching the installed version
 pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
@@ -15,10 +13,9 @@ interface PdfViewerProps {
     pageNum: number;
     onPageChange: (page: number) => void;
     noteId?: string; // Optional for backward compatibility
-    versionId?: string;
 }
 
-export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: PdfViewerProps) {
+export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -26,68 +23,6 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
-    const annotationCanvasRef = useRef<HTMLCanvasElement>(null);
-    const [viewportDimensions, setViewportDimensions] = useState<{ width: number, height: number } | null>(null);
-    const [annotations, setAnnotations] = useState<Record<number, Stroke[]>>({});
-    const [textNotes, setTextNotes] = useState<Record<number, TextNote[]>>({});
-
-    // Fetch annotations
-    const { data: savedAnnotations } = api.notes.getAnnotations.useQuery(
-        { versionId: versionId || "" },
-        { enabled: !!versionId }
-    );
-
-    useEffect(() => {
-        if (savedAnnotations) {
-            const parsed = savedAnnotations as unknown as Record<number, PageAnnotations>;
-            const textNotesData: Record<number, TextNote[]> = {};
-            const strokesData: Record<number, Stroke[]> = {};
-
-            Object.entries(parsed).forEach(([pNum, data]) => {
-                const pageNumInt = parseInt(pNum);
-                if (data.textNotes) {
-                    textNotesData[pageNumInt] = data.textNotes;
-                }
-                if (data.strokes) {
-                    strokesData[pageNumInt] = data.strokes;
-                }
-            });
-            setTextNotes(textNotesData);
-            setAnnotations(strokesData);
-        }
-    }, [savedAnnotations]);
-
-    const renderAnnotations = useCallback((viewport: pdfjsLib.PageViewport) => {
-        const canvas = annotationCanvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const pageStrokes = annotations[pageNum] || [];
-        pageStrokes.forEach(stroke => {
-            if (stroke.points.length < 2) return;
-
-            ctx.beginPath();
-            ctx.strokeStyle = stroke.color;
-            ctx.lineWidth = stroke.width || (stroke.type === "highlighter" ? 15 : 2);
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-            ctx.globalAlpha = stroke.type === "highlighter" ? 0.3 : 1;
-
-            const firstPoint = stroke.points[0];
-            ctx.moveTo(firstPoint.x * viewport.width, firstPoint.y * viewport.height);
-
-            stroke.points.slice(1).forEach(p => {
-                ctx.lineTo(p.x * viewport.width, p.y * viewport.height);
-            });
-            ctx.stroke();
-        });
-        ctx.globalAlpha = 1;
-    }, [annotations, pageNum]);
 
     // 1. Load PDF Document
     useEffect(() => {
@@ -130,6 +65,13 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 if (entry.contentRect.width > 0) {
+                    // Logic: we want the PDF to fit width-wise, but maybe cap zooming
+                    // For now, let's just trigger a re-render by updating scale or invalidating
+                    // Ideally we calculate the scale based on page width here, 
+                    // but we need the page object first.
+                    // So we trigger a redraw.
+                    // Let's set a "containerWidth" state if specific logic is needed, 
+                    // or just force update execution in render effect.
                     updateScale(entry.contentRect.width);
                 }
             }
@@ -138,7 +80,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
         resizeObserver.observe(containerRef.current);
 
         return () => resizeObserver.disconnect();
-    }, [pdfDoc, pageNum, updateScale]);
+    }, [pdfDoc, pageNum, updateScale]); // Depend on doc/page to recalculate when they change
 
 
     // 3. Render Page
@@ -184,18 +126,17 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
                 renderTaskRef.current = renderTask;
 
                 await renderTask.promise;
-                setViewportDimensions({ width: viewport.width, height: viewport.height });
-
-                // Draw annotations
-                renderAnnotations(viewport);
             } catch (err: unknown) {
                 // Check if it's a cancellation error (which might not be an Error instance but usually is)
+                // pdfjs-dist cancellation is sometimes an object { name: "RenderingCancelledException" }
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const isCancelledError = err && typeof err === 'object' && 'name' in err && (err as any).name === "RenderingCancelledException";
 
                 if (!isCancelledError && !isCancelled) {
                     if (err instanceof Error && err.name !== "RenderingCancelledException") {
                         console.error("Error rendering page:", err);
+                        // Don't set error on cancel
+                        // setError("Failed to render page"); // Optional: suppress UI error for transient render issues
                     }
                 }
             }
@@ -213,7 +154,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
                 }
             }
         };
-    }, [pdfDoc, pageNum, scale, renderAnnotations]);
+    }, [pdfDoc, pageNum, scale]);
 
     const changePage = useCallback((offset: number) => {
         if (!pdfDoc) return;
@@ -289,47 +230,19 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
     if (error) return <div className="text-red-500">{error}</div>;
 
     // Unique ID for canvas to force remount on ANY change
+    // Using simple combination of dependencies
     const canvasKey = `${pdfDoc?.fingerprints?.[0] || 'doc'}-${pageNum}-${scale}`;
 
     return (
         <div ref={containerRef} className="flex flex-col items-center gap-4 w-full">
             {loading && <div>Loading PDF...</div>}
 
-            <div className="relative border border-gray-200 shadow-lg rounded-lg overflow-hidden bg-white dark:bg-zinc-800">
+            <div className="border border-gray-200 shadow-lg rounded-lg overflow-hidden bg-white dark:bg-zinc-800">
                 <canvas
                     ref={canvasRef}
                     key={canvasKey}
                     className="max-w-full"
                 />
-                <canvas
-                    ref={annotationCanvasRef}
-                    className="absolute inset-0 pointer-events-none"
-                    style={{ width: viewportDimensions?.width, height: viewportDimensions?.height }}
-                />
-
-                {/* Text Notes Overlay (Read-Only) */}
-                {viewportDimensions && textNotes[pageNum]?.map(note => (
-                    <TextNoteOverlay
-                        key={note.id}
-                        note={note}
-                        viewportDimensions={viewportDimensions}
-                        isEditing={false}
-                        onSave={() => { }}
-                        onUpdate={() => { }}
-                        onCancel={() => { }}
-                        onClick={() => { }}
-                        onDelete={() => { }}
-                        onToggleCollapse={(id) => {
-                            setTextNotes(prev => ({
-                                ...prev,
-                                [pageNum]: (prev[pageNum] || []).map(n =>
-                                    n.id === id ? { ...n, collapsed: !n.collapsed } : n
-                                )
-                            }));
-                        }}
-                        readOnly={true}
-                    />
-                ))}
             </div>
 
             {/* Controls */}

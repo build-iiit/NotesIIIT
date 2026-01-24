@@ -83,7 +83,6 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     pageNum={pageNum}
                                     onPageChange={setPageNum}
                                     noteId={note?.id}
-                                    versionId={currentVersion?.id}
                                 />
                             ) : (
                                 <div className="p-8 border text-center text-red-500">
@@ -108,11 +107,10 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
             {s3Url && (
                 <FullPageNoteViewer
                     url={s3Url}
-                    initialPage={1}
+                    initialPage={pageNum}
                     isOpen={isFullPageOpen}
                     onClose={() => setIsFullPageOpen(false)}
                     noteTitle={note.title}
-                    versionId={note.currentVersionId || ""}
                 />
             )}
         </>
