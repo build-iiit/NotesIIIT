@@ -171,7 +171,7 @@ export const TextNoteOverlay = ({
                             placeholder="Type a note..."
                             style={{
                                 minHeight: '60px',
-                                color: note.color,
+                                color: note.color || '#000000',
                                 fontWeight: note.bold ? 'bold' : 'normal',
                                 fontStyle: note.italic ? 'italic' : 'normal',
                                 textDecoration: note.underline ? 'underline' : 'none',
@@ -199,7 +199,7 @@ export const TextNoteOverlay = ({
                     <div className="relative group">
                         <StickyNote
                             className="w-8 h-8 drop-shadow-md transition-transform group-hover:scale-110"
-                            style={{ color: note.color, fill: `${note.color}20` }}
+                            style={{ color: note.color || '#F59E0B', fill: `${note.color || '#F59E0B'}20` }}
                         />
                         <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-500 rounded-full ring-2 ring-white dark:ring-black animate-pulse" />
                     </div>
@@ -207,7 +207,7 @@ export const TextNoteOverlay = ({
                     <div
                         className="overflow-hidden whitespace-pre-wrap relative px-1 min-h-[1.5em]"
                         style={{
-                            color: note.color,
+                            color: note.color || '#000000',
                             fontWeight: note.bold ? 'bold' : 'normal',
                             fontStyle: note.italic ? 'italic' : 'normal',
                             textDecoration: note.underline ? 'underline' : 'none',

@@ -18,11 +18,27 @@ export const notesRouter = createTRPCRouter({
         .query(async ({ ctx, input }) => {
             const limit = input?.limit ?? 20;
             const cursor = input?.cursor;
+            const userId = ctx.session?.user?.id;
 
             const items = await ctx.prisma.note.findMany({
                 take: limit + 1,
                 cursor: cursor ? { id: cursor } : undefined,
-                where: { isPublic: true },
+                where: {
+                    OR: [
+                        { visibility: "PUBLIC" },
+                        // Private/Group notes visible to author
+                        ...(userId ? [{ authorId: userId }] : []),
+                        // Group notes visible to members
+                        ...(userId ? [{
+                            visibility: "GROUP",
+                            sharedGroups: {
+                                some: {
+                                    members: { some: { userId } }
+                                }
+                            }
+                        }] : [])
+                    ]
+                },
                 orderBy: { createdAt: "desc" },
                 include: { author: true, course: true },
             });
@@ -50,7 +66,26 @@ export const notesRouter = createTRPCRouter({
             if (!note) return null;
 
             const isAuthor = ctx.session?.user?.id === note.authorId;
-            if (!note.isPublic && !isAuthor) return null;
+
+            // Access Check
+            let hasAccess = isAuthor || note.visibility === "PUBLIC";
+
+            if (!hasAccess && ctx.session?.user?.id) {
+                // Check group access
+                if (note.visibility === "GROUP") {
+                    // We need to fetch groups separately or trust 'sharedGroups' relation if previously fetched?
+                    // Let's refetch note with sharedGroups to be safe
+                    const noteWithGroups = await ctx.prisma.note.findUnique({
+                        where: { id: input.id },
+                        include: { sharedGroups: { include: { members: { where: { userId: ctx.session.user.id } } } } }
+                    });
+                    if (noteWithGroups?.sharedGroups.some(g => g.members.length > 0)) {
+                        hasAccess = true;
+                    }
+                }
+            }
+
+            if (!hasAccess) return null;
 
             let fileUrl = "";
             const currentVersion = note.versions.find(v => v.id === note.currentVersionId) || note.versions[0];
@@ -86,7 +121,9 @@ export const notesRouter = createTRPCRouter({
                 s3Key: z.string().min(1),
                 folderId: z.string().optional(),
                 courseId: z.string().optional(),
-                semester: z.string().optional()
+                semester: z.string().optional(),
+                visibility: z.enum(["PUBLIC", "PRIVATE", "GROUP"]).default("PUBLIC"),
+                groupIds: z.array(z.string()).optional()
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -99,9 +136,14 @@ export const notesRouter = createTRPCRouter({
                         folderId: input.folderId ?? undefined,
                         courseId: input.courseId ?? undefined,
                         semester: input.semester ?? undefined,
+                        visibility: input.visibility,
+                        isPublic: input.visibility === "PUBLIC",
                         versions: {
                             create: { version: 1, s3Key: input.s3Key },
                         },
+                        sharedGroups: input.groupIds && input.visibility === "GROUP" ? {
+                            connect: input.groupIds.map(id => ({ id }))
+                        } : undefined
                     },
                     include: { versions: true },
                 });

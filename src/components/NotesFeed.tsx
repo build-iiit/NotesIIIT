@@ -4,6 +4,7 @@ import { api } from "@/app/_trpc/client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { TrendingUp } from "lucide-react";
 
 export function NotesFeed() {
     const [sort, setSort] = useState<"newest" | "popular">("popular");
@@ -52,21 +53,29 @@ export function NotesFeed() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-muted/50 p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold">
-                        {sort === "popular" ? "Trending Notes" : "Recent Uploads"}
-                    </h2>
-                    <div className="flex bg-black/20 p-1.5 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        {sort === "popular" && (
+                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg animate-in zoom-in spin-in-180 duration-500">
+                                <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                            </div>
+                        )}
+                        <h2 className="text-3xl font-black bg-gradient-to-r from-orange-600 via-pink-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
+                            {sort === "popular" ? "Trending Uploads" : "Recent Uploads"}
+                        </h2>
+                    </div>
+
+                    <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl border border-black/5 dark:border-white/5 backdrop-blur-md">
                         <button
                             onClick={() => setSort("popular")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${sort === "popular" ? "bg-primary text-white shadow" : "text-gray-400 hover:text-white"}`}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${sort === "popular" ? "bg-white dark:bg-zinc-800 text-orange-600 shadow-sm scale-105" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"}`}
                         >
                             Trending
                         </button>
                         <button
                             onClick={() => setSort("newest")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${sort === "newest" ? "bg-primary text-white shadow" : "text-gray-400 hover:text-white"}`}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${sort === "newest" ? "bg-white dark:bg-zinc-800 text-purple-600 shadow-sm scale-105" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"}`}
                         >
                             Recent
                         </button>
@@ -74,9 +83,11 @@ export function NotesFeed() {
                 </div>
                 <Link
                     href="/upload"
-                    className="px-4 py-2 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
+                    className="hidden sm:flex px-6 py-2.5 rounded-xl text-sm font-bold text-gray-800 dark:text-white relative backdrop-blur-3xl bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-white/5 hover:from-orange-500/20 hover:to-pink-500/20 transition-all duration-300 shadow-lg border border-white/20 hover:scale-105 active:scale-95 group"
                 >
-                    Upload Note
+                    <span className="flex items-center gap-2">
+                        Upload Note
+                    </span>
                 </Link>
             </div>
 

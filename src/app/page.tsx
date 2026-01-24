@@ -56,8 +56,7 @@ export default async function Home() {
             </div>
           )}
 
-          {/* Trending Notes */}
-          <TrendingNotes />
+
 
           {/* Notes Feed */}
           <div className="w-full max-w-6xl">

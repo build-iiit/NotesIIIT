@@ -25,11 +25,16 @@ export default function UploadPage() {
     const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
     const [isSemesterDropdownOpen, setIsSemesterDropdownOpen] = useState(false);
 
+    // Visibility State
+    const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "GROUP">("PUBLIC");
+    const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+
     const courseDropdownRef = useRef<HTMLDivElement>(null);
     const semesterDropdownRef = useRef<HTMLDivElement>(null);
 
     const { data: allFoldersData } = api.folders.getAllFlat.useQuery();
     const { data: courses } = api.course.getAll.useQuery();
+    const { data: userGroups } = api.social.getGroups.useQuery();
 
     // Click outside handler
     useEffect(() => {
@@ -167,6 +172,8 @@ export default function UploadPage() {
                 folderId: folderId || undefined,
                 courseId: selectedCourseId || undefined,
                 semester: selectedSemester || undefined,
+                visibility,
+                groupIds: visibility === "GROUP" ? selectedGroupIds : undefined,
             });
             setUploadProgress(100);
             setUploadStep("complete");
@@ -416,10 +423,76 @@ export default function UploadPage() {
                             </div>
                         )}
 
+                        {/* Visibility Selector */}
+                        <div>
+                            <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">
+                                Visibility
+                            </label>
+                            <div className="flex gap-2 p-1 bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 rounded-xl">
+                                {(["PUBLIC", "PRIVATE", "GROUP"] as const).map((v) => (
+                                    <button
+                                        key={v}
+                                        type="button"
+                                        onClick={() => setVisibility(v)}
+                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${visibility === v
+                                            ? "bg-orange-500 text-white shadow-md"
+                                            : "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5"
+                                            }`}
+                                    >
+                                        {v.charAt(0) + v.slice(1).toLowerCase()}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Group Selection */}
+                        {visibility === "GROUP" && (
+                            <div className="animate-in slide-in-from-top-2">
+                                <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">
+                                    Select Groups
+                                </label>
+                                <div className="max-h-48 overflow-y-auto p-2 bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 rounded-xl space-y-1">
+                                    {userGroups?.length === 0 ? (
+                                        <div className="text-center py-4 text-xs text-gray-500">
+                                            You are not in any groups.
+                                        </div>
+                                    ) : (
+                                        userGroups?.map((group) => (
+                                            <label
+                                                key={group.id}
+                                                className="flex items-center gap-3 p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedGroupIds.includes(group.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedGroupIds([...selectedGroupIds, group.id]);
+                                                        } else {
+                                                            setSelectedGroupIds(selectedGroupIds.filter((id) => id !== group.id));
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                                                        {group.name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {group._count.members} members
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={uploading || !file || !title}
+                            disabled={uploading || !file || !title || (visibility === "GROUP" && selectedGroupIds.length === 0)}
                             className="w-full py-4 rounded-xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white font-bold shadow-lg hover:shadow-orange-500/20 hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
                         >
                             {uploading ? (
