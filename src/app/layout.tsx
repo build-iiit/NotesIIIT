@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TRPCReactProvider } from "@/app/_trpc/client";
-import { ThemeProvider } from "@/components/theme-provider";
+
 import { NavbarWrapper } from "@/components/NavbarWrapper";
 
 const geistSans = Geist({
@@ -30,17 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-orange-100 via-pink-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-orange-950/20 min-h-screen`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange
-        >
-          <TRPCReactProvider>
-            <NavbarWrapper />
-            <main className="pt-16">{children}</main>
-          </TRPCReactProvider>
-        </ThemeProvider>
+        <TRPCReactProvider>
+          <NavbarWrapper />
+          <main className="pt-16">{children}</main>
+        </TRPCReactProvider>
       </body>
     </html>
   );

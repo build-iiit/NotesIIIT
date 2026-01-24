@@ -58,7 +58,15 @@ export const leaderboardsRouter = createTRPCRouter({
         // We'll adapt the frontend to use "totalScore" or map it here.
         // Let's adapt the frontend component to be smarter.
         // For now, return a shape that includes both.
-        return users.map(u => ({
+        interface RawUser {
+            id: string;
+            name: string | null;
+            image: string | null;
+            noteCount: bigint;
+            totalScore: number;
+        }
+
+        return (users as unknown as RawUser[]).map(u => ({
             ...u,
             _count: { notes: Number(u.noteCount) },
             totalScore: Number(u.totalScore)
@@ -74,15 +82,22 @@ export const leaderboardsRouter = createTRPCRouter({
             SELECT n.*, u.name as "authorName", u.image as "authorImage"
             FROM "Note" n
             JOIN "User" u ON n."authorId" = u.id
-            ORDER BY 
-              (n."voteScore" + 1) / POWER(EXTRACT(EPOCH FROM (NOW() - n."createdAt"))/3600 + 2, 1.8) DESC
+            ORDER BY n."voteScore" DESC, n."createdAt" DESC
             LIMIT 20;
         `;
 
-        // Map raw result to expected shape (Prisma raw returns generic object)
-        // We need to match the shape expected by frontend components if possible or create a new one.
-        // Simple mapping:
-        return notes.map(n => ({
+        interface RawNote {
+            id: string;
+            title: string;
+            voteScore: number;
+            viewCount: number;
+            createdAt: Date;
+            authorName: string | null;
+            authorImage: string | null;
+            // Add other props if needed
+        }
+
+        return (notes as RawNote[]).map(n => ({
             ...n,
             author: {
                 name: n.authorName,

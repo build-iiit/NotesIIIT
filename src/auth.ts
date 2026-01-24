@@ -7,7 +7,8 @@ import type { Adapter } from "next-auth/adapters"
 const prisma = new PrismaClient()
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-    adapter: PrismaAdapter(prisma) as Adapter,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    adapter: PrismaAdapter(prisma) as any,
     session: { strategy: "jwt" },
     providers: [GitHub],
     callbacks: {

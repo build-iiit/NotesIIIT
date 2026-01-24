@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
-import { BookOpen, Menu, X, Upload, Trophy, User, LogOut, Home, Shield, Bookmark } from "lucide-react";
+import { BookOpen, Menu, X, Upload, Trophy, User, LogOut, Home, Shield, Search, Bookmark } from "lucide-react";
 import { useState } from "react";
 
 interface NavbarProps {
@@ -23,6 +23,8 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
 
     const navLinks = [
         { href: "/", label: "Home", icon: Home },
+        { href: "/search", label: "Search", icon: Search },
+        { href: "/courses", label: "Courses", icon: BookOpen },
         { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
         { href: "/bookmarks", label: "Bookmarks", icon: Bookmark, authRequired: true },
         { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
@@ -36,18 +38,16 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
     };
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-3xl bg-gradient-to-r from-white/[0.12] via-white/[0.08] to-white/[0.12] dark:from-black/25 dark:via-black/20 dark:to-black/25 border-b border-white/25 dark:border-white/15 shadow-[0_4px_24px_0_rgba(0,0,0,0.08)] dark:shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]">
-            {/* Frosted glass overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+        <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/70 border-b border-border">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group">
                         <div className="relative">
-                            <BookOpen className="h-8 w-8 text-orange-500 dark:text-orange-400 transition-transform group-hover:rotate-12 duration-300 drop-shadow-lg" />
-                            <div className="absolute inset-0 bg-orange-500/30 blur-xl group-hover:bg-orange-500/50 transition-all duration-300 rounded-full" />
+                            <BookOpen className="h-8 w-8 text-primary transition-transform group-hover:rotate-12 duration-300" />
+                            <div className="absolute inset-0 bg-primary/20 blur-xl group-hover:bg-primary/40 transition-all duration-300 rounded-full" />
                         </div>
-                        <span className="text-xl font-bold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent drop-shadow">
+                        <span className="text-xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
                             NotesIIIT
                         </span>
                     </Link>
@@ -67,8 +67,8 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                     relative px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300
                     flex items-center gap-2 group backdrop-blur-2xl
                     ${active
-                                            ? "bg-gradient-to-r from-orange-500/25 to-pink-500/25 text-white dark:text-white border border-white/40 shadow-lg"
-                                            : "text-gray-700 dark:text-gray-300 hover:bg-white/15 dark:hover:bg-white/10 border border-transparent hover:scale-[1.02]"
+                                            ? "text-primary"
+                                            : "text-gray-300 hover:text-primary"
                                         }
                   `}
                                 >
@@ -77,7 +77,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
 
                                     {/* Active indicator */}
                                     {active && (
-                                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full shadow-lg" />
+                                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-gradient-to-r from-orange-500 to-red-600 rounded-full" />
                                     )}
 
                                     {/* Hover effect */}
@@ -89,9 +89,8 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         })}
                     </div>
 
-                    {/* Right side: Theme Toggle + Auth */}
+                    {/* Right side: Auth */}
                     <div className="hidden md:flex items-center gap-3">
-                        <ThemeToggle />
 
                         {user ? (
                             <div className="flex items-center gap-3">
