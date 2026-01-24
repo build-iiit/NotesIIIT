@@ -5,7 +5,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info } from "lucide-react";
 
 // Set worker URL to the CDN matching the installed version
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface FullPageNoteViewerProps {
     url: string;
@@ -34,6 +34,7 @@ export function FullPageNoteViewer({
     const [loading, setLoading] = useState(true);
     const [showControls, setShowControls] = useState(true);
     const [showHelp, setShowHelp] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const renderTaskRef = useRef<any>(null);
     const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isAnimatingIn, setIsAnimatingIn] = useState(false);
@@ -57,7 +58,7 @@ export function FullPageNoteViewer({
         };
 
         loadPdf();
-        setIsAnimatingIn(true);
+        setTimeout(() => setIsAnimatingIn(true), 10);
     }, [url, isOpen]);
 
     // Handle zoom and responsive scaling
@@ -92,7 +93,11 @@ export function FullPageNoteViewer({
     // Update scale when relevant dependencies change
     useEffect(() => {
         if (zoomMode !== "custom") {
-            updateScale();
+            // Wrap in timeout to avoid "setState synchronously in effect" warning, 
+            // although updateScale is async, it might be safer to defer.
+            setTimeout(() => {
+                updateScale();
+            }, 0);
         }
     }, [updateScale, zoomMode]);
 
@@ -135,14 +140,16 @@ export function FullPageNoteViewer({
                 const renderContext = {
                     canvasContext: context,
                     viewport: viewport,
-                } as any;
+                };
 
                 const renderTask = page.render(renderContext);
                 renderTaskRef.current = renderTask;
 
                 await renderTask.promise;
-            } catch (err: any) {
-                if (err.name !== "RenderingCancelledException") {
+            } catch (err: unknown) {
+                // Check if it's a cancellation error
+                const isCancelled = err instanceof Error && err.name === "RenderingCancelledException";
+                if (!isCancelled) {
                     console.error("Error rendering page:", err);
                     setError("Failed to render page");
                 }
@@ -182,6 +189,25 @@ export function FullPageNoteViewer({
             }
         };
     }, [isOpen, resetHideControlsTimer]);
+
+    const changePage = useCallback((offset: number) => {
+        if (!pdfDoc) return;
+        setPageNum((prev) => Math.min(Math.max(prev + offset, 1), pdfDoc.numPages));
+    }, [pdfDoc]);
+
+    const handleZoomIn = () => {
+        setZoomMode("custom");
+        setScale((prev) => Math.min(prev + 0.2, 3.0));
+    };
+
+    const handleZoomOut = () => {
+        setZoomMode("custom");
+        setScale((prev) => Math.max(prev - 0.2, 0.5));
+    };
+
+    const toggleZoomMode = () => {
+        setZoomMode((prev) => (prev === "fit-width" ? "fit-height" : "fit-width"));
+    };
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -227,27 +253,7 @@ export function FullPageNoteViewer({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose, showHelp]);
-
-    const changePage = (offset: number) => {
-        if (!pdfDoc) return;
-        const newPage = Math.min(Math.max(pageNum + offset, 1), pdfDoc.numPages);
-        setPageNum(newPage);
-    };
-
-    const handleZoomIn = () => {
-        setZoomMode("custom");
-        setScale((prev) => Math.min(prev + 0.2, 3.0));
-    };
-
-    const handleZoomOut = () => {
-        setZoomMode("custom");
-        setScale((prev) => Math.max(prev - 0.2, 0.5));
-    };
-
-    const toggleZoomMode = () => {
-        setZoomMode((prev) => (prev === "fit-width" ? "fit-height" : "fit-width"));
-    };
+    }, [isOpen, onClose, showHelp, pdfDoc, pageNum, changePage]);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {

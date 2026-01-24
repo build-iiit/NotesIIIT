@@ -2,6 +2,13 @@ import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { createCanvas } from 'canvas';
 
+interface CanvasContext {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    canvas: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    context: any;
+}
+
 // Helper for canvas factory needed by pdfjs-dist in Node
 class NodeCanvasFactory {
     create(width: number, height: number) {
@@ -12,12 +19,12 @@ class NodeCanvasFactory {
         };
     }
 
-    reset(canvasAndContext: any, width: number, height: number) {
+    reset(canvasAndContext: CanvasContext, width: number, height: number) {
         canvasAndContext.canvas.width = width;
         canvasAndContext.canvas.height = height;
     }
 
-    destroy(canvasAndContext: any) {
+    destroy(canvasAndContext: CanvasContext) {
         canvasAndContext.canvas.width = 0;
         canvasAndContext.canvas.height = 0;
         canvasAndContext.canvas = null;
@@ -41,7 +48,7 @@ export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
     const loadingTask = pdfjsLib.getDocument({
         data,
         canvasFactory: new NodeCanvasFactory()
-    } as any);
+    });
 
     const doc = await loadingTask.promise;
     const page = await doc.getPage(1);
@@ -50,7 +57,13 @@ export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext('2d');
 
-    await page.render({ canvasContext: context as any, viewport } as any).promise;
+    const renderContext = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        canvasContext: context as any, // Cast to any to satisfy RenderParameters which expects CanvasRenderingContext2D (NodeCanvas vs DOM Canvas mismatch)
+        viewport,
+    };
+
+    await page.render(renderContext).promise;
 
     return canvas.toBuffer('image/jpeg');
 }

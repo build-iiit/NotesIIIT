@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 
 export const courseRouter = createTRPCRouter({
     // Get all courses, optionally grouped by branch (logic handled in frontend usually, but we return flat list here)

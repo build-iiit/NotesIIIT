@@ -18,8 +18,16 @@ function useDebounceValue<T>(value: T, delay: number): T {
 export default function SearchPage() {
     const [search, setSearch] = useState("");
     const [semester, setSemester] = useState("");
+    const [sortBy, setSortBy] = useState<"newest" | "popular">("popular"); // Default to Trending
+
+    // Dropdown States
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+
+    // Refs
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const sortDropdownRef = useRef<HTMLDivElement>(null);
+
     const debouncedSearch = useDebounceValue(search, 500);
 
     // Click outside handler
@@ -27,6 +35,9 @@ export default function SearchPage() {
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false);
+            }
+            if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+                setIsSortDropdownOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -40,18 +51,16 @@ export default function SearchPage() {
         "1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2", "5-1", "5-2"
     ];
 
-    // Only query if search has content to avoid fetching all notes by default? 
-    // Or maybe fetching all is fine. Let's fetch all if empty.
-    const { data, isLoading } = api.notes.getAll.useQuery(
-        { search: debouncedSearch, semester: semester || undefined, limit: 50 },
-        { enabled: true } // Always enabled
+    // Use getInfinite query but as a regular query for search results (first page)
+    const { data, isLoading } = api.notes.getInfinite.useQuery(
+        { search: debouncedSearch, semester: semester || undefined, sortBy: sortBy, limit: 50 }
     );
 
     return (
         <div className="container mx-auto px-4 py-8 min-h-screen">
             <h1 className="text-4xl font-bold text-white mb-6">Find Notes</h1>
 
-            <div className="flex flex-col md:flex-row gap-4 mb-12 max-w-4xl">
+            <div className="flex flex-col md:flex-row gap-4 mb-12 max-w-5xl">
                 {/* Search Input */}
                 <div className="relative flex-grow">
                     <SearchIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-6 w-6 text-gray-500" />
@@ -63,6 +72,53 @@ export default function SearchPage() {
                         className="w-full bg-black/40 border border-white/10 text-white placeholder-gray-500 pl-14 pr-4 py-4 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 shadow-lg"
                         autoFocus
                     />
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="relative min-w-[160px]" ref={sortDropdownRef}>
+                    <button
+                        type="button"
+                        onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                        className="w-full flex items-center justify-between bg-black/40 border border-white/10 text-white px-6 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:bg-white/5"
+                    >
+                        <span className="text-white font-medium">
+                            {sortBy === "popular" ? "Trending" : "Recent"}
+                        </span>
+                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isSortDropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {isSortDropdownOpen && (
+                        <div className="absolute z-[100] w-full mt-2 bg-black/95 border border-white/20 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl ring-1 ring-white/10 p-1">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSortBy("popular");
+                                    setIsSortDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${sortBy === "popular"
+                                    ? "bg-primary/20 text-primary border border-primary/20"
+                                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                    }`}
+                            >
+                                <span className="font-medium">Trending</span>
+                                {sortBy === "popular" && <CheckCircle className="h-4 w-4 text-primary" />}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSortBy("newest");
+                                    setIsSortDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${sortBy === "newest"
+                                    ? "bg-primary/20 text-primary border border-primary/20"
+                                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                    }`}
+                            >
+                                <span className="font-medium">Recent</span>
+                                {sortBy === "newest" && <CheckCircle className="h-4 w-4 text-primary" />}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Semester Filter */}
@@ -88,8 +144,8 @@ export default function SearchPage() {
                                     setIsDropdownOpen(false);
                                 }}
                                 className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${semester === ""
-                                        ? "bg-primary/20 text-primary border border-primary/20"
-                                        : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                    ? "bg-primary/20 text-primary border border-primary/20"
+                                    : "text-gray-300 hover:bg-white/10 hover:text-white"
                                     }`}
                             >
                                 <span className="font-medium">All Semesters</span>
@@ -104,8 +160,8 @@ export default function SearchPage() {
                                         setIsDropdownOpen(false);
                                     }}
                                     className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${semester === sem
-                                            ? "bg-primary/20 text-primary border border-primary/20"
-                                            : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                        ? "bg-primary/20 text-primary border border-primary/20"
+                                        : "text-gray-300 hover:bg-white/10 hover:text-white"
                                         }`}
                                 >
                                     <span className="font-medium">Sem {sem}</span>

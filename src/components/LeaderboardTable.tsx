@@ -32,7 +32,7 @@ export function LeaderboardTable() {
                                     {note.title}
                                 </h3>
                                 <p className="text-xs text-gray-500">
-                                    {note.viewCount} views • By {note.author.name}
+                                    {note.voteScore} upvotes • {note.viewCount} views • By {note.author.name}
                                 </p>
                             </div>
                         </Link>
@@ -53,6 +53,7 @@ export function LeaderboardTable() {
                             href={`/users/${user.id}`}
                             className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors group"
                         >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                                 alt={user.name!}
@@ -63,7 +64,7 @@ export function LeaderboardTable() {
                                     {user.name}
                                 </h3>
                                 <div className="text-xs text-gray-500 font-medium bg-gray-100 dark:bg-zinc-800 inline-block px-2 py-0.5 rounded-full mt-1">
-                                    {(user as any).totalScore} karma • {user._count.notes} notes
+                                    {(user as unknown as { totalScore: number }).totalScore} karma • {user._count.notes} notes
                                 </div>
                             </div>
                             {idx < 3 && (

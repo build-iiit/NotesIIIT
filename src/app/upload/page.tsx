@@ -1,12 +1,9 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
 import { Upload, FileText, X, CheckCircle, Loader2, Search } from "lucide-react";
-
-
-type UploadStep = "idle" | "getting-url" | "uploading" | "creating-record" | "complete";
 
 export default function UploadPage() {
     const router = useRouter();
@@ -54,13 +51,19 @@ export default function UploadPage() {
     const { data: courses } = api.course.getAll.useQuery();
 
     // Filter courses client-side for better UX
-    const filteredCourses = courses?.filter((c: any) =>
+    interface Course {
+        id: string;
+        name: string;
+        code: string;
+        branch: string;
+    }
+
+    const filteredCourses = courses?.filter((c: Course) =>
         c.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
         c.code.toLowerCase().includes(courseSearch.toLowerCase()) ||
         c.branch.toLowerCase().includes(courseSearch.toLowerCase())
     );
 
-    const getUploadUrlMutation = api.notes.getUploadUrl.useMutation();
     const createNoteMutation = api.notes.create.useMutation({
         onSuccess: () => {
             setUploadStep("complete");
@@ -135,49 +138,44 @@ export default function UploadPage() {
             setUploadProgress(0);
             setUploadStep("uploading");
 
-            // 1. Get Presigned URL
+            // 1. Upload Locally (Bypass S3 for local dev)
             setUploadProgress(10);
-            console.log("Step 1: Requesting presigned URL...");
-            const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
-                filename: file.name,
-                contentType: file.type,
-            });
-            console.log("Step 1 Success: Got URL", url);
-            setUploadProgress(30);
+            console.log("Step 1: Uploading locally...");
 
-            // 2. Upload to S3
-            console.log("Step 2: Uploading to S3...", url);
+            const formData = new FormData();
+            formData.append("file", file);
 
-            const uploadResponse = await fetch(url, {
-                method: "PUT",
-                body: file,
-                headers: {
-                    "Content-Type": file.type,
-                },
+            const uploadResponse = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
             });
 
             if (!uploadResponse.ok) {
-                const errorText = await uploadResponse.text();
-                throw new Error(`S3 upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
+                const errorData = await uploadResponse.json();
+                throw new Error(errorData.error || "Upload failed");
             }
-            console.log("Step 2 Success: File uploaded");
+
+            const uploadResult = await uploadResponse.json();
+            const s3Key = uploadResult.key; // Using local path as "s3Key"
+
+            console.log("Step 1 Success: Uploaded to", s3Key);
             setUploadProgress(70);
 
-            // 3. Create Note Record
-            console.log("Step 3: Creating note record...");
+            // 2. Create Note Record
+            console.log("Step 2: Creating note record...");
             await createNoteMutation.mutateAsync({
                 title,
                 description,
-                s3Key,
-                fileSize: file.size,
+                s3Key, // Pass the local path
                 courseId: selectedCourseId || undefined,
                 semester: selectedSemester || undefined,
             });
-            console.log("Step 3 Success: Note created");
+            console.log("Step 2 Success: Note created");
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Upload failed:", error);
-            setError(error.message || "An unknown error occurred");
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+            setError(errorMessage);
             setUploadStep("idle");
             setUploadProgress(0);
         }
@@ -280,10 +278,10 @@ export default function UploadPage() {
                                             </div>
                                         ) : filteredCourses?.length === 0 ? (
                                             <div className="p-4 text-center text-gray-400 text-sm">
-                                                No courses found matching "{courseSearch}"
+                                                No courses found matching &quot;{courseSearch}&quot;
                                             </div>
                                         ) : (
-                                            filteredCourses?.map((course: any) => (
+                                            filteredCourses?.map((course: Course) => (
                                                 <button
                                                     key={course.id}
                                                     type="button"

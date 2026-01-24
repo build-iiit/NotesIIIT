@@ -2,10 +2,12 @@
 
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
 export function NotesFeed() {
+    const [sort, setSort] = useState<"newest" | "popular">("popular");
+
     // Infinite query for pagination
     const {
         data,
@@ -13,8 +15,8 @@ export function NotesFeed() {
         hasNextPage,
         isFetchingNextPage,
         isLoading
-    } = api.notes.getAll.useInfiniteQuery(
-        { limit: 10 },
+    } = api.notes.getInfinite.useInfiniteQuery(
+        { limit: 10, sortBy: sort },
         { getNextPageParam: (lastPage) => lastPage.nextCursor }
     );
 
@@ -46,7 +48,25 @@ export function NotesFeed() {
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center bg-muted/50 p-4 rounded-lg">
-                <h2 className="text-2xl font-bold">Recent Uploads</h2>
+                <div className="flex items-center gap-4">
+                    <h2 className="text-2xl font-bold">
+                        {sort === "popular" ? "Trending Notes" : "Recent Uploads"}
+                    </h2>
+                    <div className="flex bg-black/20 p-1.5 rounded-lg">
+                        <button
+                            onClick={() => setSort("popular")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${sort === "popular" ? "bg-primary text-white shadow" : "text-gray-400 hover:text-white"}`}
+                        >
+                            Trending
+                        </button>
+                        <button
+                            onClick={() => setSort("newest")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${sort === "newest" ? "bg-primary text-white shadow" : "text-gray-400 hover:text-white"}`}
+                        >
+                            Recent
+                        </button>
+                    </div>
+                </div>
                 <Link
                     href="/upload"
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"

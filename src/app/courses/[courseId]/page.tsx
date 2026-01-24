@@ -77,9 +77,10 @@ function CourseNotesList({ courseId }: { courseId: string }) {
     // Did I implement it? I only updated `create`. 
     // I need to update `getAll` in notes.ts to accept courseId.
 
-    const { data, isLoading } = api.notes.getAll.useQuery({
-        // @ts-expect-error - I will update backend next
-        courseId: courseId
+    // Use getInfinite to allow filtering by courseId and return consistent { items } structure
+    const { data, isLoading } = api.notes.getInfinite.useQuery({
+        courseId: courseId,
+        limit: 50 // Fetch more than default 10
     });
 
     if (isLoading) {
@@ -97,7 +98,7 @@ function CourseNotesList({ courseId }: { courseId: string }) {
     // Sort by popularity (voteScore) - Client side for now or modify backend
     // Requirement: "view the most upvoted course at the top and choose the best out of them"
     // "choose the best out of them" probably means sorting notes by upvotes.
-    const sortedNotes = [...data.items].sort((a: any, b: any) => (b.voteScore || 0) - (a.voteScore || 0));
+    const sortedNotes = [...data.items].sort((a: { voteScore: number }, b: { voteScore: number }) => (b.voteScore || 0) - (a.voteScore || 0));
 
     return (
         <div>
