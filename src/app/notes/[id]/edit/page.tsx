@@ -9,6 +9,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     const { id } = use(params);
     const router = useRouter();
     const [note] = api.notes.getById.useSuspenseQuery({ id });
+    const [currentUser] = api.auth.getMe.useSuspenseQuery();
     const updateNote = api.notes.update.useMutation();
     const getUploadUrl = api.notes.getUploadUrl.useMutation();
     const addVersion = api.versions.addVersion.useMutation();
@@ -18,6 +19,33 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     const [uploading, setUploading] = useState(false);
 
     if (!note) return <div>Note not found</div>;
+
+
+    // Authorization check: Only note owner can edit
+    if (!currentUser || currentUser.id !== note.authorId) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="max-w-md text-center">
+                    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/20 dark:to-red-800/20 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Unauthorized</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6">
+                        You don&apos;t have permission to edit this note. Only the note owner can make changes.
+                    </p>
+                    <button
+                        onClick={() => router.push(`/notes/${id}`)}
+                        className="px-6 py-3 rounded-lg font-semibold text-sm bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200"
+                    >
+                        Back to Note
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
 
     const handleUpdateMetadata = async (e: React.FormEvent) => {
         e.preventDefault();

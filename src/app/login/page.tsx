@@ -5,7 +5,7 @@ import { BookOpen, Github } from "lucide-react"
 export default function SignIn() {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 py-12 sm:px-6 lg:px-8 relative dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 transition-colors duration-500">
-            <div className="absolute top-4 right-4">
+                <div className="absolute top-4 right-4">
                 <ThemeToggle className="text-white hover:bg-white/20" />
             </div>
 

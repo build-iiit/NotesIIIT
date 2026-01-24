@@ -2,6 +2,7 @@ import { api } from "@/app/_trpc/server";
 import { UserStatsCard } from "@/components/UserStatsCard";
 import { UserNotesGrid } from "@/components/UserNotesGrid";
 import { FileText, Eye, TrendingUp, Trophy, Award, Sparkles, Medal } from "lucide-react";
+import Image from "next/image";
 
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -15,7 +16,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                         <Trophy className="h-12 w-12 text-red-500 dark:text-red-400" />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">User not found</h1>
-                    <p className="text-gray-500 dark:text-gray-400">This user doesn't exist or has been removed.</p>
+                    <p className="text-gray-500 dark:text-gray-400">This user doesn&apos;t exist or has been removed.</p>
                 </div>
             </div>
         );
@@ -46,9 +47,11 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
                         {/* Avatar */}
                         <div className="relative inline-block">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full blur-xl opacity-50" />
-                            <img
+                            <Image
                                 src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                                 alt={user.name!}
+                                width={128}
+                                height={128}
                                 className="relative w-32 h-32 rounded-full border-4 border-white dark:border-zinc-900 shadow-2xl bg-white"
                             />
                             {/* Online indicator */}
