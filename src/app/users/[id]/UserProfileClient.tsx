@@ -148,7 +148,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
 
                 {isOwnProfile && (
                     <div className="mb-12">
-                        <FileExplorer userId={user.id} />
+                        <FileExplorer />
                     </div>
                 )}
 

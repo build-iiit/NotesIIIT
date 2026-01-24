@@ -2,6 +2,13 @@ import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { createCanvas } from 'canvas';
 
+interface CanvasContext {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    canvas: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    context: any;
+}
+
 // Helper for canvas factory needed by pdfjs-dist in Node
 interface CanvasAndContext {
     canvas: ReturnType<typeof createCanvas>;
@@ -43,8 +50,8 @@ export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
     const data = new Uint8Array(pdfBuffer);
     const loadingTask = pdfjsLib.getDocument({
         data,
-        canvasFactory: new NodeCanvasFactory() as unknown as pdfjsLib.CanvasFactory
-    });
+        canvasFactory: new NodeCanvasFactory()
+    } as any);
 
     const doc = await loadingTask.promise;
     const page = await doc.getPage(1);

@@ -6,7 +6,7 @@ import { Star, Bookmark } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 
 // Set worker URL to the CDN matching the installed version
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface PdfViewerProps {
     url: string;
@@ -85,20 +85,31 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
 
     // 3. Render Page
     useEffect(() => {
+        let isCancelled = false;
+
         const renderPage = async () => {
             if (!pdfDoc || !canvasRef.current || scale === 0) return;
 
-            // Cancel previous render if any
+            // Strict Cancellation
             if (renderTaskRef.current) {
-                renderTaskRef.current.cancel();
+                try {
+                    renderTaskRef.current.cancel();
+                } catch {
+                    // Ignore cancellation errors
+                }
+                renderTaskRef.current = null;
             }
+
+            if (isCancelled) return;
 
             try {
                 const page = await pdfDoc.getPage(pageNum);
                 const viewport = page.getViewport({ scale });
                 const canvas = canvasRef.current;
-                const context = canvas.getContext("2d");
 
+                if (!canvas) return;
+
+                const context = canvas.getContext("2d");
                 if (!context) return;
 
                 // Set dimensions
@@ -116,15 +127,33 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
 
                 await renderTask.promise;
             } catch (err: unknown) {
-                if (err instanceof Error && err.name !== "RenderingCancelledException") {
-                    console.error("Error rendering page:", err);
-                    // Don't set error on cancel
-                    setError("Failed to render page");
+                // Check if it's a cancellation error (which might not be an Error instance but usually is)
+                // pdfjs-dist cancellation is sometimes an object { name: "RenderingCancelledException" }
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const isCancelledError = err && typeof err === 'object' && 'name' in err && (err as any).name === "RenderingCancelledException";
+
+                if (!isCancelledError && !isCancelled) {
+                    if (err instanceof Error && err.name !== "RenderingCancelledException") {
+                        console.error("Error rendering page:", err);
+                        // Don't set error on cancel
+                        // setError("Failed to render page"); // Optional: suppress UI error for transient render issues
+                    }
                 }
             }
         };
 
         renderPage();
+
+        return () => {
+            isCancelled = true;
+            if (renderTaskRef.current) {
+                try {
+                    renderTaskRef.current.cancel();
+                } catch {
+                    // ignore
+                }
+            }
+        };
     }, [pdfDoc, pageNum, scale]);
 
     const changePage = useCallback((offset: number) => {
@@ -200,12 +229,20 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
 
     if (error) return <div className="text-red-500">{error}</div>;
 
+    // Unique ID for canvas to force remount on ANY change
+    // Using simple combination of dependencies
+    const canvasKey = `${pdfDoc?.fingerprints?.[0] || 'doc'}-${pageNum}-${scale}`;
+
     return (
         <div ref={containerRef} className="flex flex-col items-center gap-4 w-full">
             {loading && <div>Loading PDF...</div>}
 
             <div className="border border-gray-200 shadow-lg rounded-lg overflow-hidden bg-white dark:bg-zinc-800">
-                <canvas ref={canvasRef} className="max-w-full" />
+                <canvas
+                    ref={canvasRef}
+                    key={canvasKey}
+                    className="max-w-full"
+                />
             </div>
 
             {/* Controls */}

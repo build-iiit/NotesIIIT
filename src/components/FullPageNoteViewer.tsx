@@ -5,7 +5,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info } from "lucide-react";
 
 // Set worker URL to the CDN matching the installed version
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface FullPageNoteViewerProps {
     url: string;
@@ -57,6 +57,7 @@ export function FullPageNoteViewer({
         };
 
         loadPdf();
+        setTimeout(() => setIsAnimatingIn(true), 10);
     }, [url, isOpen]);
 
     // Animate in when opening
@@ -102,6 +103,11 @@ export function FullPageNoteViewer({
     // Update scale when zoom mode or dependencies change
     useEffect(() => {
         if (zoomMode !== "custom") {
+            // Wrap in timeout to avoid "setState synchronously in effect" warning, 
+            // although updateScale is async, it might be safer to defer.
+            setTimeout(() => {
+                updateScale();
+            }, 0);
             // eslint-disable-next-line react-hooks/set-state-in-effect
             void updateScale();
         }
@@ -154,9 +160,13 @@ export function FullPageNoteViewer({
 
                 await renderTask.promise;
             } catch (err: unknown) {
-                if (err instanceof Error && err.name !== "RenderingCancelledException") {
-                    console.error("Error rendering page:", err);
-                    setError("Failed to render page");
+                // Check if it's a cancellation error
+                const isCancelled = err instanceof Error && err.name === "RenderingCancelledException";
+                if (!isCancelled) {
+                    if (err instanceof Error && err.name !== "RenderingCancelledException") {
+                        console.error("Error rendering page:", err);
+                        setError("Failed to render page");
+                    }
                 }
             }
         };
@@ -195,26 +205,24 @@ export function FullPageNoteViewer({
         };
     }, [isOpen, resetHideControlsTimer]);
 
-    // Helper functions for keyboard shortcuts
     const changePage = useCallback((offset: number) => {
         if (!pdfDoc) return;
-        const newPage = Math.min(Math.max(pageNum + offset, 1), pdfDoc.numPages);
-        setPageNum(newPage);
-    }, [pdfDoc, pageNum]);
+        setPageNum((prev) => Math.min(Math.max(prev + offset, 1), pdfDoc.numPages));
+    }, [pdfDoc]);
 
-    const handleZoomIn = useCallback(() => {
+    const handleZoomIn = () => {
         setZoomMode("custom");
-        setScale((prev) => Math.min(prev + 0.2, 5.0));
-    }, []);
+        setScale((prev) => Math.min(prev + 0.2, 3.0));
+    };
 
-    const handleZoomOut = useCallback(() => {
+    const handleZoomOut = () => {
         setZoomMode("custom");
         setScale((prev) => Math.max(prev - 0.2, 0.5));
-    }, []);
+    };
 
-    const toggleZoomMode = useCallback(() => {
+    const toggleZoomMode = () => {
         setZoomMode((prev) => (prev === "fit-width" ? "fit-height" : "fit-width"));
-    }, []);
+    };
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -260,7 +268,7 @@ export function FullPageNoteViewer({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose, showHelp, changePage, handleZoomIn, handleZoomOut, toggleZoomMode]);
+    }, [isOpen, onClose, showHelp, changePage, handleZoomIn, handleZoomOut, toggleZoomMode, pdfDoc, pageNum, changePage]);
 
 
 

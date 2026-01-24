@@ -37,7 +37,7 @@ export default async function Home() {
         <div className="flex flex-col items-center gap-8 w-full z-10">
           <div className="flex flex-col items-center gap-2 mb-4">
             <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-bold">Welcome back, {session.user.name?.split(" ")[0]}!</h1>
+              <h1 className="text-3xl font-bold">Welcome, {session.user.name?.split(" ")[0]}!</h1>
               <form
                 action={async () => {
                   "use server";
@@ -54,7 +54,7 @@ export default async function Home() {
               <span className="text-gray-300">|</span>
               <a href={`/users/${session.user.id}`} className="text-blue-600 hover:underline">Your Profile</a>
             </div>
-            <p className="text-gray-500 mt-2">Pick up where you left off</p>
+            <p className="text-gray-500 mt-2">Explore the latest notes</p>
           </div>
 
           {/* Folder Grid */}
