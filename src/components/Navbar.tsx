@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
-import { BookOpen, Menu, X, Upload, Trophy, User, LogOut, Home, Shield } from "lucide-react";
+import { BookOpen, Menu, X, Upload, Trophy, User, LogOut, Home, Shield, Bookmark } from "lucide-react";
 import { useState } from "react";
 
 interface NavbarProps {
@@ -24,6 +24,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
     const navLinks = [
         { href: "/", label: "Home", icon: Home },
         { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
+        { href: "/bookmarks", label: "Bookmarks", icon: Bookmark, authRequired: true },
         { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
         ...(user ? [{ href: `/users/${user.id}`, label: "Profile", icon: User }] : []),
         ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: Shield, adminOnly: true }] : []),

@@ -79,6 +79,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     url={s3Url}
                                     pageNum={pageNum}
                                     onPageChange={setPageNum}
+                                    noteId={note?.id}
                                 />
                             ) : (
                                 <div className="p-8 border text-center text-red-500">
