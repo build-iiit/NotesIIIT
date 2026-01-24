@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
+import { getPresignedUrl, getPresignedDownloadUrl } from "@/lib/s3";
+import { v4 as uuidv4 } from "uuid";
 
 export const authRouter = createTRPCRouter({
     /**
@@ -22,6 +24,7 @@ export const authRouter = createTRPCRouter({
                     id: true,
                     name: true,
                     image: true,
+                    backgroundImage: true,
                     createdAt: true,
                     notes: {
                         where: { isPublic: true },
@@ -67,8 +70,20 @@ export const authRouter = createTRPCRouter({
             `;
             const rank = Number(usersWithHigherScore[0]?.count || 0) + 1;
 
+            // Resolve S3 URLs for images
+            const imageUrl = user.image && !user.image.startsWith("http")
+                ? await getPresignedDownloadUrl(user.image)
+                : user.image;
+
+            const backgroundUrl = user.backgroundImage && !user.backgroundImage.startsWith("http")
+                ? await getPresignedDownloadUrl(user.backgroundImage)
+                : user.backgroundImage;
+
             return {
                 ...user,
+                _count: user._count,
+                image: imageUrl,
+                backgroundImage: backgroundUrl,
                 totalViews: stats._sum.viewCount || 0,
                 totalKarma: stats._sum.voteScore || 0,
                 rank,
@@ -80,11 +95,37 @@ export const authRouter = createTRPCRouter({
      * Auth: Protected
      */
     updateProfile: protectedProcedure
-        .input(z.object({ name: z.string().min(1).optional() }))
+        .input(z.object({
+            name: z.string().min(1).optional(),
+            image: z.string().optional(),
+            backgroundImage: z.string().optional(),
+        }))
         .mutation(async ({ ctx, input }) => {
             return ctx.prisma.user.update({
                 where: { id: ctx.session.user.id },
-                data: { name: input.name },
+                data: {
+                    name: input.name,
+                    image: input.image,
+                    backgroundImage: input.backgroundImage,
+                },
             });
+        }),
+
+    /**
+     * Generate S3 Upload URL for profile images.
+     * Auth: Protected
+     */
+    getProfileUploadUrl: protectedProcedure
+        .input(z.object({
+            filename: z.string(),
+            contentType: z.string(),
+            type: z.enum(["avatar", "background"])
+        }))
+        .mutation(async ({ input, ctx }) => {
+            const uniqueId = uuidv4();
+            const extension = input.filename.split(".").pop();
+            const key = `users/${ctx.session.user.id}/${input.type}-${uniqueId}.${extension}`;
+            const url = await getPresignedUrl(key, input.contentType);
+            return { url, s3Key: key };
         }),
 });

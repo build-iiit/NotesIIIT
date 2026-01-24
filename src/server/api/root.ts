@@ -5,6 +5,7 @@ import { versionsRouter } from "@/server/api/routers/versions";
 import { votesRouter } from "@/server/api/routers/votes";
 import { commentsRouter } from "@/server/api/routers/comments";
 import { leaderboardsRouter } from "@/server/api/routers/leaderboards";
+import { foldersRouter } from "@/server/api/routers/folders";
 
 /**
  * This is the primary router for your server.
@@ -18,6 +19,7 @@ export const appRouter = createTRPCRouter({
     votes: votesRouter,
     comments: commentsRouter,
     leaderboards: leaderboardsRouter,
+    folders: foldersRouter,
 });
 
 // export type definition of API
