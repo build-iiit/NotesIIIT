@@ -1,12 +1,12 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { api } from "@/app/_trpc/client";
 import { PdfViewer } from "@/components/PdfViewer";
 import { InteractionsPanel } from "@/components/InteractionsPanel";
 import { FullPageNoteViewer } from "@/components/FullPageNoteViewer";
 import Link from "next/link";
-import { Maximize2 } from "lucide-react";
+import { Maximize2, Eye } from "lucide-react";
 
 export default function NotePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -14,6 +14,17 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     const { data: currentUser } = api.auth.getMe.useQuery();
     const [pageNum, setPageNum] = useState(1);
     const [isFullPageOpen, setIsFullPageOpen] = useState(false);
+    const trackViewMutation = api.notes.trackView.useMutation();
+
+    // Track view when the note is loaded
+    useEffect(() => {
+        if (note?.id) {
+            // Track view in background without updating the UI immediately
+            // The updated count will show on next page load
+            trackViewMutation.mutate({ noteId: note.id });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [note?.id]); // Only track on initial load
 
     if (!note) return <div>Note not found</div>;
 
@@ -32,8 +43,11 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                         <div>
                             <Link href="/" className="text-blue-500 hover:underline mb-4 inline-block">&larr; Back to Home</Link>
                             <h1 className="text-3xl font-bold">{note.title}</h1>
-                            <p className="text-gray-500">
-                                By {note.author.name} • Version {currentVersion?.version}
+                            <p className="text-gray-500 flex items-center gap-2">
+                                <span>By {note.author.name} • Version {currentVersion?.version}</span>
+                                <span className="flex items-center gap-1">
+                                    • <Eye className="w-4 h-4" /> {note.viewCount}
+                                </span>
                             </p>
                             {note.description && <p className="mt-2 text-lg">{note.description}</p>}
                         </div>
@@ -68,6 +82,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     url={s3Url}
                                     pageNum={pageNum}
                                     onPageChange={setPageNum}
+                                    noteId={note?.id}
                                 />
                             ) : (
                                 <div className="p-8 border text-center text-red-500">

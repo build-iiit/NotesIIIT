@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Menu, X, Upload, Trophy, User, LogOut, Home, Search } from "lucide-react";
+import { ThemeToggle } from "./theme-toggle";
+import { BookOpen, Menu, X, Upload, Trophy, User, LogOut, Home, Shield, Search, Bookmark } from "lucide-react";
 import { useState } from "react";
 
 interface NavbarProps {
@@ -11,6 +12,7 @@ interface NavbarProps {
         name?: string | null;
         email?: string | null;
         image?: string | null;
+        role?: string;
     } | null;
     onSignOut?: () => void;
 }
@@ -24,8 +26,10 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
         { href: "/search", label: "Search", icon: Search },
         { href: "/courses", label: "Courses", icon: BookOpen },
         { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
+        { href: "/bookmarks", label: "Bookmarks", icon: Bookmark, authRequired: true },
         { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
         ...(user ? [{ href: `/users/${user.id}`, label: "Profile", icon: User }] : []),
+        ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: Shield, adminOnly: true }] : []),
     ];
 
     const isActive = (path: string) => {
@@ -60,8 +64,8 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                     key={link.href}
                                     href={link.href}
                                     className={`
-                    relative px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200
-                    flex items-center gap-2 group
+                    relative px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300
+                    flex items-center gap-2 group backdrop-blur-2xl
                     ${active
                                             ? "text-primary"
                                             : "text-gray-300 hover:text-primary"
@@ -77,7 +81,9 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                     )}
 
                                     {/* Hover effect */}
-                                    <span className="absolute inset-0 bg-blue-600/5 dark:bg-blue-400/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 -z-10" />
+                                    {!active && (
+                                        <span className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-pink-500/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 -z-10" />
+                                    )}
                                 </Link>
                             );
                         })}
@@ -88,9 +94,9 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
 
                         {user ? (
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-100 dark:border-blue-900/30">
-                                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-2xl bg-gradient-to-r from-orange-500/12 to-pink-500/12 border border-white/30 shadow-inner">
+                                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse shadow-lg shadow-green-500/50" />
+                                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                                         {user.name?.split(" ")[0]}
                                     </span>
                                 </div>
@@ -98,7 +104,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                 {onSignOut && (
                                     <button
                                         onClick={onSignOut}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 border border-transparent hover:border-red-200 dark:hover:border-red-900/30"
+                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 backdrop-blur-sm bg-white/20 dark:bg-white/10 hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all duration-200 border border-white/30 hover:border-red-300/50"
                                     >
                                         <LogOut className="h-4 w-4" />
                                         <span className="hidden lg:inline">Sign Out</span>
@@ -108,7 +114,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         ) : (
                             <Link
                                 href="/login"
-                                className="px-6 py-2 rounded-full font-semibold text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                className="px-6 py-2 rounded-full font-semibold text-sm backdrop-blur-2xl bg-gradient-to-r from-orange-500/80 to-pink-500/80 text-white hover:from-orange-600/90 hover:to-pink-600/90 transition-all duration-300 shadow-[0_4px_16px_0_rgba(251,113,133,0.3)] hover:shadow-[0_6px_24px_0_rgba(251,113,133,0.4)] border border-white/40 hover:scale-[1.05]"
                             >
                                 Sign In
                             </Link>
@@ -118,20 +124,20 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                     {/* Mobile menu button */}
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                        className="md:hidden p-2 rounded-lg backdrop-blur-sm bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 transition-colors border border-white/20"
                         aria-label="Toggle menu"
                     >
                         {mobileMenuOpen ? (
-                            <X className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                            <X className="h-6 w-6 text-gray-800 dark:text-gray-200" />
                         ) : (
-                            <Menu className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                            <Menu className="h-6 w-6 text-gray-800 dark:text-gray-200" />
                         )}
                     </button>
                 </div>
 
                 {/* Mobile Navigation Menu */}
                 {mobileMenuOpen && (
-                    <div className="md:hidden py-4 border-t border-gray-200/20 dark:border-zinc-800/50 animate-in slide-in-from-top duration-200">
+                    <div className="md:hidden py-4 border-t border-white/20 dark:border-white/10 animate-in slide-in-from-top duration-200">
                         <div className="flex flex-col gap-2">
                             {navLinks.map((link) => {
                                 if (link.authRequired && !user) return null;
@@ -144,10 +150,10 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                         href={link.href}
                                         onClick={() => setMobileMenuOpen(false)}
                                         className={`
-                      flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200
+                      flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 backdrop-blur-sm
                       ${active
-                                                ? "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30"
-                                                : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                                ? "bg-gradient-to-r from-orange-500/30 to-pink-500/30 text-white dark:text-white border border-white/30"
+                                                : "text-gray-800 dark:text-gray-200 hover:bg-white/20 dark:hover:bg-white/10 border border-transparent"
                                             }
                     `}
                                     >
@@ -157,15 +163,19 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                 );
                             })}
 
-                            <div className="border-t border-gray-200/20 dark:border-zinc-800/50 my-2" />
+                            <div className="border-t border-white/20 dark:border-white/10 my-2" />
 
-
+                            {/* Mobile Theme Toggle */}
+                            <div className="px-4 py-3 flex items-center justify-between backdrop-blur-sm bg-white/10 dark:bg-white/5 rounded-lg border border-white/20">
+                                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Theme</span>
+                                <ThemeToggle />
+                            </div>
 
                             {/* Mobile Auth Section */}
                             {user ? (
                                 <div className="px-4 py-3 space-y-2">
-                                    <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                                    <div className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200 backdrop-blur-sm bg-white/10 dark:bg-white/5 rounded-lg p-2 border border-white/20">
+                                        <div className="h-2 w-2 rounded-full bg-green-500 shadow-lg shadow-green-500/50" />
                                         Signed in as {user.name}
                                     </div>
                                     {onSignOut && (
@@ -174,7 +184,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                                 onSignOut();
                                                 setMobileMenuOpen(false);
                                             }}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-950/50 transition-all duration-200 border border-red-200 dark:border-red-900/30"
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 backdrop-blur-sm bg-red-100/50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 transition-all duration-200 border border-red-300/50 dark:border-red-800/50"
                                         >
                                             <LogOut className="h-4 w-4" />
                                             Sign Out
@@ -185,7 +195,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                 <Link
                                     href="/login"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="mx-4 px-6 py-3 rounded-lg font-semibold text-sm text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg"
+                                    className="mx-4 px-6 py-3 rounded-lg font-semibold text-sm text-center backdrop-blur-md bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600 transition-all duration-200 shadow-lg border border-white/30"
                                 >
                                     Sign In
                                 </Link>

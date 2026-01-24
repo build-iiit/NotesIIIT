@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
 import { Upload, FileText, X, CheckCircle, Loader2, Search } from "lucide-react";
+type UploadStep = "idle" | "getting-url" | "uploading" | "creating-record" | "complete";
+
 
 export default function UploadPage() {
     const router = useRouter();
@@ -11,6 +13,9 @@ export default function UploadPage() {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [uploadStep, setUploadStep] = useState<"idle" | "uploading" | "complete">("idle");
+    const [folderId, setFolderId] = useState<string | null>(null);
+    const [uploading, setUploading] = useState(false);
+//     const [uploadStep, setUploadStep] = useState<UploadStep>("idle");
     const [uploadProgress, setUploadProgress] = useState(0);
     const [dragActive, setDragActive] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -166,9 +171,11 @@ export default function UploadPage() {
             await createNoteMutation.mutateAsync({
                 title,
                 description,
+
                 s3Key, // Pass the local path
                 courseId: selectedCourseId || undefined,
                 semester: selectedSemester || undefined,
+                folderId: folderId || undefined,
             });
             console.log("Step 2 Success: Note created");
 
@@ -434,6 +441,8 @@ export default function UploadPage() {
                                 </div>
                             </div>
                         )}
+                    </div>
+
 
                         {/* Error Message */}
                         {error && (
@@ -472,7 +481,27 @@ export default function UploadPage() {
                 <p className="mt-6 text-center text-xs text-gray-500">
                     &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
                 </p>
+                    {/* Upload Progress */}
+                    {uploading && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm text-white">
+                                <span className="font-medium">{getStepMessage()}</span>
+                                <span>{uploadProgress}%</span>
+                            </div>
+                            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-300 ease-out"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
             </div>
+
+            <p className="mt-6 text-center text-xs text-white/60">
+                &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
+            </p>
         </div>
     );
 }

@@ -2,9 +2,18 @@
 
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
+import Image from "next/image";
+
+type UserWithScore = {
+    id: string;
+    name: string | null;
+    image: string | null;
+    totalScore: number;
+    _count: { notes: number };
+};
 
 export function LeaderboardTable() {
-    const { data: topNotes } = api.leaderboards.trending.useQuery();
+    const { data: topNotes } = api.leaderboards.topNotes.useQuery();
     const { data: topContributors } = api.leaderboards.topContributors.useQuery();
 
     return (
@@ -12,7 +21,7 @@ export function LeaderboardTable() {
             {/* Top Notes */}
             <div className="bg-white dark:bg-zinc-900 shadow-xl rounded-2xl p-6 border border-gray-100 dark:border-zinc-800">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <span className="text-3xl">🔥</span> Trending Notes
+                    <span className="text-3xl">🔥</span> Top Notes by Upvotes
                 </h2>
                 <div className="space-y-4">
                     {topNotes?.map((note, idx) => (
@@ -32,7 +41,7 @@ export function LeaderboardTable() {
                                     {note.title}
                                 </h3>
                                 <p className="text-xs text-gray-500">
-                                    {note.voteScore} upvotes • {note.viewCount} views • By {note.author.name}
+                                    {note.voteScore} {note.voteScore === 1 ? 'upvote' : 'upvotes'} • By {note.author.name}
                                 </p>
                             </div>
                         </Link>
@@ -47,17 +56,18 @@ export function LeaderboardTable() {
                     <span className="text-3xl">🏆</span> Top Contributors
                 </h2>
                 <div className="space-y-4">
-                    {topContributors?.map((user, idx) => (
+                    {topContributors?.map((user: UserWithScore, idx) => (
                         <Link
                             key={user.id}
                             href={`/users/${user.id}`}
                             className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors group"
                         >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <Image
                                 src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
-                                alt={user.name!}
-                                className="w-10 h-10 rounded-full bg-gray-200"
+                                alt={user.name || "User avatar"}
+                                width={40}
+                                height={40}
+                                className="rounded-full bg-gray-200"
                             />
                             <div className="flex-1">
                                 <h3 className="font-semibold group-hover:text-blue-600 transition-colors">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FileText, Eye, ThumbsUp, Calendar } from "lucide-react";
 
-interface Note {
+export interface Note {
     id: string;
     title: string;
     description: string | null;
@@ -57,13 +57,13 @@ export function UserNotesGrid({ notes, userName }: UserNotesGridProps) {
 
                             {/* Stats overlay */}
                             <div className="absolute bottom-3 right-3 flex gap-2">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/10">
-                                    <Eye className="h-3 w-3 text-gray-300" />
-                                    <span className="text-xs font-medium text-gray-300">{note.viewCount}</span>
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/30">
+                                    <Eye className="h-3 w-3 text-white" />
+                                    <span className="text-xs font-medium text-white">{note.viewCount}</span>
                                 </div>
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/10">
-                                    <ThumbsUp className="h-3 w-3 text-gray-300" />
-                                    <span className="text-xs font-medium text-gray-300">{note.voteScore}</span>
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/30">
+                                    <ThumbsUp className="h-3 w-3 text-white" />
+                                    <span className="text-xs font-medium text-white">{note.voteScore}</span>
                                 </div>
                             </div>
                         </div>

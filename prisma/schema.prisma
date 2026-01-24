@@ -17,6 +17,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  backgroundImage String?
   accounts      Account[]
   sessions      Session[]
   
@@ -25,6 +26,8 @@ model User {
   comments      Comment[]
   votes         Vote[]
   views         View[]
+  folders       Folder[]
+  bookmarks     Bookmark[]
 
   role          Role      @default(USER)
 
@@ -99,6 +102,10 @@ model Note {
   // Relations
   comments    Comment[] // Global note-level comments (optional)
   views       View[]
+  bookmarks   Bookmark[]
+
+  folderId    String?
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   // Course Relation
   courseId    String?
@@ -113,6 +120,28 @@ model Note {
   @@index([authorId])
   @@index([courseId])
   @@index([createdAt])
+  @@index([folderId])
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  parentId  String?
+  parent    Folder?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[] @relation("ParentChild")
+  
+  notes     Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, parentId, name]) // Unique folder names within the same parent/root
+  @@index([userId])
+  @@index([parentId])
 }
 
 model Course {
@@ -242,3 +271,28 @@ model View {
 
   @@index([noteId])
 }
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  
+  // User who created the bookmark
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Note being bookmarked
+  noteId     String
+  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  // Specific page number
+  pageNumber Int
+  
+  // Optional label/note
+  label      String?
+  
+  createdAt  DateTime @default(now())
+  
+  @@unique([userId, noteId, pageNumber]) // One bookmark per user per page
+  @@index([userId])
+  @@index([noteId])
+}
+

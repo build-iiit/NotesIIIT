@@ -34,8 +34,7 @@ export function FullPageNoteViewer({
     const [loading, setLoading] = useState(true);
     const [showControls, setShowControls] = useState(true);
     const [showHelp, setShowHelp] = useState(false);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const renderTaskRef = useRef<any>(null);
+    const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
     const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isAnimatingIn, setIsAnimatingIn] = useState(false);
 
@@ -61,6 +60,17 @@ export function FullPageNoteViewer({
         setTimeout(() => setIsAnimatingIn(true), 10);
     }, [url, isOpen]);
 
+    // Animate in when opening
+    useEffect(() => {
+        if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsAnimatingIn(true);
+        } else {
+
+            setIsAnimatingIn(false);
+        }
+    }, [isOpen]);
+
     // Handle zoom and responsive scaling
     const updateScale = useCallback(async () => {
         if (!pdfDoc || !containerRef.current) return;
@@ -84,13 +94,13 @@ export function FullPageNoteViewer({
                 return;
             }
 
-            setScale(Math.max(0.5, Math.min(newScale, 3.0))); // Clamp between 0.5 and 3.0
+            setScale(Math.max(0.5, Math.min(newScale, 5.0))); // Clamp between 0.5 and 5.0
         } catch (e) {
             console.error("Error updating scale:", e);
         }
     }, [pdfDoc, pageNum, zoomMode]);
 
-    // Update scale when relevant dependencies change
+    // Update scale when zoom mode or dependencies change
     useEffect(() => {
         if (zoomMode !== "custom") {
             // Wrap in timeout to avoid "setState synchronously in effect" warning, 
@@ -98,6 +108,8 @@ export function FullPageNoteViewer({
             setTimeout(() => {
                 updateScale();
             }, 0);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            void updateScale();
         }
     }, [updateScale, zoomMode]);
 
@@ -140,6 +152,7 @@ export function FullPageNoteViewer({
                 const renderContext = {
                     canvasContext: context,
                     viewport: viewport,
+                    canvas: canvas,
                 };
 
                 const renderTask = page.render(renderContext);
@@ -150,6 +163,7 @@ export function FullPageNoteViewer({
                 // Check if it's a cancellation error
                 const isCancelled = err instanceof Error && err.name === "RenderingCancelledException";
                 if (!isCancelled) {
+                if (err instanceof Error && err.name !== "RenderingCancelledException") {
                     console.error("Error rendering page:", err);
                     setError("Failed to render page");
                 }
@@ -253,7 +267,9 @@ export function FullPageNoteViewer({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose, showHelp, pdfDoc, pageNum, changePage]);
+    }, [isOpen, onClose, showHelp, changePage, handleZoomIn, handleZoomOut, toggleZoomMode, pdfDoc, pageNum, changePage]);
+
+
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {
@@ -343,7 +359,7 @@ export function FullPageNoteViewer({
                 {!loading && !error && (
                     <div className="flex flex-col items-center gap-4">
                         <div className="shadow-2xl rounded-lg overflow-hidden bg-white">
-                            <canvas ref={canvasRef} className="max-w-full" />
+                            <canvas ref={canvasRef} />
                         </div>
                     </div>
                 )}

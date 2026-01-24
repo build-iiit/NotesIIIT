@@ -10,8 +10,13 @@ interface CanvasContext {
 }
 
 // Helper for canvas factory needed by pdfjs-dist in Node
+interface CanvasAndContext {
+    canvas: ReturnType<typeof createCanvas>;
+    context: ReturnType<ReturnType<typeof createCanvas>['getContext']>;
+}
+
 class NodeCanvasFactory {
-    create(width: number, height: number) {
+    create(width: number, height: number): CanvasAndContext {
         const canvas = createCanvas(width, height);
         return {
             canvas,
@@ -20,15 +25,15 @@ class NodeCanvasFactory {
     }
 
     reset(canvasAndContext: CanvasContext, width: number, height: number) {
+    reset(canvasAndContext: CanvasAndContext, width: number, height: number) {
         canvasAndContext.canvas.width = width;
         canvasAndContext.canvas.height = height;
     }
 
     destroy(canvasAndContext: CanvasContext) {
+    destroy(canvasAndContext: CanvasAndContext) {
         canvasAndContext.canvas.width = 0;
         canvasAndContext.canvas.height = 0;
-        canvasAndContext.canvas = null;
-        canvasAndContext.context = null;
     }
 }
 
@@ -48,6 +53,7 @@ export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
     const loadingTask = pdfjsLib.getDocument({
         data,
         canvasFactory: new NodeCanvasFactory()
+        canvasFactory: new NodeCanvasFactory() as unknown as pdfjsLib.CanvasFactory
     });
 
     const doc = await loadingTask.promise;
@@ -64,6 +70,11 @@ export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
     };
 
     await page.render(renderContext).promise;
+    await page.render({
+        canvasContext: context as unknown as CanvasRenderingContext2D,
+        viewport,
+        canvas: canvas as unknown as HTMLCanvasElement
+    }).promise;
 
     return canvas.toBuffer('image/jpeg');
 }
