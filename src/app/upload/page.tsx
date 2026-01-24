@@ -2,110 +2,113 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createNoteRecord } from "@/app/actions/upload";
+import { api } from "@/app/_trpc/client";
 
 export default function UploadPage() {
     const router = useRouter();
     const [file, setFile] = useState<File | null>(null);
     const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
     const [uploading, setUploading] = useState(false);
-    const [error, setError] = useState("");
+
+    const getUploadUrlMutation = api.notes.getUploadUrl.useMutation();
+    const createNoteMutation = api.notes.create.useMutation();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const selectedFile = e.target.files[0];
-            if (selectedFile.type !== "application/pdf") {
-                setError("Only PDF files are allowed.");
-                return;
-            }
-            setFile(selectedFile);
-            setError("");
+        if (e.target.files) {
+            setFile(e.target.files[0]);
         }
     };
 
-    const handleUpload = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!file || !title) return;
-
-        setUploading(true);
-        setError("");
+        if (!file) return;
 
         try {
+            setUploading(true);
+
             // 1. Get Presigned URL
-            const res = await fetch("/api/upload/presigned", {
-                method: "POST",
-                body: JSON.stringify({ filename: file.name, contentType: file.type }),
+            console.log("Step 1: Requesting presigned URL...");
+            const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
+                filename: file.name,
+                contentType: file.type,
             });
-            const { url, key } = await res.json();
+            console.log("Step 1 Success: Got URL", url);
 
-            if (!url) throw new Error("Failed to get upload URL");
-
-            // 2. Upload to S3 (Directly)
-            const uploadRes = await fetch(url, {
+            // 2. Upload to S3
+            console.log("Step 2: Uploading to S3...");
+            const uploadResponse = await fetch(url, {
                 method: "PUT",
                 body: file,
-                headers: { "Content-Type": file.type },
+                headers: {
+                    "Content-Type": file.type,
+                },
             });
 
-            if (!uploadRes.ok) throw new Error("Upload to S3 failed");
+            if (!uploadResponse.ok) {
+                throw new Error(`S3 upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
+            }
+            console.log("Step 2 Success: File uploaded");
 
-            // 3. Create Record in DB
-            const dbRes = await createNoteRecord(title, key);
-
-            if (!dbRes.success) throw new Error(dbRes.error);
+            // 3. Create Note Record
+            console.log("Step 3: Creating note record...");
+            await createNoteMutation.mutateAsync({
+                title,
+                description,
+                s3Key,
+            });
+            console.log("Step 3 Success: Note created");
 
             router.push("/");
-        } catch (err) {
-            console.error(err);
-            setError("Something went wrong. Please try again.");
+            router.refresh();
+        } catch (error: any) {
+            console.error("Upload failed:", error);
+            alert(`Upload failed: ${error.message || "Unknown error"}\n\nCheck browser console for details.`);
         } finally {
             setUploading(false);
         }
     };
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6">
-            <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-                <h1 className="text-2xl font-bold mb-6 text-center">Upload Note</h1>
-
-                {error && (
-                    <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
-                        {error}
-                    </div>
-                )}
-
-                <form onSubmit={handleUpload} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Title</label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500"
-                            required
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">PDF File</label>
-                        <input
-                            type="file"
-                            accept="application/pdf"
-                            onChange={handleFileChange}
-                            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                            required
-                        />
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={uploading}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
-                    >
-                        {uploading ? "Uploading..." : "Upload"}
-                    </button>
-                </form>
-            </div>
+        <div className="max-w-xl mx-auto p-8">
+            <h1 className="text-2xl font-bold mb-6">Upload Note</h1>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div>
+                    <label className="block text-sm font-medium mb-1">Title</label>
+                    <input
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                        className="w-full border p-2 rounded"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Description</label>
+                    <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="w-full border p-2 rounded"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">PDF File</label>
+                    <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                        required
+                        className="w-full"
+                    />
+                </div>
+                <button
+                    type="submit"
+                    disabled={uploading || !file}
+                    className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                    {uploading ? "Uploading..." : "Upload Note"}
+                </button>
+            </form>
         </div>
     );
 }

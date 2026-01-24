@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------
+// 1. Identity & Auth (NextAuth Standard)
+// ---------------------------------------------------------
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -16,12 +19,22 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  notes         Note[]
-  votes         Vote[]
-  comments      Comment[]
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // App Relations
+  notes         Note[]
+  comments      Comment[]
+  votes         Vote[]
+  views         View[]
+
+  role          Role      @default(USER)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 model Account {
@@ -59,44 +72,98 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Note {
-  id        String   @id @default(cuid())
-  title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+// ---------------------------------------------------------
+// 2. Core Content
+// ---------------------------------------------------------
 
-  // Versions
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  isPublic    Boolean  @default(true)
+  
+  // Authorship
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Versioning
   versions         NoteVersion[]
   currentVersionId String?       @map("current_version_id")
-  
-  // Social
-  votes     Vote[]
-  comments  Comment[]
+  // Note: We don't strictly relation currentVersion to NoteVersion here to avoid circular dependency issues during creation, 
+  // but logically it points to a NoteVersion.id
+
+  // Stats (Denormalized for performance, updated via transactions/events)
+  viewCount   Int      @default(0)
+  voteScore   Int      @default(0) // Upvotes - Downvotes
+
+  // Relations
+  comments    Comment[] // Global note-level comments (optional)
+  views       View[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([createdAt])
 }
 
 model NoteVersion {
-  id        String   @id @default(cuid())
-  noteId    String
-  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  version   Int
-  s3Key     String
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  version     Int      // Incremental version number (1, 2, 3...)
+  
+  // File Storage
+  s3Key       String   // The PDF file path in storage
+  
+  // Relations
+  noteId      String
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  pages       Page[]
 
-  @@unique([noteId, version])
+  createdAt   DateTime @default(now())
+
+  @@unique([noteId, version]) // Ensure version numbers are unique per note
+  @@index([noteId])
 }
 
-model Vote {
-  id        String @id @default(cuid())
-  userId    String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  noteId    String
-  note      Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
-  type      VoteType
-  pageIndex Int?
+model Page {
+  id            String   @id @default(cuid())
+  number        Int      // Page number (1-indexed)
+  
+  // Parent
+  versionId     String
+  version       NoteVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, noteId, pageIndex])
+  // Explicit Relations for Page-Level Interactivity
+  votes         Vote[]
+  comments      Comment[]
+
+  @@unique([versionId, number]) // One record per page number per version
+  @@index([versionId])
+}
+
+// ---------------------------------------------------------
+// 3. Interactivity (Votes, Comments, Views)
+// ---------------------------------------------------------
+
+model Vote {
+  id        String   @id @default(cuid())
+  type      VoteType
+  
+  // Voter
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Target: Vote is strictly on a PAGE (granular)
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, pageId]) // Prevent duplicate votes by same user on same page
+  @@index([pageId])
+  @@index([userId])
 }
 
 enum VoteType {
@@ -107,15 +174,46 @@ enum VoteType {
 model Comment {
   id        String   @id @default(cuid())
   content   String
+  isPrivate Boolean  @default(false) // Private = only visible to author (and maybe note owner)
+  
+  // Author
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  noteId    String
-  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
   
+  // Targets (Polymorphic-ish, but explicit is better for Prisma)
+  // Comments can be on a NOTE (general) or a PAGE (specific)
+  noteId    String?
+  note      Note?    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  pageId    String?
+  page      Page?    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  
+  // Threading
   parentId  String?
-  parent    Comment? @relation("ParentChild", fields: [parentId], references: [id])
+  parent    Comment?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
   children  Comment[] @relation("ParentChild")
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([noteId])
+  @@index([pageId])
+  @@index([userId])
+}
+
+model View {
+  id        String   @id @default(cuid())
+  
+  // Viewer (Optional, for anonymous views tracking?)
+  // Requirement doesn't specify anonymous, but usually views are tracked by IP or User.
+  // We'll track authenticated users strictly for now.
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([noteId])
 }

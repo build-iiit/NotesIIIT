@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Notes Platform
 
-## Getting Started
+A modern notes sharing platform built with the T3 Stack (Next.js, tRPC, Prisma, Tailwind CSS) featuring PDF storage via MinIO (S3-compatible).
 
-First, run the development server:
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Styling:** Tailwind CSS v4
+- **Database:** PostgreSQL (via Prisma)
+- **Storage:** MinIO (S3-compatible object storage)
+- **API:** tRPC
+- **Auth:** NextAuth.js
+
+## Prerequisites
+
+- Node.js 18+
+- Docker & Docker Compose
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Environment Setup
+
+Create a `.env` file in the root directory:
+
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/notes_db"
+
+# NextAuth
+# Generate a secret: openssl rand -base64 32
+NEXTAUTH_SECRET="your-secret-here"
+NEXTAUTH_URL="http://localhost:3000"
+
+# S3 (MinIO)
+# These defaults match the docker-compose setup
+S3_REGION="us-east-1"
+S3_ENDPOINT="http://localhost:9000"
+S3_ACCESS_KEY="minioadmin"
+S3_SECRET_KEY="minioadmin"
+S3_BUCKET_NAME="notes-bucket"
+```
+
+### 3. Start Backend Services
+
+Start PostgreSQL and MinIO containers:
+
+```bash
+docker-compose up -d
+```
+
+Services will be available at:
+- **MinIO Console:** [http://localhost:9001](http://localhost:9001) (User: `minioadmin`, Pass: `minioadmin`)
+- **MinIO API:** [http://localhost:9000](http://localhost:9000)
+- **Postgres:** `localhost:5432`
+
+### 4. Initialize Database
+
+Push the schema to the database:
+
+```bash
+npx prisma db push
+```
+
+### 5. Run Application
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Development Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev`: Start dev server
+- `npx prisma studio`: Open Prisma Studio UI to inspect database
+- `npm run lint`: Run linting

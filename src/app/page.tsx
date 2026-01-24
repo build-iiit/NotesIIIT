@@ -1,38 +1,52 @@
 import { auth, signOut } from "@/auth";
+import { Suspense } from "react";
+import { HeroSection } from "@/components/HeroSection";
+import { NotesFeed } from "@/components/NotesFeed";
 
 export default async function Home() {
   const session = await auth();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold mb-8">Notes Platform</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center p-8 sm:p-24 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
 
       {session?.user ? (
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-xl">Welcome, {session.user.name}!</p>
-          <img
-            src={session.user.image ?? ""}
-            alt="Profile"
-            className="w-16 h-16 rounded-full"
-          />
-          <div className="flex gap-4">
-            <a href="/upload" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-              Upload Note
-            </a>
-            <form
-              action={async () => {
-                "use server";
-                await signOut();
-              }}
-            >
-              <button className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                Sign Out
-              </button>
-            </form>
+        <div className="flex flex-col items-center gap-4 w-full z-10">
+          <div className="flex flex-col items-center gap-2 mb-8">
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl font-bold">Welcome back, {session.user.name?.split(" ")[0]}!</h1>
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut();
+                }}
+              >
+                <button className="text-sm text-red-500 hover:underline bg-white/50 dark:bg-black/50 px-3 py-1 rounded-full border border-red-100 dark:border-red-900/30">
+                  Sign Out
+                </button>
+              </form>
+            </div>
+            <div className="flex gap-4">
+              <a href="/leaderboard" className="text-blue-600 hover:underline">View Leaderboard</a>
+              <span className="text-gray-300">|</span>
+              <a href={`/users/${session.user.id}`} className="text-blue-600 hover:underline">Your Profile</a>
+            </div>
+            <p className="text-gray-500 mt-2">Pick up where you left off</p>
+          </div>
+
+          <div className="w-full max-w-6xl">
+            <Suspense fallback={<div className="text-center">Loading feed...</div>}>
+              <NotesFeed />
+            </Suspense>
           </div>
         </div>
       ) : (
-        <p>You shouldn't see this (Middleware should redirect)</p>
+        <div className="z-10 w-full">
+          <HeroSection />
+        </div>
       )}
     </div>
   );
