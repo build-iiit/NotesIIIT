@@ -7,34 +7,39 @@ import { useInView } from "react-intersection-observer";
 
 export function NotesFeed() {
     const [sort, setSort] = useState<"newest" | "popular">("popular");
+    const [displayCount, setDisplayCount] = useState(10);
 
-    // Infinite query for pagination
-    const {
-        data,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading
-    } = api.notes.getInfinite.useInfiniteQuery(
-        { limit: 10, sortBy: sort },
-        { getNextPageParam: (lastPage) => lastPage.nextCursor }
-    );
+    // Regular query instead of infinite query
+    const { data, isLoading } = api.notes.getAll.useQuery({
+        cursor: undefined,
+        limit: 100 // Load more at once
+    });
 
     const { ref, inView } = useInView();
 
     useEffect(() => {
-        if (inView && hasNextPage) {
-            fetchNextPage();
+        if (inView && data?.items && displayCount < data.items.length) {
+            setDisplayCount(prev => prev + 10);
         }
-    }, [inView, hasNextPage, fetchNextPage]);
+    }, [inView, data?.items, displayCount]);
+
+    // Client-side sorting
+    const sortedNotes = (data?.items || []).sort((a: { voteScore?: number; createdAt: Date | string }, b: { voteScore?: number; createdAt: Date | string }) => {
+        if (sort === "popular") {
+            return (b.voteScore || 0) - (a.voteScore || 0);
+        } else {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+    });
+
+    // Display subset
+    const allNotes = sortedNotes.slice(0, displayCount);
 
     if (isLoading) {
         return <div className="text-center py-10">Loading notes...</div>;
     }
 
-    const allNotes = data?.pages.flatMap((page) => page.items) ?? [];
-
-    if (allNotes.length === 0 && !isLoading) {
+    if (sortedNotes.length === 0 && !isLoading) {
         return (
             <div className="text-center py-20 border-2 border-dashed rounded-xl">
                 <p className="text-gray-500 mb-4">No notes shared yet.</p>
@@ -106,7 +111,7 @@ export function NotesFeed() {
                 ))}
             </div>
 
-            {isFetchingNextPage && (
+            {displayCount < sortedNotes.length && (
                 <div className="text-center py-4 text-gray-500">Loading more...</div>
             )}
 

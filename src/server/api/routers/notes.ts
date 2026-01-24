@@ -2,7 +2,6 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { getPresignedUrl, getPresignedDownloadUrl } from "@/lib/s3";
 import { v4 as uuidv4 } from "uuid";
-import { TRPCError } from "@trpc/server";
 
 export const notesRouter = createTRPCRouter({
     /**
@@ -14,28 +13,18 @@ export const notesRouter = createTRPCRouter({
             z.object({
                 limit: z.number().min(1).max(100).default(20),
                 cursor: z.string().nullish(), // For infinite scroll
-                search: z.string().optional(),
             }).optional()
         )
         .query(async ({ ctx, input }) => {
             const limit = input?.limit ?? 20;
             const cursor = input?.cursor;
-            const search = input?.search;
 
             const items = await ctx.prisma.note.findMany({
                 take: limit + 1,
                 cursor: cursor ? { id: cursor } : undefined,
-                where: {
-                    isPublic: true,
-                    AND: search ? {
-                        OR: [
-                            { title: { contains: search, mode: "insensitive" } },
-                            { author: { name: { contains: search, mode: "insensitive" } } },
-                        ]
-                    } : undefined,
-                },
+                where: { isPublic: true },
                 orderBy: { createdAt: "desc" },
-                include: { author: true },
+                include: { author: true, course: true },
             });
 
             let nextCursor: typeof cursor | undefined = undefined;
@@ -48,117 +37,63 @@ export const notesRouter = createTRPCRouter({
         }),
 
     /**
-     * Get trending notes (most viewed).
+     * Get a single note by ID with its current version.
      * Auth: Public
      */
-    getTrending: publicProcedure
-        .query(async ({ ctx }) => {
-            return ctx.prisma.note.findMany({
-                take: 6,
-                where: { isPublic: true },
-                orderBy: { viewCount: "desc" },
-                include: { author: true },
-            });
-        }),
     getById: publicProcedure
         .input(z.object({ id: z.string() }))
         .query(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({
                 where: { id: input.id },
-                include: {
-                    author: true,
-                    course: true,
-                    versions: {
-                        orderBy: { createdAt: "desc" },
-                    },
-                    comments: {
-                        include: { user: true },
-                        orderBy: { createdAt: "desc" },
-                    },
-                },
+                include: { versions: true, author: true, course: true },
             });
 
-            if (!note) throw new TRPCError({ code: "NOT_FOUND" });
+            if (!note) return null;
 
-            return note;
-        }),
-
-    incrementView: publicProcedure
-        .input(z.object({ id: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            await ctx.prisma.note.update({
-                where: { id: input.id },
-                data: { viewCount: { increment: 1 } },
-            });
-            return { success: true };
-        }),
-
-    getInfinite: publicProcedure
-        .input(
-            z.object({
-                limit: z.number().min(1).max(100).default(10),
-                cursor: z.string().nullish(),
-                search: z.string().optional(),
-                courseId: z.string().optional(),
-                semester: z.string().optional(),
-                sortBy: z.enum(["newest", "popular"]).default("newest"),
-            })
-        )
-        .query(async ({ ctx, input }) => {
-            const limit = input.limit;
-            const { cursor, search, courseId, semester, sortBy } = input;
-
-            const where = {
-                AND: [
-                    search
-                        ? {
-                            OR: [
-                                { title: { contains: search, mode: "insensitive" as const } },
-                                { description: { contains: search, mode: "insensitive" as const } },
-                                { course: { name: { contains: search, mode: "insensitive" as const } } }, // Added course name search
-                                { course: { code: { contains: search, mode: "insensitive" as const } } }, // Added course code search
-                            ],
-                        }
-                        : {},
-                    courseId ? { courseId } : {},
-                    semester ? { semester } : {},
-                ],
-            };
-
-            const items = await ctx.prisma.note.findMany({
-                take: limit + 1,
-                where,
-                cursor: cursor ? { id: cursor } : undefined,
-                orderBy: sortBy === "newest"
-                    ? { createdAt: "desc" }
-                    : { voteScore: "desc" },
-                include: {
-                    author: true,
-                    course: true,
-                },
-            });
-
-            let nextCursor: typeof cursor | undefined = undefined;
-            if (items.length > limit) {
-                const itemsPop = items.pop();
-                nextCursor = itemsPop?.id;
+            // Security Check
+            const isAuthor = ctx.session?.user?.id === note.authorId;
+            if (!note.isPublic && !isAuthor) {
+                return null;
             }
 
-            return {
-                items,
-                nextCursor,
-            };
+            // Generate Signed URL
+            let fileUrl = "";
+            const currentVersion = note.versions.find(v => v.id === note.currentVersionId) || note.versions[0];
+
+            if (currentVersion?.s3Key) {
+                fileUrl = await getPresignedDownloadUrl(currentVersion.s3Key);
+            }
+
+            return { ...note, fileUrl };
         }),
 
+    /**
+     * Generate S3 Upload URL.
+     * Auth: Protected
+     */
+    getUploadUrl: protectedProcedure
+        .input(z.object({ filename: z.string(), contentType: z.string() }))
+        .mutation(async ({ input, ctx }) => {
+            const uniqueId = uuidv4();
+            const extension = input.filename.split(".").pop();
+            const key = `notes/${ctx.session.user.id}/${uniqueId}.${extension}`;
+            const url = await getPresignedUrl(key, input.contentType);
+            return { url, s3Key: key };
+        }),
+
+    /**
+     * Create a new note.
+     * Auth: Protected
+     */
     create: protectedProcedure
         .input(
             z.object({
                 title: z.string().min(1),
                 description: z.string().optional(),
-                s3Key: z.string(),
-                courseId: z.string().optional(),
-                semester: z.string().optional(),
+                s3Key: z.string().min(1),
                 folderId: z.string().optional(),
+                courseId: z.string().optional(),
+                semester: z.string().optional()
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -168,15 +103,12 @@ export const notesRouter = createTRPCRouter({
                         title: input.title,
                         description: input.description,
                         authorId: ctx.session.user.id,
-                        courseId: input.courseId,
                         folderId: input.folderId ?? undefined,
-                        semester: input.semester,
+                        courseId: input.courseId ?? undefined,
+                        semester: input.semester ?? undefined,
                         versions: {
-                            create: {
-                                s3Key: input.s3Key,
-                                version: 1,
-                            }
-                        }
+                            create: { version: 1, s3Key: input.s3Key },
+                        },
                     },
                     include: { versions: true },
                 });
@@ -190,23 +122,41 @@ export const notesRouter = createTRPCRouter({
             });
         }),
 
-    update: protectedProcedure
-        .input(
-            z.object({
-                id: z.string(),
-                title: z.string().min(1),
-                description: z.string().optional(),
-                courseId: z.string().optional(),
-                semester: z.string().optional(),
-            })
-        )
+    /**
+     * Delete a note.
+     * Auth: Author or Admin
+     */
+    delete: protectedProcedure
+        .input(z.object({ id: z.string() }))
         .mutation(async ({ ctx, input }) => {
-            const note = await ctx.prisma.note.findUnique({
-                where: { id: input.id },
-            });
+            const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
+            if (!note) return null;
 
-            if (!note || note.authorId !== ctx.session.user.id) {
-                throw new TRPCError({ code: "FORBIDDEN" });
+            if (note.authorId !== ctx.session.user.id && ctx.session.user.role !== "ADMIN") {
+                throw new Error("UNAUTHORIZED");
+            }
+
+            return ctx.prisma.note.delete({ where: { id: input.id } });
+        }),
+
+    /**
+     * Update note metadata.
+     * Auth: Author
+     */
+    update: protectedProcedure
+        .input(z.object({
+            id: z.string(),
+            title: z.string().min(1),
+            description: z.string().optional(),
+            courseId: z.string().optional(),
+            semester: z.string().optional()
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
+            if (!note) throw new Error("Note not found");
+
+            if (note.authorId !== ctx.session.user.id) {
+                throw new Error("UNAUTHORIZED");
             }
 
             return ctx.prisma.note.update({
@@ -215,24 +165,8 @@ export const notesRouter = createTRPCRouter({
                     title: input.title,
                     description: input.description,
                     courseId: input.courseId,
-                    semester: input.semester,
+                    semester: input.semester
                 },
-            });
-        }),
-
-    delete: protectedProcedure
-        .input(z.object({ id: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            const note = await ctx.prisma.note.findUnique({
-                where: { id: input.id },
-            });
-
-            if (!note || note.authorId !== ctx.session.user.id) {
-                throw new TRPCError({ code: "FORBIDDEN" });
-            }
-
-            return ctx.prisma.note.delete({
-                where: { id: input.id },
             });
         }),
 
@@ -296,5 +230,72 @@ export const notesRouter = createTRPCRouter({
             ]);
 
             return { success: true, message: "View tracked successfully" };
+        }),
+
+    /**
+     * Get annotations for a version.
+     */
+    getAnnotations: protectedProcedure
+        .input(z.object({ versionId: z.string() }))
+        .query(async ({ ctx, input }) => {
+            const annotations = await ctx.prisma.annotation.findMany({
+                where: {
+                    userId: ctx.session.user.id,
+                    page: { versionId: input.versionId }
+                },
+                include: { page: true }
+            });
+
+            // Map to [pageNum]: content
+            const result: Record<number, any> = {};
+            annotations.forEach(a => {
+                result[a.page.number] = a.content;
+            });
+            return result;
+        }),
+
+    /**
+     * Save annotation for a page.
+     */
+    saveAnnotation: protectedProcedure
+        .input(z.object({
+            versionId: z.string(),
+            pageNumber: z.number(),
+            content: z.any()
+        }))
+        .mutation(async ({ ctx, input }) => {
+            // Lazy create page
+            let page = await ctx.prisma.page.findUnique({
+                where: { versionId_number: { versionId: input.versionId, number: input.pageNumber } }
+            });
+
+            if (!page) {
+                try {
+                    page = await ctx.prisma.page.create({
+                        data: { versionId: input.versionId, number: input.pageNumber }
+                    });
+                } catch {
+                    page = await ctx.prisma.page.findUniqueOrThrow({
+                        where: { versionId_number: { versionId: input.versionId, number: input.pageNumber } }
+                    });
+                }
+            }
+
+            return ctx.prisma.annotation.upsert({
+                where: {
+                    userId_pageId: {
+                        userId: ctx.session.user.id,
+                        pageId: page.id
+                    }
+                },
+                create: {
+                    userId: ctx.session.user.id,
+                    pageId: page.id,
+                    content: input.content
+                },
+                update: {
+                    content: input.content
+                }
+            });
         }),
 });

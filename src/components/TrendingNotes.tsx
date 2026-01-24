@@ -5,7 +5,12 @@ import Link from "next/link";
 import { TrendingUp, Eye } from "lucide-react";
 
 export function TrendingNotes() {
-    const { data: trendingNotes, isLoading } = api.notes.getTrending.useQuery();
+    const { data, isLoading } = api.notes.getAll.useQuery({ cursor: undefined, limit: 50 });
+
+    // Sort by voteScore to get trending notes
+    const trendingNotes = (data?.items || [])
+        .sort((a: { voteScore?: number }, b: { voteScore?: number }) => (b.voteScore || 0) - (a.voteScore || 0))
+        .slice(0, 5); // Top 5 trending
 
     if (isLoading) {
         return (

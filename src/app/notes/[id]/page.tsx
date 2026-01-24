@@ -110,7 +110,8 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                     initialPage={pageNum}
                     isOpen={isFullPageOpen}
                     onClose={() => setIsFullPageOpen(false)}
-                    noteTitle={note.title}
+                    noteTitle={note?.title || ""}
+                    versionId={note?.currentVersionId || ""}
                 />
             )}
         </>

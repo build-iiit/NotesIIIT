@@ -51,10 +51,41 @@ export default function SearchPage() {
         "1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2", "5-1", "5-2"
     ];
 
-    // Use getInfinite query but as a regular query for search results (first page)
-    const { data, isLoading } = api.notes.getInfinite.useQuery(
-        { search: debouncedSearch, semester: semester || undefined, sortBy: sortBy, limit: 50 }
+    // Use getAll query for search results
+    const { data, isLoading } = api.notes.getAll.useQuery(
+        { cursor: undefined, limit: 100 }
     );
+
+    // Client-side filtering and sorting
+    const filteredNotes = (data?.items || []).filter((note: { title: string; description?: string | null; semester?: string | null; course?: { code: string; name: string } | null; author?: { name: string | null } | null }) => {
+        // Search filter
+        if (debouncedSearch) {
+            const searchLower = debouncedSearch.toLowerCase();
+            const matchesSearch =
+                note.title.toLowerCase().includes(searchLower) ||
+                note.description?.toLowerCase().includes(searchLower) ||
+                note.course?.code.toLowerCase().includes(searchLower) ||
+                note.course?.name.toLowerCase().includes(searchLower) ||
+                note.author?.name?.toLowerCase().includes(searchLower);
+            if (!matchesSearch) return false;
+        }
+
+        // Semester filter
+        if (semester && note.semester !== semester) {
+            return false;
+        }
+
+        return true;
+    });
+
+    // Sort
+    const sortedNotes = [...filteredNotes].sort((a: { voteScore?: number; createdAt: Date | string }, b: { voteScore?: number; createdAt: Date | string }) => {
+        if (sortBy === "popular") {
+            return (b.voteScore || 0) - (a.voteScore || 0);
+        } else {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+    });
 
     return (
         <div className="container mx-auto px-4 py-8 min-h-screen">
@@ -180,13 +211,13 @@ export default function SearchPage() {
                 </div>
             ) : (
                 <>
-                    {!data?.items.length ? (
+                    {!sortedNotes.length ? (
                         <div className="text-center text-gray-500 mt-20">
                             {debouncedSearch ? `No notes found matching "${debouncedSearch}"` : "Try searching for something like 'Data Structures' or 'CS1.201'"}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {data.items.map((note) => (
+                            {sortedNotes.map((note) => (
                                 <Link href={`/notes/${note.id}`} key={note.id} className="group">
                                     <div className="bg-card border border-border rounded-xl p-5 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col backdrop-blur-md relative overflow-hidden">
                                         <div className="flex items-start justify-between mb-3">
