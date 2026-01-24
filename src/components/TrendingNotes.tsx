@@ -43,7 +43,7 @@ export function TrendingNotes() {
                         {/* Glow effect */}
                         <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-pink-500/0 to-purple-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-tr" />
 
-                        <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800">
+                        <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800 overflow-hidden">
                             {note.versions[0]?.thumbnailKey ? (
                                 <img
                                     src={note.versions[0].thumbnailKey}

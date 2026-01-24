@@ -200,7 +200,7 @@ export default function SearchPage() {
                                         <div className="bg-card border border-border rounded-xl hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col backdrop-blur-md relative overflow-hidden">
 
                                             {/* Thumbnail Section */}
-                                            <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800">
+                                            <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800 overflow-hidden">
                                                 {note.versions[0]?.thumbnailKey ? (
                                                     <img
                                                         src={note.versions[0].thumbnailKey}

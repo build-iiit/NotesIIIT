@@ -82,7 +82,7 @@ export function NotesFeed() {
                         href={`/notes/${note.id}`}
                         className="group block bg-card border border-border rounded-xl overflow-hidden hover:shadow-md transition-all hover:border-blue-500/50"
                     >
-                        <div className="relative h-48 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800">
+                        <div className="relative h-48 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800 overflow-hidden">
                             {note.versions[0]?.thumbnailKey ? (
                                 <img
                                     src={note.versions[0].thumbnailKey}
