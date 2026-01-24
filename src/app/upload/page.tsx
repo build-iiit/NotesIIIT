@@ -26,12 +26,17 @@ export default function UploadPage() {
 
     // Ref for click outside
     const courseDropdownRef = useRef<HTMLDivElement>(null);
+    const semesterDropdownRef = useRef<HTMLDivElement>(null); // New Ref
+    const [isSemesterDropdownOpen, setIsSemesterDropdownOpen] = useState(false); // New State
 
     // Click Outside Handler
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
                 setIsCourseDropdownOpen(false);
+            }
+            if (semesterDropdownRef.current && !semesterDropdownRef.current.contains(event.target as Node)) {
+                setIsSemesterDropdownOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -303,25 +308,47 @@ export default function UploadPage() {
                         </div>
 
                         {/* Semester Selector */}
-                        <div>
+                        <div className="relative" ref={semesterDropdownRef}>
                             <label className="block text-sm font-semibold text-gray-200 mb-2">
                                 Semester (Optional)
                             </label>
-                            <div className="flex flex-wrap gap-2">
-                                {semesters.map((sem) => (
-                                    <button
-                                        key={sem}
-                                        type="button"
-                                        onClick={() => setSelectedSemester(selectedSemester === sem ? "" : sem)}
-                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${selectedSemester === sem
-                                            ? "bg-primary text-white border-primary"
-                                            : "bg-black/40 text-gray-400 border-white/10 hover:bg-white/5 hover:text-white"
-                                            }`}
-                                    >
-                                        {sem}
-                                    </button>
-                                ))}
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsSemesterDropdownOpen(!isSemesterDropdownOpen)}
+                                className="w-full flex items-center justify-between bg-black/40 border border-white/10 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:bg-white/5"
+                            >
+                                <span className={selectedSemester ? "text-white" : "text-gray-500"}>
+                                    {selectedSemester ? `Semester ${selectedSemester}` : "Select a semester..."}
+                                </span>
+                                <div className={`transition-transform duration-200 ${isSemesterDropdownOpen ? "rotate-180" : ""}`}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500"><path d="m6 9 6 6 6-6" /></svg>
+                                </div>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isSemesterDropdownOpen && (
+                                <div className="absolute z-[100] w-full mt-1 bg-black/95 border border-white/20 rounded-lg shadow-2xl max-h-60 overflow-y-auto backdrop-blur-xl ring-1 ring-white/10 p-1">
+                                    {semesters.map((sem) => (
+                                        <button
+                                            key={sem}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedSemester(sem);
+                                                setIsSemesterDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-4 py-2.5 rounded-md transition-all duration-200 flex items-center justify-between group ${selectedSemester === sem
+                                                ? "bg-primary/20 text-primary border border-primary/20"
+                                                : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                                }`}
+                                        >
+                                            <span className="font-medium">Semester {sem}</span>
+                                            {selectedSemester === sem && (
+                                                <CheckCircle className="h-4 w-4 text-primary" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         {/* Description Input */}
                         <div>

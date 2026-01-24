@@ -1,9 +1,9 @@
 "use client";
 
 import { api } from "@/app/_trpc/client";
-import { Loader2, Search as SearchIcon, FileText } from "lucide-react";
+import { Loader2, Search as SearchIcon, FileText, CheckCircle, ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Inline Debounce Hook for simplicity if missing
 function useDebounceValue<T>(value: T, delay: number): T {
@@ -18,7 +18,22 @@ function useDebounceValue<T>(value: T, delay: number): T {
 export default function SearchPage() {
     const [search, setSearch] = useState("");
     const [semester, setSemester] = useState("");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const debouncedSearch = useDebounceValue(search, 500);
+
+    // Click outside handler
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     // Semester Options
     const semesters = [
@@ -51,16 +66,55 @@ export default function SearchPage() {
                 </div>
 
                 {/* Semester Filter */}
-                <select
-                    value={semester}
-                    onChange={(e) => setSemester(e.target.value)}
-                    className="bg-black/40 border border-white/10 text-white px-6 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary min-w-[150px] appearance-none cursor-pointer hover:bg-white/5 transition-colors"
-                >
-                    <option value="">All Semesters</option>
-                    {semesters.map(sem => (
-                        <option key={sem} value={sem}>Sem {sem}</option>
-                    ))}
-                </select>
+                {/* Semester Custom Dropdown */}
+                <div className="relative min-w-[200px]" ref={dropdownRef}>
+                    <button
+                        type="button"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="w-full flex items-center justify-between bg-black/40 border border-white/10 text-white px-6 py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:bg-white/5"
+                    >
+                        <span className={semester ? "text-white" : "text-gray-400"}>
+                            {semester ? `Sem ${semester}` : "All Semesters"}
+                        </span>
+                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {isDropdownOpen && (
+                        <div className="absolute z-[100] w-full mt-2 bg-black/95 border border-white/20 rounded-xl shadow-2xl max-h-60 overflow-y-auto backdrop-blur-xl ring-1 ring-white/10 p-1">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSemester("");
+                                    setIsDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${semester === ""
+                                        ? "bg-primary/20 text-primary border border-primary/20"
+                                        : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                    }`}
+                            >
+                                <span className="font-medium">All Semesters</span>
+                                {semester === "" && <CheckCircle className="h-4 w-4 text-primary" />}
+                            </button>
+                            {semesters.map(sem => (
+                                <button
+                                    key={sem}
+                                    type="button"
+                                    onClick={() => {
+                                        setSemester(sem);
+                                        setIsDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${semester === sem
+                                            ? "bg-primary/20 text-primary border border-primary/20"
+                                            : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                        }`}
+                                >
+                                    <span className="font-medium">Sem {sem}</span>
+                                    {semester === sem && <CheckCircle className="h-4 w-4 text-primary" />}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Results */}
