@@ -27,6 +27,7 @@ model User {
   votes         Vote[]
   views         View[]
   folders       Folder[]
+  bookmarks     Bookmark[]
 
   role          Role      @default(USER)
 
@@ -101,6 +102,7 @@ model Note {
   // Relations
   comments    Comment[] // Global note-level comments (optional)
   views       View[]
+  bookmarks   Bookmark[]
 
   folderId    String?
   folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
@@ -244,3 +246,28 @@ model View {
 
   @@index([noteId])
 }
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  
+  // User who created the bookmark
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Note being bookmarked
+  noteId     String
+  note       Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  // Specific page number
+  pageNumber Int
+  
+  // Optional label/note
+  label      String?
+  
+  createdAt  DateTime @default(now())
+  
+  @@unique([userId, noteId, pageNumber]) // One bookmark per user per page
+  @@index([userId])
+  @@index([noteId])
+}
+

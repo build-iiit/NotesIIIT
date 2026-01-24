@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure, adminProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { getPresignedUrl, getPresignedDownloadUrl } from "@/lib/s3";
 import { v4 as uuidv4 } from "uuid";
 
@@ -160,5 +160,67 @@ export const notesRouter = createTRPCRouter({
                     description: input.description,
                 },
             });
+        }),
+
+    /**
+     * Track a view on a note.
+     * Auth: Public (both authenticated and anonymous users can view)
+     */
+    trackView: publicProcedure
+        .input(z.object({ noteId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const userId = ctx.session?.user?.id;
+
+            // Check if the note exists
+            const note = await ctx.prisma.note.findUnique({
+                where: { id: input.noteId },
+            });
+
+            if (!note) {
+                throw new Error("Note not found");
+            }
+
+            // Only track if the viewer is not the author (to avoid self-inflation)
+            if (userId && userId === note.authorId) {
+                return { success: false, message: "Authors don't count views on their own notes" };
+            }
+
+            // Check if this user has already viewed this note recently (within last 24 hours)
+            // to prevent spam from refreshes
+            if (userId) {
+                const recentView = await ctx.prisma.view.findFirst({
+                    where: {
+                        noteId: input.noteId,
+                        userId: userId,
+                        createdAt: {
+                            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours ago
+                        },
+                    },
+                });
+
+                if (recentView) {
+                    return { success: false, message: "View already counted recently" };
+                }
+            }
+
+            // Create a new view and increment the view count in a transaction
+            await ctx.prisma.$transaction([
+                ctx.prisma.view.create({
+                    data: {
+                        noteId: input.noteId,
+                        userId: userId || null,
+                    },
+                }),
+                ctx.prisma.note.update({
+                    where: { id: input.noteId },
+                    data: {
+                        viewCount: {
+                            increment: 1,
+                        },
+                    },
+                }),
+            ]);
+
+            return { success: true, message: "View tracked successfully" };
         }),
 });

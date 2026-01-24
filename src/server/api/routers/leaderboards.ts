@@ -1,13 +1,36 @@
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 
+type TopContributorRaw = {
+    id: string;
+    name: string | null;
+    image: string | null;
+    totalScore: number | bigint;
+    noteCount: number | bigint;
+};
+
+type TrendingNoteRaw = {
+    id: string;
+    title: string;
+    description: string | null;
+    authorId: string;
+    authorName: string;
+    authorImage: string | null;
+    viewCount: number;
+    voteScore: number;
+    createdAt: Date;
+    updatedAt: Date;
+    currentVersionId: string | null;
+    isPublic: boolean;
+};
+
 export const leaderboardsRouter = createTRPCRouter({
     /**
-     * Top notes by view count.
+     * Top notes by total upvotes (vote score).
      */
     topNotes: publicProcedure.query(async ({ ctx }) => {
         return ctx.prisma.note.findMany({
             take: 10,
-            orderBy: { viewCount: "desc" },
+            orderBy: { voteScore: "desc" },
             include: { author: true },
         });
     }),
@@ -19,7 +42,7 @@ export const leaderboardsRouter = createTRPCRouter({
      * Top contributors by total upvotes (Karma).
      */
     topContributors: publicProcedure.query(async ({ ctx }) => {
-        const users = await ctx.prisma.$queryRaw`
+        const users = await ctx.prisma.$queryRaw<TopContributorRaw[]>`
             SELECT u.id, u.name, u.image, 
             CAST(COALESCE(SUM(n."voteScore"), 0) AS INTEGER) as "totalScore",
             COUNT(n.id) as "noteCount"
@@ -35,7 +58,7 @@ export const leaderboardsRouter = createTRPCRouter({
         // We'll adapt the frontend to use "totalScore" or map it here.
         // Let's adapt the frontend component to be smarter.
         // For now, return a shape that includes both.
-        return (users as any[]).map(u => ({
+        return users.map(u => ({
             ...u,
             _count: { notes: Number(u.noteCount) },
             totalScore: Number(u.totalScore)
@@ -47,7 +70,7 @@ export const leaderboardsRouter = createTRPCRouter({
      */
     trending: publicProcedure.query(async ({ ctx }) => {
         // Use raw query for complex sorting logic efficiently
-        const notes = await ctx.prisma.$queryRaw`
+        const notes = await ctx.prisma.$queryRaw<TrendingNoteRaw[]>`
             SELECT n.*, u.name as "authorName", u.image as "authorImage"
             FROM "Note" n
             JOIN "User" u ON n."authorId" = u.id
@@ -59,7 +82,7 @@ export const leaderboardsRouter = createTRPCRouter({
         // Map raw result to expected shape (Prisma raw returns generic object)
         // We need to match the shape expected by frontend components if possible or create a new one.
         // Simple mapping:
-        return (notes as any[]).map(n => ({
+        return notes.map(n => ({
             ...n,
             author: {
                 name: n.authorName,

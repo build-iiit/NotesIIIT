@@ -1,9 +1,7 @@
 "use server";
 
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma"; // We need to ensure lib/prisma exists
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 export async function createNoteRecord(title: string, s3Key: string) {
     // const session = await auth();

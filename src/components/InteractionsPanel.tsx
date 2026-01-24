@@ -26,7 +26,7 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
     });
 
     const voteMutation = api.votes.vote.useMutation({
-        onMutate: async (newVote) => {
+        onMutate: async () => {
             await utils.votes.getStats.cancel({ versionId, pageNumber });
             // Optimistic update logic omitted for brevity, but recommended
         },
