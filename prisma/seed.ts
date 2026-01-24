@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-
+// somesh
 const prisma = new PrismaClient()
 
 async function main() {
