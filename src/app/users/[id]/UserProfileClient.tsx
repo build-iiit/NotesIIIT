@@ -52,6 +52,7 @@ export function UserProfileClient({ user, achievements, currentUserId, isOwnProf
                                 fill
                                 className="object-cover opacity-90"
                                 priority
+                                unoptimized
                             />
                         ) : (
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600" />
@@ -68,6 +69,7 @@ export function UserProfileClient({ user, achievements, currentUserId, isOwnProf
                                     alt={user.name!}
                                     fill
                                     className="object-cover"
+                                    unoptimized
                                 />
                             </div>
                             {/* Online indicator */}

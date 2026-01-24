@@ -100,7 +100,9 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                     });
 
                     if (!uploadResponse.ok) {
-                        throw new Error('Failed to upload avatar image');
+                        const errorText = await uploadResponse.text();
+                        console.error("Avatar upload failed:", uploadResponse.status, errorText);
+                        throw new Error(`Failed to upload avatar: ${uploadResponse.status} ${uploadResponse.statusText}`);
                     }
                     newAvatarKey = s3Key;
                 } catch (err) {
@@ -126,7 +128,9 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                     });
 
                     if (!uploadResponse.ok) {
-                        throw new Error('Failed to upload background image');
+                        const errorText = await uploadResponse.text();
+                        console.error("Background upload failed:", uploadResponse.status, errorText);
+                        throw new Error(`Failed to upload background: ${uploadResponse.status} ${uploadResponse.statusText}`);
                     }
                     newBackgroundKey = s3Key;
                 } catch (err) {
@@ -147,7 +151,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                 router.refresh();
                 onClose();
             } catch (err) {
-                setError('Failed to save profile changes. Please try again.');
+                setError(err instanceof Error ? err.message : 'Failed to save profile changes. Please try again.');
                 setIsSaving(false);
             }
         } catch (error) {
@@ -204,7 +208,8 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                             </div>
                             <button
                                 onClick={() => avatarInputRef.current?.click()}
-                                className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full m-1"
+                                className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white transition-all rounded-full m-1 backdrop-blur-sm cursor-pointer hover:scale-[1.05]"
+                                title="Change Profile Photo"
                             >
                                 <Camera size={24} />
                             </button>
