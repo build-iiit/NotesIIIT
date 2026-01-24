@@ -100,11 +100,36 @@ model Note {
   comments    Comment[] // Global note-level comments (optional)
   views       View[]
 
+  // Course Relation
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id])
+  
+  // Metadata
+  semester    String?  // e.g., "1-1", "1-2", "2-1"...
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([authorId])
+  @@index([courseId])
   @@index([createdAt])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Linear Algebra"
+  code        String   // e.g., "MA101"
+  branch      String   // e.g., "CSE", "ECE", "MTH" (Group key)
+  
+  description String?
+  
+  notes       Note[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([code])     // Course codes should be unique
+  @@index([branch])
 }
 
 model NoteVersion {

@@ -42,37 +42,44 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
         }
     }, [url]);
 
-    // 2. Handle Responsive Scaling
+    // 2. Handle Responsive Scaling with Debounce
     useEffect(() => {
         if (!containerRef.current) return;
+
+        let timeoutId: NodeJS.Timeout;
 
         const resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 if (entry.contentRect.width > 0) {
-                    // Logic: we want the PDF to fit width-wise, but maybe cap zooming
-                    // For now, let's just trigger a re-render by updating scale or invalidating
-                    // Ideally we calculate the scale based on page width here, 
-                    // but we need the page object first.
-                    // So we trigger a redraw.
-                    // Let's set a "containerWidth" state if specific logic is needed, 
-                    // or just force update execution in render effect.
-                    updateScale(entry.contentRect.width);
+                    // Debounce scale updates to prevent rapid re-renders
+                    clearTimeout(timeoutId);
+                    timeoutId = setTimeout(() => {
+                        updateScale(entry.contentRect.width);
+                    }, 200);
                 }
             }
         });
 
         resizeObserver.observe(containerRef.current);
 
-        return () => resizeObserver.disconnect();
-    }, [pdfDoc, pageNum]); // Depend on doc/page to recalculate when they change
+        return () => {
+            resizeObserver.disconnect();
+            clearTimeout(timeoutId);
+        };
+    }, [pdfDoc, pageNum]);
 
     const updateScale = useCallback(async (availableWidth: number) => {
         if (!pdfDoc) return;
         try {
             const page = await pdfDoc.getPage(pageNum);
             const viewport = page.getViewport({ scale: 1.0 });
-            const newScale = (availableWidth - 32) / viewport.width; // -32 for padding
-            setScale(newScale);
+            const newScale = (availableWidth - 32) / viewport.width;
+
+            // Only update if scale significantly changed to avoid loops
+            setScale(prev => {
+                if (Math.abs(prev - newScale) > 0.01) return newScale;
+                return prev;
+            });
         } catch (e) {
             console.error(e);
         }
@@ -81,20 +88,34 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
 
     // 3. Render Page
     useEffect(() => {
+        let isCancelled = false;
+
         const renderPage = async () => {
             if (!pdfDoc || !canvasRef.current || scale === 0) return;
 
-            // Cancel previous render if any
+            // Strict Cancellation
             if (renderTaskRef.current) {
-                renderTaskRef.current.cancel();
+                try {
+                    const cancelPromise = renderTaskRef.current.cancel();
+                    if (cancelPromise && typeof cancelPromise.catch === 'function') {
+                        await cancelPromise.catch(() => { });
+                    }
+                } catch (error) {
+                    // Ignore
+                }
+                renderTaskRef.current = null;
             }
+
+            if (isCancelled) return;
 
             try {
                 const page = await pdfDoc.getPage(pageNum);
                 const viewport = page.getViewport({ scale });
                 const canvas = canvasRef.current;
-                const context = canvas.getContext("2d");
 
+                if (!canvas) return;
+
+                const context = canvas.getContext("2d");
                 if (!context) return;
 
                 // Set dimensions
@@ -111,15 +132,25 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
 
                 await renderTask.promise;
             } catch (err: any) {
-                if (err.name !== "RenderingCancelledException") {
+                if (err.name !== "RenderingCancelledException" && !isCancelled) {
                     console.error("Error rendering page:", err);
                     // Don't set error on cancel
-                    setError("Failed to render page");
+                    // setError("Failed to render page"); // Optional: suppress UI error for transient render issues
                 }
             }
         };
 
         renderPage();
+
+        return () => {
+            isCancelled = true;
+            if (renderTaskRef.current) {
+                const cancelPromise = renderTaskRef.current.cancel();
+                if (cancelPromise && typeof cancelPromise.catch === 'function') {
+                    cancelPromise.catch(() => { });
+                }
+            }
+        };
     }, [pdfDoc, pageNum, scale]);
 
     const changePage = (offset: number) => {
@@ -128,12 +159,20 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
 
     if (error) return <div className="text-red-500">{error}</div>;
 
+    // Unique ID for canvas to force remount on ANY change
+    // Using simple combination of dependencies
+    const canvasKey = `${pdfDoc?.fingerprints?.[0] || 'doc'}-${pageNum}-${scale}`;
+
     return (
         <div ref={containerRef} className="flex flex-col items-center gap-4 w-full">
             {loading && <div>Loading PDF...</div>}
 
             <div className="border border-gray-200 shadow-lg rounded-lg overflow-hidden bg-white dark:bg-zinc-800">
-                <canvas ref={canvasRef} className="max-w-full" />
+                <canvas
+                    ref={canvasRef}
+                    key={canvasKey}
+                    className="max-w-full"
+                />
             </div>
 
             <div className="flex gap-4 items-center">

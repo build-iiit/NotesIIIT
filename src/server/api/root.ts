@@ -1,10 +1,11 @@
 import { createTRPCRouter } from "@/server/api/trpc";
 import { notesRouter } from "@/server/api/routers/notes";
-import { authRouter } from "@/server/api/routers/auth";
+import { courseRouter } from "@/server/api/routers/course";
 import { versionsRouter } from "@/server/api/routers/versions";
 import { votesRouter } from "@/server/api/routers/votes";
 import { commentsRouter } from "@/server/api/routers/comments";
 import { leaderboardsRouter } from "@/server/api/routers/leaderboards";
+import { authRouter } from "@/server/api/routers/auth";
 
 /**
  * This is the primary router for your server.
@@ -13,11 +14,12 @@ import { leaderboardsRouter } from "@/server/api/routers/leaderboards";
  */
 export const appRouter = createTRPCRouter({
     notes: notesRouter,
-    auth: authRouter,
+    course: courseRouter,
     versions: versionsRouter,
     votes: votesRouter,
     comments: commentsRouter,
     leaderboards: leaderboardsRouter,
+    auth: authRouter,
 });
 
 // export type definition of API

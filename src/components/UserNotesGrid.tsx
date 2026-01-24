@@ -45,9 +45,9 @@ export function UserNotesGrid({ notes, userName }: UserNotesGridProps) {
                     href={`/notes/${note.id}`}
                     className="group block"
                 >
-                    <div className="h-full rounded-2xl bg-white dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                    <div className="h-full rounded-2xl bg-card border border-border overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                         {/* Header with gradient */}
-                        <div className="h-32 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 relative overflow-hidden">
+                        <div className="h-32 bg-gradient-to-br from-orange-500 via-red-500 to-purple-900 relative overflow-hidden">
                             <div className="absolute inset-0 bg-black/10 group-hover:bg-black/5 transition-colors duration-300" />
 
                             {/* PDF icon overlay */}
@@ -70,7 +70,7 @@ export function UserNotesGrid({ notes, userName }: UserNotesGridProps) {
 
                         {/* Content */}
                         <div className="p-5">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 group-hover:text-primary transition-colors">
                                 {note.title}
                             </h3>
 

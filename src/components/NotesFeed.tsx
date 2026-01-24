@@ -45,7 +45,7 @@ export function NotesFeed() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-lg">
+            <div className="flex justify-between items-center bg-muted/50 p-4 rounded-lg">
                 <h2 className="text-2xl font-bold">Recent Uploads</h2>
                 <Link
                     href="/upload"
@@ -60,7 +60,7 @@ export function NotesFeed() {
                     <Link
                         key={note.id}
                         href={`/notes/${note.id}`}
-                        className="group block bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:shadow-md transition-all hover:border-blue-500/50"
+                        className="group block bg-card border border-border rounded-xl overflow-hidden hover:shadow-md transition-all hover:border-blue-500/50"
                     >
                         <div className="p-5 h-full flex flex-col">
                             <h3 className="font-bold text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-1">

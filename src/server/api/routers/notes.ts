@@ -13,24 +13,44 @@ export const notesRouter = createTRPCRouter({
             z.object({
                 limit: z.number().min(1).max(100).default(20),
                 cursor: z.string().nullish(), // For infinite scroll
+                courseId: z.string().optional(), // Filter by course
+                search: z.string().optional(), // Search term
+                semester: z.string().optional(), // Filter by semester
             }).optional()
         )
         .query(async ({ ctx, input }) => {
             const limit = input?.limit ?? 20;
             const cursor = input?.cursor;
+            const courseId = input?.courseId;
+            const search = input?.search;
+            const semester = input?.semester;
 
             const items = await ctx.prisma.note.findMany({
                 take: limit + 1,
                 cursor: cursor ? { id: cursor } : undefined,
-                where: { isPublic: true },
-                orderBy: { createdAt: "desc" },
-                include: { author: true },
+                where: {
+                    isPublic: true,
+                    ...(courseId ? { courseId } : {}),
+                    ...(semester ? { semester } : {}),
+                    ...(search ? {
+                        OR: [
+                            { title: { contains: search, mode: 'insensitive' } },
+                            { course: { name: { contains: search, mode: 'insensitive' } } },
+                            { course: { code: { contains: search, mode: 'insensitive' } } },
+                            { author: { name: { contains: search, mode: 'insensitive' } } },
+                        ]
+                    } : {}),
+                },
+                orderBy: {
+                    createdAt: "desc"
+                },
+                include: { author: true, course: true },
             });
 
             let nextCursor: typeof cursor | undefined = undefined;
             if (items.length > limit) {
                 const nextItem = items.pop();
-                nextCursor = nextItem!.id;
+                nextCursor = items.length > 0 ? items[items.length - 1].id : undefined;
             }
 
             return { items, nextCursor };
@@ -45,7 +65,7 @@ export const notesRouter = createTRPCRouter({
         .query(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({
                 where: { id: input.id },
-                include: { versions: true, author: true },
+                include: { versions: true, author: true, course: true },
             });
 
             if (!note) return null;
@@ -86,34 +106,35 @@ export const notesRouter = createTRPCRouter({
      * Auth: Protected
      */
     create: protectedProcedure
-        .input(
-            z.object({
-                title: z.string().min(1),
-                description: z.string().optional(),
-                s3Key: z.string(),
-            })
-        )
+        .input(z.object({
+            title: z.string().min(1),
+            description: z.string().optional(),
+            s3Key: z.string(),
+            fileSize: z.number(),
+            courseId: z.string().optional(),
+            semester: z.string().optional(),
+        }))
         .mutation(async ({ ctx, input }) => {
-            return ctx.prisma.$transaction(async (tx) => {
-                const note = await tx.note.create({
-                    data: {
-                        title: input.title,
-                        description: input.description,
-                        authorId: ctx.session.user.id,
-                        versions: {
-                            create: { version: 1, s3Key: input.s3Key },
-                        },
-                    },
-                    include: { versions: true },
-                });
+            const { title, description, s3Key, fileSize, courseId, semester } = input;
 
-                await tx.note.update({
-                    where: { id: note.id },
-                    data: { currentVersionId: note.versions[0].id },
-                });
-
-                return note;
+            // Create note and initial version
+            const note = await ctx.prisma.note.create({
+                data: {
+                    title,
+                    description,
+                    authorId: ctx.session.user.id,
+                    courseId: courseId || null,
+                    semester: semester || null,
+                    versions: {
+                        create: {
+                            version: 1,
+                            s3Key: s3Key,
+                        }
+                    }
+                },
             });
+
+            return note;
         }),
 
     /**
