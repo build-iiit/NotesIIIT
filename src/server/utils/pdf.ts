@@ -3,8 +3,13 @@ import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { createCanvas } from 'canvas';
 
 // Helper for canvas factory needed by pdfjs-dist in Node
+interface CanvasAndContext {
+    canvas: ReturnType<typeof createCanvas>;
+    context: ReturnType<ReturnType<typeof createCanvas>['getContext']>;
+}
+
 class NodeCanvasFactory {
-    create(width: number, height: number) {
+    create(width: number, height: number): CanvasAndContext {
         const canvas = createCanvas(width, height);
         return {
             canvas,
@@ -12,16 +17,14 @@ class NodeCanvasFactory {
         };
     }
 
-    reset(canvasAndContext: any, width: number, height: number) {
+    reset(canvasAndContext: CanvasAndContext, width: number, height: number) {
         canvasAndContext.canvas.width = width;
         canvasAndContext.canvas.height = height;
     }
 
-    destroy(canvasAndContext: any) {
+    destroy(canvasAndContext: CanvasAndContext) {
         canvasAndContext.canvas.width = 0;
         canvasAndContext.canvas.height = 0;
-        canvasAndContext.canvas = null;
-        canvasAndContext.context = null;
     }
 }
 
@@ -40,8 +43,8 @@ export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
     const data = new Uint8Array(pdfBuffer);
     const loadingTask = pdfjsLib.getDocument({
         data,
-        canvasFactory: new NodeCanvasFactory()
-    } as any);
+        canvasFactory: new NodeCanvasFactory() as unknown as pdfjsLib.CanvasFactory
+    });
 
     const doc = await loadingTask.promise;
     const page = await doc.getPage(1);
@@ -50,7 +53,11 @@ export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext('2d');
 
-    await page.render({ canvasContext: context as any, viewport } as any).promise;
+    await page.render({
+        canvasContext: context as unknown as CanvasRenderingContext2D,
+        viewport,
+        canvas: canvas as unknown as HTMLCanvasElement
+    }).promise;
 
     return canvas.toBuffer('image/jpeg');
 }

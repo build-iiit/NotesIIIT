@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure, adminProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { getPresignedUrl, getPresignedDownloadUrl } from "@/lib/s3";
 import { v4 as uuidv4 } from "uuid";
 

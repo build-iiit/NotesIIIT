@@ -19,7 +19,7 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
     const [scale, setScale] = useState(1.0);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const renderTaskRef = useRef<any>(null);
+    const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
 
     // 1. Load PDF Document
     useEffect(() => {
@@ -42,7 +42,20 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
         }
     }, [url]);
 
-    // 2. Handle Responsive Scaling
+    // 2. Calculate scale based on container width
+    const updateScale = useCallback(async (availableWidth: number) => {
+        if (!pdfDoc) return;
+        try {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.0 });
+            const newScale = (availableWidth - 32) / viewport.width; // -32 for padding
+            setScale(newScale);
+        } catch (e) {
+            console.error(e);
+        }
+    }, [pdfDoc, pageNum]);
+
+    // 3. Handle Responsive Scaling
     useEffect(() => {
         if (!containerRef.current) return;
 
@@ -64,19 +77,7 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
         resizeObserver.observe(containerRef.current);
 
         return () => resizeObserver.disconnect();
-    }, [pdfDoc, pageNum]); // Depend on doc/page to recalculate when they change
-
-    const updateScale = useCallback(async (availableWidth: number) => {
-        if (!pdfDoc) return;
-        try {
-            const page = await pdfDoc.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 1.0 });
-            const newScale = (availableWidth - 32) / viewport.width; // -32 for padding
-            setScale(newScale);
-        } catch (e) {
-            console.error(e);
-        }
-    }, [pdfDoc, pageNum]);
+    }, [pdfDoc, pageNum, updateScale]); // Depend on doc/page to recalculate when they change
 
 
     // 3. Render Page
@@ -104,14 +105,15 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
                 const renderContext = {
                     canvasContext: context,
                     viewport: viewport,
-                } as any;
+                    canvas: canvas,
+                };
 
                 const renderTask = page.render(renderContext);
                 renderTaskRef.current = renderTask;
 
                 await renderTask.promise;
-            } catch (err: any) {
-                if (err.name !== "RenderingCancelledException") {
+            } catch (err: unknown) {
+                if (err instanceof Error && err.name !== "RenderingCancelledException") {
                     console.error("Error rendering page:", err);
                     // Don't set error on cancel
                     setError("Failed to render page");

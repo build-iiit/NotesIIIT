@@ -34,7 +34,7 @@ export function FullPageNoteViewer({
     const [loading, setLoading] = useState(true);
     const [showControls, setShowControls] = useState(true);
     const [showHelp, setShowHelp] = useState(false);
-    const renderTaskRef = useRef<any>(null);
+    const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
     const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isAnimatingIn, setIsAnimatingIn] = useState(false);
 
@@ -57,8 +57,18 @@ export function FullPageNoteViewer({
         };
 
         loadPdf();
-        setIsAnimatingIn(true);
     }, [url, isOpen]);
+
+    // Animate in when opening
+    useEffect(() => {
+        if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setIsAnimatingIn(true);
+        } else {
+             
+            setIsAnimatingIn(false);
+        }
+    }, [isOpen]);
 
     // Handle zoom and responsive scaling
     const updateScale = useCallback(async () => {
@@ -89,10 +99,11 @@ export function FullPageNoteViewer({
         }
     }, [pdfDoc, pageNum, zoomMode]);
 
-    // Update scale when relevant dependencies change
+    // Update scale when zoom mode or dependencies change
     useEffect(() => {
         if (zoomMode !== "custom") {
-            updateScale();
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            void updateScale();
         }
     }, [updateScale, zoomMode]);
 
@@ -135,14 +146,15 @@ export function FullPageNoteViewer({
                 const renderContext = {
                     canvasContext: context,
                     viewport: viewport,
-                } as any;
+                    canvas: canvas,
+                };
 
                 const renderTask = page.render(renderContext);
                 renderTaskRef.current = renderTask;
 
                 await renderTask.promise;
-            } catch (err: any) {
-                if (err.name !== "RenderingCancelledException") {
+            } catch (err: unknown) {
+                if (err instanceof Error && err.name !== "RenderingCancelledException") {
                     console.error("Error rendering page:", err);
                     setError("Failed to render page");
                 }
@@ -182,6 +194,27 @@ export function FullPageNoteViewer({
             }
         };
     }, [isOpen, resetHideControlsTimer]);
+
+    // Helper functions for keyboard shortcuts
+    const changePage = useCallback((offset: number) => {
+        if (!pdfDoc) return;
+        const newPage = Math.min(Math.max(pageNum + offset, 1), pdfDoc.numPages);
+        setPageNum(newPage);
+    }, [pdfDoc, pageNum]);
+
+    const handleZoomIn = useCallback(() => {
+        setZoomMode("custom");
+        setScale((prev) => Math.min(prev + 0.2, 3.0));
+    }, []);
+
+    const handleZoomOut = useCallback(() => {
+        setZoomMode("custom");
+        setScale((prev) => Math.max(prev - 0.2, 0.5));
+    }, []);
+
+    const toggleZoomMode = useCallback(() => {
+        setZoomMode((prev) => (prev === "fit-width" ? "fit-height" : "fit-width"));
+    }, []);
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -227,27 +260,9 @@ export function FullPageNoteViewer({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose, showHelp]);
+    }, [isOpen, onClose, showHelp, changePage, handleZoomIn, handleZoomOut, toggleZoomMode]);
 
-    const changePage = (offset: number) => {
-        if (!pdfDoc) return;
-        const newPage = Math.min(Math.max(pageNum + offset, 1), pdfDoc.numPages);
-        setPageNum(newPage);
-    };
 
-    const handleZoomIn = () => {
-        setZoomMode("custom");
-        setScale((prev) => Math.min(prev + 0.2, 3.0));
-    };
-
-    const handleZoomOut = () => {
-        setZoomMode("custom");
-        setScale((prev) => Math.max(prev - 0.2, 0.5));
-    };
-
-    const toggleZoomMode = () => {
-        setZoomMode((prev) => (prev === "fit-width" ? "fit-height" : "fit-width"));
-    };
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (e.target === e.currentTarget) {

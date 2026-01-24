@@ -2,6 +2,15 @@
 
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
+import Image from "next/image";
+
+type UserWithScore = {
+    id: string;
+    name: string | null;
+    image: string | null;
+    totalScore: number;
+    _count: { notes: number };
+};
 
 export function LeaderboardTable() {
     const { data: topNotes } = api.leaderboards.trending.useQuery();
@@ -47,23 +56,25 @@ export function LeaderboardTable() {
                     <span className="text-3xl">🏆</span> Top Contributors
                 </h2>
                 <div className="space-y-4">
-                    {topContributors?.map((user, idx) => (
+                    {topContributors?.map((user: UserWithScore, idx) => (
                         <Link
                             key={user.id}
                             href={`/users/${user.id}`}
                             className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors group"
                         >
-                            <img
+                            <Image
                                 src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
-                                alt={user.name!}
-                                className="w-10 h-10 rounded-full bg-gray-200"
+                                alt={user.name || "User avatar"}
+                                width={40}
+                                height={40}
+                                className="rounded-full bg-gray-200"
                             />
                             <div className="flex-1">
                                 <h3 className="font-semibold group-hover:text-blue-600 transition-colors">
                                     {user.name}
                                 </h3>
                                 <div className="text-xs text-gray-500 font-medium bg-gray-100 dark:bg-zinc-800 inline-block px-2 py-0.5 rounded-full mt-1">
-                                    {(user as any).totalScore} karma • {user._count.notes} notes
+                                    {user.totalScore} karma • {user._count.notes} notes
                                 </div>
                             </div>
                             {idx < 3 && (

@@ -117,9 +117,9 @@ export default function UploadPage() {
                 router.push("/");
                 router.refresh();
             }, 500);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Upload failed:", error);
-            alert(`Upload failed: ${error.message || "Unknown error"}\n\nCheck browser console for details.`);
+            alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}\n\nCheck browser console for details.`);
             setUploadStep("idle");
             setUploadProgress(0);
         } finally {
@@ -225,8 +225,8 @@ export default function UploadPage() {
                                     onDragOver={handleDrag}
                                     onDrop={handleDrop}
                                     className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 cursor-pointer ${dragActive
-                                            ? "border-white bg-white/20 scale-105"
-                                            : "border-white/30 bg-white/5 hover:border-white/50 hover:bg-white/10"
+                                        ? "border-white bg-white/20 scale-105"
+                                        : "border-white/30 bg-white/5 hover:border-white/50 hover:bg-white/10"
                                         }`}
                                 >
                                     <input
