@@ -146,7 +146,7 @@ export default function UploadPage() {
         }
     };
 
-    return 
+    return (
         <div className="max-w-xl mx-auto p-8">
             {/* Sunset Gradient Background */}
             <div className="absolute inset-0 bg-gradient-to-br from-orange-400/15 via-pink-500/15 to-purple-600/15 rounded-xl -z-10" />
@@ -192,109 +192,108 @@ export default function UploadPage() {
                             ))}
                         </select>
                     </div>
-                   {/* File Upload Zone */}
-                        <div>
-                            <label className="block text-sm font-semibold text-white mb-2">
-                                PDF File *
-                            </label>
+                    {/* File Upload Zone */}
+                    <div>
+                        <label className="block text-sm font-semibold text-white mb-2">
+                            PDF File *
+                        </label>
 
-                            {!file ? (
-                                <div
-                                    onDragEnter={handleDrag}
-                                    onDragLeave={handleDrag}
-                                    onDragOver={handleDrag}
-                                    onDrop={handleDrop}
-                                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 cursor-pointer ${dragActive
-                                        ? "border-white bg-white/20 scale-105"
-                                        : "border-white/30 bg-white/5 hover:border-white/50 hover:bg-white/10"
-                                        }`}
-                                >
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        onChange={handleFileChange}
-                                        required
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                    <Upload className="h-12 w-12 text-white/70 mx-auto mb-4" />
-                                    <p className="text-white font-medium mb-1">
-                                        Drop your PDF here, or click to browse
+                        {!file ? (
+                            <div
+                                onDragEnter={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDragOver={handleDrag}
+                                onDrop={handleDrop}
+                                className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 cursor-pointer ${dragActive
+                                    ? "border-white bg-white/20 scale-105"
+                                    : "border-white/30 bg-white/5 hover:border-white/50 hover:bg-white/10"
+                                    }`}
+                            >
+                                <input
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={handleFileChange}
+                                    required
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <Upload className="h-12 w-12 text-white/70 mx-auto mb-4" />
+                                <p className="text-white font-medium mb-1">
+                                    Drop your PDF here, or click to browse
+                                </p>
+                                <p className="text-white/60 text-sm">
+                                    PDF files only
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-white/10 border border-white/20 rounded-lg p-4 flex items-center gap-4">
+                                <div className="bg-white/20 p-3 rounded-lg">
+                                    <FileText className="h-8 w-8 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-white font-medium truncate">
+                                        {file.name}
                                     </p>
                                     <p className="text-white/60 text-sm">
-                                        PDF files only
+                                        {formatFileSize(file.size)}
                                     </p>
                                 </div>
-                            ) : (
-                                <div className="bg-white/10 border border-white/20 rounded-lg p-4 flex items-center gap-4">
-                                    <div className="bg-white/20 p-3 rounded-lg">
-                                        <FileText className="h-8 w-8 text-white" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-white font-medium truncate">
-                                            {file.name}
-                                        </p>
-                                        <p className="text-white/60 text-sm">
-                                            {formatFileSize(file.size)}
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={removeFile}
-                                        disabled={uploading}
-                                        className="bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors duration-200 disabled:opacity-50"
-                                    >
-                                        <X className="h-5 w-5 text-white" />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Upload Progress */}
-                        {uploading && (
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm text-white">
-                                    <span className="font-medium">{getStepMessage()}</span>
-                                    <span>{uploadProgress}%</span>
-                                </div>
-                                <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-300 ease-out"
-                                        style={{ width: `${uploadProgress}%` }}
-                                    />
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={removeFile}
+                                    disabled={uploading}
+                                    className="bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                                >
+                                    <X className="h-5 w-5 text-white" />
+                                </button>
                             </div>
                         )}
+                    </div>
 
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={uploading || !file}
-                            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-indigo-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 gap-2"
-                        >
-                            {uploading ? (
-                                <>
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                    <span>Uploading...</span>
-                                </>
-                            ) : uploadStep === "complete" ? (
-                                <>
-                                    <CheckCircle className="h-5 w-5" />
-                                    <span>Upload Complete!</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="h-5 w-5" />
-                                    <span>Upload Note</span>
-                                </>
-                            )}
-                        </button>
-                    </form>
-                </div>
+                    {/* Upload Progress */}
+                    {uploading && (
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm text-white">
+                                <span className="font-medium">{getStepMessage()}</span>
+                                <span>{uploadProgress}%</span>
+                            </div>
+                            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-300 ease-out"
+                                    style={{ width: `${uploadProgress}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
 
-                <p className="mt-6 text-center text-xs text-white/60">
-                    &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
-                </p>
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        disabled={uploading || !file}
+                        className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-indigo-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 gap-2"
+                    >
+                        {uploading ? (
+                            <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <span>Uploading...</span>
+                            </>
+                        ) : uploadStep === "complete" ? (
+                            <>
+                                <CheckCircle className="h-5 w-5" />
+                                <span>Upload Complete!</span>
+                            </>
+                        ) : (
+                            <>
+                                <Upload className="h-5 w-5" />
+                                <span>Upload Note</span>
+                            </>
+                        )}
+                    </button>
+                </form>
             </div>
+
+            <p className="mt-6 text-center text-xs text-white/60">
+                &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
+            </p>
         </div>
     );
 }
