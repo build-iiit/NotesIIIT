@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import {
     X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info,
-    Pen, Eraser, RotateCcw
+    Pen, Eraser, RotateCcw, Highlighter
 } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 
@@ -21,7 +21,7 @@ interface FullPageNoteViewerProps {
 }
 
 type ZoomMode = "fit-width" | "fit-height" | "custom";
-type Tool = "pen" | "eraser";
+type Tool = "pen" | "eraser" | "highlighter";
 
 interface Point {
     x: number; // 0-1 relative to page width
@@ -31,7 +31,7 @@ interface Point {
 interface Stroke {
     points: Point[];
     color: string;
-    type: "pen";
+    type: "pen" | "highlighter";
 }
 
 const COLORS = [
@@ -40,6 +40,14 @@ const COLORS = [
     { name: "Blue", value: "#0000FF" },
     { name: "Green", value: "#008000" },
     { name: "Purple", value: "#800080" },
+];
+
+const HIGHLIGHT_COLORS = [
+    { name: "Yellow", value: "rgba(255, 255, 0, 0.3)" },
+    { name: "Green", value: "rgba(76, 175, 80, 0.3)" },
+    { name: "Pink", value: "rgba(233, 30, 99, 0.3)" },
+    { name: "Blue", value: "rgba(33, 150, 243, 0.3)" },
+    { name: "Orange", value: "rgba(255, 152, 0, 0.3)" },
 ];
 
 export function FullPageNoteViewer({
@@ -73,6 +81,7 @@ export function FullPageNoteViewer({
     // Annotation State
     const [tool, setTool] = useState<Tool>("pen");
     const [penColor, setPenColor] = useState(COLORS[0].value);
+    const [highlightColor, setHighlightColor] = useState(HIGHLIGHT_COLORS[0].value);
     const [annotations, setAnnotations] = useState<Record<number, Stroke[]>>({});
     const [currentStroke, setCurrentStroke] = useState<Point[] | null>(null);
     const [history, setHistory] = useState<Record<number, Stroke[][]>>({});
@@ -230,10 +239,10 @@ export function FullPageNoteViewer({
         const { width, height } = viewportDimensions;
 
         // Helper to draw stroke
-        const drawStroke = (points: Point[], color: string) => {
+        const drawStroke = (points: Point[], color: string, strokeType: "pen" | "highlighter") => {
             if (points.length < 2) return;
             ctx.beginPath();
-            ctx.lineWidth = 2; // Fixed thickness for vector feel, or scale * 2
+            ctx.lineWidth = strokeType === "highlighter" ? 20 : 2; // Wider for highlights to cover text lines
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
             ctx.strokeStyle = color;
@@ -248,14 +257,16 @@ export function FullPageNoteViewer({
 
         // Draw saved strokes
         const pageStrokes = annotations[pageNum] || [];
-        pageStrokes.forEach(stroke => drawStroke(stroke.points, stroke.color));
+        pageStrokes.forEach(stroke => drawStroke(stroke.points, stroke.color, stroke.type));
 
         // Draw current stroke
         if (currentStroke) {
-            drawStroke(currentStroke, penColor);
+            const currentColor = tool === "highlighter" ? highlightColor : penColor;
+            const currentType = tool === "highlighter" ? "highlighter" : "pen";
+            drawStroke(currentStroke, currentColor, currentType);
         }
 
-    }, [annotations, currentStroke, pageNum, viewportDimensions, penColor]);
+    }, [annotations, currentStroke, pageNum, viewportDimensions, penColor, highlightColor, tool]);
 
 
     // Undo / Redo Logic
@@ -320,7 +331,7 @@ export function FullPageNoteViewer({
         const point = getPoint(e);
         if (!point) return;
 
-        if (tool === 'pen') {
+        if (tool === 'pen' || tool === 'highlighter') {
             setCurrentStroke([point]);
         } else if (tool === 'eraser') {
             setIsErasing(true);
@@ -346,6 +357,9 @@ export function FullPageNoteViewer({
     const [showColorPicker, setShowColorPicker] = useState(false);
     const colorPickerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+    const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+    const highlightPickerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     // Color Picker Hover Logic
     const handleColorPickerMouseEnter = () => {
         if (colorPickerTimeoutRef.current) clearTimeout(colorPickerTimeoutRef.current);
@@ -358,10 +372,23 @@ export function FullPageNoteViewer({
         }, 500);
     };
 
+    // Highlight Picker Hover Logic
+    const handleHighlightPickerMouseEnter = () => {
+        if (highlightPickerTimeoutRef.current) clearTimeout(highlightPickerTimeoutRef.current);
+        setShowHighlightPicker(true);
+    };
+
+    const handleHighlightPickerMouseLeave = () => {
+        highlightPickerTimeoutRef.current = setTimeout(() => {
+            setShowHighlightPicker(false);
+        }, 500);
+    };
+
     // Clean up timeout on unmount
     useEffect(() => {
         return () => {
             if (colorPickerTimeoutRef.current) clearTimeout(colorPickerTimeoutRef.current);
+            if (highlightPickerTimeoutRef.current) clearTimeout(highlightPickerTimeoutRef.current);
         };
     }, []);
 
@@ -370,7 +397,7 @@ export function FullPageNoteViewer({
         const point = getPoint(e);
         if (!point) return;
 
-        if (tool === 'pen') {
+        if (tool === 'pen' || tool === 'highlighter') {
             setCurrentStroke(prev => prev ? [...prev, point] : [point]);
         } else if (tool === 'eraser' && isErasing) {
             performErase(point);
@@ -378,12 +405,14 @@ export function FullPageNoteViewer({
     };
 
     const handlePointerUp = () => {
-        if (tool === 'pen' && currentStroke) {
+        if ((tool === 'pen' || tool === 'highlighter') && currentStroke) {
             if (currentStroke.length > 1) {
                 addToHistory(pageNum);
+                const strokeColor = tool === 'highlighter' ? highlightColor : penColor;
+                const strokeType = tool === 'highlighter' ? "highlighter" : "pen";
                 setAnnotations(prev => ({
                     ...prev,
-                    [pageNum]: [...(prev[pageNum] || []), { points: currentStroke, color: penColor, type: "pen" }]
+                    [pageNum]: [...(prev[pageNum] || []), { points: currentStroke, color: strokeColor, type: strokeType }]
                 }));
                 setUnsavedChanges(true);
             }
@@ -581,6 +610,35 @@ export function FullPageNoteViewer({
                             </div>
                         </div>
 
+                        {/* Highlighter */}
+                        <div
+                            className="relative"
+                            onMouseEnter={handleHighlightPickerMouseEnter}
+                            onMouseLeave={handleHighlightPickerMouseLeave}
+                        >
+                            <button
+                                onClick={() => setTool("highlighter")}
+                                className={`p-2 rounded-lg transition-all ${tool === "highlighter" ? "bg-yellow-500 text-white" : "text-white/70 hover:bg-white/10"}`}
+                            >
+                                <Highlighter className="w-5 h-5" />
+                            </button>
+
+                            {/* Highlight Color Picker */}
+                            <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pb-2 transition-all flex flex-col items-center ${showHighlightPicker ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
+                                <div className={`p-2 bg-zinc-800 rounded-xl border border-white/10 shadow-xl flex gap-1 transition-all origin-bottom ${showHighlightPicker ? "scale-100" : "scale-95"}`}>
+                                    {HIGHLIGHT_COLORS.map(c => (
+                                        <button
+                                            key={c.name}
+                                            onClick={(e) => { e.stopPropagation(); setHighlightColor(c.value); setTool("highlighter"); }}
+                                            className={`w-6 h-6 rounded-full border-2 ${highlightColor === c.value ? "border-white" : "border-transparent"} hover:scale-110 transition-transform`}
+                                            style={{ backgroundColor: c.value }}
+                                            title={c.name}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Eraser */}
                         <button
                             onClick={() => setTool("eraser")}
@@ -589,7 +647,11 @@ export function FullPageNoteViewer({
                             <Eraser className="w-5 h-5" />
                         </button>
 
-                        <div className="w-6 h-6 rounded-full border border-white/20 ml-2" style={{ backgroundColor: penColor }} title="Current Color" />
+                        <div
+                            className="w-6 h-6 rounded-full border border-white/20 ml-2"
+                            style={{ backgroundColor: tool === "highlighter" ? highlightColor : penColor }}
+                            title={tool === "highlighter" ? "Current Highlight Color" : "Current Pen Color"}
+                        />
                     </div>
 
                     {/* Zoom */}
