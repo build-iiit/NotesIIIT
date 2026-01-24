@@ -72,6 +72,18 @@ export const foldersRouter = createTRPCRouter({
             };
         }),
 
+    getAllFlat: protectedProcedure
+        .query(async ({ ctx }) => {
+            return ctx.prisma.folder.findMany({
+                where: {
+                    userId: ctx.session.user.id,
+                },
+                orderBy: {
+                    name: 'asc'
+                }
+            });
+        }),
+
     getBreadcrumbs: protectedProcedure
         .input(z.object({ folderId: z.string() }))
         .query(async ({ ctx, input }) => {
@@ -79,7 +91,7 @@ export const foldersRouter = createTRPCRouter({
             let currentId: string | null = input.folderId;
 
             while (currentId) {
-                const folder: any = await ctx.prisma.folder.findUnique({
+                const folder = await ctx.prisma.folder.findUnique({
                     where: { id: currentId }
                 });
 

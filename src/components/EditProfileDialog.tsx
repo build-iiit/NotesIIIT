@@ -105,7 +105,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                         throw new Error(`Failed to upload avatar: ${uploadResponse.status} ${uploadResponse.statusText}`);
                     }
                     newAvatarKey = s3Key;
-                } catch (err) {
+                } catch {
                     setError('Failed to upload profile photo. Please try again.');
                     setIsSaving(false);
                     return;
@@ -133,7 +133,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                         throw new Error(`Failed to upload background: ${uploadResponse.status} ${uploadResponse.statusText}`);
                     }
                     newBackgroundKey = s3Key;
-                } catch (err) {
+                } catch {
                     setError('Failed to upload background image. Please try again.');
                     setIsSaving(false);
                     return;

@@ -15,7 +15,7 @@ interface Badge {
     color: string;
 }
 
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, any> = { // eslint-disable-line @typescript-eslint/no-explicit-any
     Sparkles,
     Award,
     Trophy,
@@ -24,13 +24,13 @@ const ICON_MAP: Record<string, any> = {
 };
 
 interface UserProfileClientProps {
-    user: any; // Using any for simplicity as it matches the trpc return type
+    user: any; // eslint-disable-line @typescript-eslint/no-explicit-any
     achievements: Badge[];
     currentUserId?: string;
     isOwnProfile: boolean;
 }
 
-export function UserProfileClient({ user, achievements, currentUserId, isOwnProfile }: UserProfileClientProps) {
+export function UserProfileClient({ user, achievements, isOwnProfile }: UserProfileClientProps) {
     const [isEditOpen, setIsEditOpen] = useState(false);
 
     return (

@@ -11,12 +11,12 @@ interface FileExplorerProps {
     userId: string;
 }
 
-export function FileExplorer({ userId }: FileExplorerProps) {
+export function FileExplorer({ }: FileExplorerProps) {
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
 
-    const router = useRouter();
+    // const router = useRouter();
     const utils = api.useUtils();
 
     // Data fetching

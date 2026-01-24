@@ -75,7 +75,7 @@ export default function BookmarksPage() {
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {Object.entries(groupedBookmarks || {}).map(([noteId, data]: [string, { note: { id: string; title: string }; bookmarks: BookmarkWithNote[] }]) => (
+                        {(Object.entries(groupedBookmarks || {}) as [string, { note: { id: string; title: string }; bookmarks: BookmarkWithNote[] }][]).map(([noteId, data]) => (
                             <div
                                 key={noteId}
                                 className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden"

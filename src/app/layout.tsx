@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-orange-50 via-white to-purple-50 dark:from-zinc-950 dark:via-purple-950/10 dark:to-orange-950/10 min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-100/50 via-gray-200 to-orange-100 dark:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] dark:from-zinc-950 dark:via-[#1a0b2e] dark:to-[#2e100b] min-h-screen`}
       >
         <ThemeProvider
           attribute="class"

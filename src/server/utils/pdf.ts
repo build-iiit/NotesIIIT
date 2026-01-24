@@ -43,8 +43,8 @@ export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
     const data = new Uint8Array(pdfBuffer);
     const loadingTask = pdfjsLib.getDocument({
         data,
-        canvasFactory: new NodeCanvasFactory() as unknown as pdfjsLib.CanvasFactory
-    });
+        canvasFactory: new NodeCanvasFactory()
+    } as any);
 
     const doc = await loadingTask.promise;
     const page = await doc.getPage(1);

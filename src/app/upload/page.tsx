@@ -18,7 +18,39 @@ export default function UploadPage() {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [dragActive, setDragActive] = useState(false);
 
-    const { data: allFolders } = api.folders.getAll.useQuery({});
+    const { data: allFoldersData } = api.folders.getAllFlat.useQuery();
+
+    // Helper to build folder hierarchy
+    const getFolderOptions = () => {
+        if (!allFoldersData) return [];
+
+        const folderMap = new Map();
+        allFoldersData.forEach((f: any) => folderMap.set(f.id, { ...f, children: [] })); // eslint-disable-line @typescript-eslint/no-explicit-any
+        const rootFolders: any[] = []; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        folderMap.forEach((f) => {
+            if (f.parentId && folderMap.has(f.parentId)) {
+                folderMap.get(f.parentId).children.push(f);
+            } else {
+                rootFolders.push(f);
+            }
+        });
+
+        // Flatten for display with indentation
+        const options: { id: string, name: string, level: number }[] = [];
+        const traverse = (folders: any[], level = 0) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+            folders.sort((a, b) => a.name.localeCompare(b.name));
+            folders.forEach(f => {
+                options.push({ id: f.id, name: f.name, level });
+                if (f.children.length > 0) traverse(f.children, level + 1);
+            });
+        };
+        traverse(rootFolders);
+        return options;
+    };
+
+    const folderOptions = getFolderOptions();
+
     const getUploadUrlMutation = api.notes.getUploadUrl.useMutation();
     const createNoteMutation = api.notes.create.useMutation();
 
@@ -181,12 +213,12 @@ export default function UploadPage() {
                             <select
                                 value={folderId || ""}
                                 onChange={(e) => setFolderId(e.target.value || null)}
-                                className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white transition-all"
+                                className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white transition-all text-sm"
                             >
                                 <option value="">No Folder (Root)</option>
-                                {allFolders && (allFolders as any).folders?.map((folder: any) => (
+                                {folderOptions.map((folder) => (
                                     <option key={folder.id} value={folder.id}>
-                                        {folder.name}
+                                        {'\u00A0\u00A0'.repeat(folder.level)} {folder.level > 0 ? '↳ ' : ''}{folder.name}
                                     </option>
                                 ))}
                             </select>
