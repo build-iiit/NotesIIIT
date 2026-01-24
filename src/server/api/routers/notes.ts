@@ -57,7 +57,13 @@ export const notesRouter = createTRPCRouter({
                 take: 6,
                 where: { isPublic: true },
                 orderBy: { viewCount: "desc" },
-                include: { author: true },
+                include: {
+                    author: true,
+                    versions: {
+                        orderBy: { version: 'desc' },
+                        take: 1
+                    }
+                },
             });
         }),
     getById: publicProcedure
@@ -135,6 +141,10 @@ export const notesRouter = createTRPCRouter({
                 include: {
                     author: true,
                     course: true,
+                    versions: {
+                        orderBy: { version: 'desc' },
+                        take: 1
+                    }
                 },
             });
 
@@ -155,7 +165,12 @@ export const notesRouter = createTRPCRouter({
             z.object({
                 title: z.string().min(1),
                 description: z.string().optional(),
+                // Added thumbnails to queries by including versions where needed or relying on frontend to fetch.
+                // For list views, it's better to fetch just the needed version info.
+
+                // create mutation update
                 s3Key: z.string(),
+                thumbnailKey: z.string().nullish(),
                 courseId: z.string().optional(),
                 semester: z.string().optional(),
                 folderId: z.string().optional(),
@@ -174,6 +189,7 @@ export const notesRouter = createTRPCRouter({
                         versions: {
                             create: {
                                 s3Key: input.s3Key,
+                                thumbnailKey: input.thumbnailKey,
                                 version: 1,
                             }
                         }

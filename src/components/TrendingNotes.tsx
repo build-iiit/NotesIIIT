@@ -43,7 +43,26 @@ export function TrendingNotes() {
                         {/* Glow effect */}
                         <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-pink-500/0 to-purple-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-tr" />
 
-                        <div className="p-5 h-full flex flex-col relative z-10">
+                        <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800">
+                            {note.versions[0]?.thumbnailKey ? (
+                                <img
+                                    src={note.versions[0].thumbnailKey}
+                                    alt={`Thumbnail for ${note.title}`}
+                                    className="w-full h-full object-cover object-top"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                            )}
+                            {/* Overlay Gradient */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                        </div>
+
+                        <div className="p-5 h-full flex flex-col relative z-10 flex-1">
                             <div className="flex justify-between items-start mb-2">
                                 <h3 className="font-bold text-lg group-hover:text-orange-600 transition-colors line-clamp-1 pr-4">
                                     {note.title}

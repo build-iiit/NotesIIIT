@@ -85,10 +85,50 @@ export default function UploadPage() {
         }
     });
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Generate Thumbnail Client-Side
+    const generateThumbnail = async (file: File): Promise<Blob | null> => {
+        try {
+            const pdfjsLib = await import("pdfjs-dist");
+            // Set worker using CDN or local path
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            const page = await pdf.getPage(1);
+
+            const scale = 1.0;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+
+            if (!context) return null;
+
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({
+                canvasContext: context,
+                viewport: viewport,
+            } as any).promise;
+
+            return new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, "image/jpeg", 0.8);
+            });
+        } catch (error) {
+            console.error("Client-side thumbnail generation failed:", error);
+            return null;
+        }
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
+            const selectedFile = e.target.files[0];
+            setFile(selectedFile);
             setError(null);
+            // Optional: You could show a preview here if you implemented state for it
         }
     };
 
@@ -102,7 +142,7 @@ export default function UploadPage() {
         }
     };
 
-    const handleDrop = async (e: React.DragEvent) => {
+    const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
         setDragActive(false);
@@ -144,11 +184,17 @@ export default function UploadPage() {
             setUploadStep("uploading");
 
             // 1. Upload Locally (Bypass S3 for local dev)
-            setUploadProgress(10);
-            console.log("Step 1: Uploading locally...");
+            setUploadProgress(5);
+            console.log("Step 1: Generated Thumbnail & Uploading...");
 
             const formData = new FormData();
             formData.append("file", file);
+
+            // Generate thumbnail just before upload
+            const thumbnailBlob = await generateThumbnail(file);
+            if (thumbnailBlob) {
+                formData.append("thumbnail", thumbnailBlob, "thumbnail.jpg");
+            }
 
             const uploadResponse = await fetch("/api/upload", {
                 method: "POST",
@@ -173,6 +219,7 @@ export default function UploadPage() {
                 description,
 
                 s3Key, // Pass the local path
+                thumbnailKey: uploadResult.thumbnailKey, // Pass the thumbnail key
                 courseId: selectedCourseId || undefined,
                 semester: selectedSemester || undefined,
                 folderId: folderId || undefined,
