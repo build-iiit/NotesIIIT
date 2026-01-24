@@ -38,6 +38,10 @@ export const authRouter = createTRPCRouter({
                                     image: true,
                                 },
                             },
+                            versions: {
+                                orderBy: { version: 'desc' },
+                                take: 1,
+                            },
                         },
                     },
                     _count: {
