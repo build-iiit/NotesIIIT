@@ -27,10 +27,22 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     const [selectedCourseId, setSelectedCourseId] = useState<string>(note?.courseId || "");
     const [selectedSemester, setSelectedSemester] = useState<string>(note?.semester || "");
     const [selectedFolderId, setSelectedFolderId] = useState<string | null>(note?.folderId || null);
+
+    // Visibility State
+    const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "GROUP">(
+        (note?.visibility as "PUBLIC" | "PRIVATE" | "GROUP") || "PUBLIC"
+    );
+    const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>(
+        note?.sharedGroups?.map((g: { id: string }) => g.id) || []
+    );
+
     const [courseSearch, setCourseSearch] = useState(note?.course ? `${note.course.code} - ${note.course.name}` : note?.courseId ? `Course ${note.courseId}` : "");
     const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
     const [isSemesterDropdownOpen, setIsSemesterDropdownOpen] = useState(false);
     const [uploading, setUploading] = useState(false);
+
+    // Fetch User Groups
+    const { data: userGroups } = api.social.getGroups.useQuery();
 
     // Refs
     const courseDropdownRef = useRef<HTMLDivElement>(null);
@@ -98,7 +110,10 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
                 title,
                 description,
                 courseId: selectedCourseId || undefined,
-                semester: selectedSemester || undefined
+                semester: selectedSemester || undefined,
+                folderId: selectedFolderId,
+                visibility,
+                groupIds: visibility === "GROUP" ? selectedGroupIds : undefined,
             });
             router.push(`/notes/${id}`);
         } catch (error) {
@@ -298,6 +313,70 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
                             Move this note to a different folder
                         </p>
                     </div>
+
+                    {/* Visibility Selection */}
+                    <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
+                        <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Visibility</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {(["PUBLIC", "PRIVATE", "GROUP"] as const).map((type) => (
+                                <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() => setVisibility(type)}
+                                    className={`p-4 rounded-xl border text-left transition-all ${visibility === type
+                                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-500/20"
+                                        : "border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                                        }`}
+                                >
+                                    <div className="font-bold text-sm mb-1">{type}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {type === "PUBLIC" && "Visible to everyone"}
+                                        {type === "PRIVATE" && "Only you"}
+                                        {type === "GROUP" && "Specific groups"}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Group Selection (Only if GROUP visibility) */}
+                    {visibility === "GROUP" && (
+                        <div className="animate-in slide-in-from-top-2 fade-in">
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select Groups</label>
+                            {userGroups?.length === 0 ? (
+                                <div className="text-sm text-gray-500 italic p-4 border rounded bg-gray-50 dark:bg-zinc-800">
+                                    You haven't joined any groups yet.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+                                    {userGroups?.map(group => (
+                                        <div
+                                            key={group.id}
+                                            onClick={() => {
+                                                if (selectedGroupIds.includes(group.id)) {
+                                                    setSelectedGroupIds(prev => prev.filter(id => id !== group.id));
+                                                } else {
+                                                    setSelectedGroupIds(prev => [...prev, group.id]);
+                                                }
+                                            }}
+                                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedGroupIds.includes(group.id)
+                                                ? "bg-purple-50 dark:bg-purple-900/20 border-purple-500"
+                                                : "hover:bg-gray-50 dark:hover:bg-zinc-800 border-gray-200 dark:border-zinc-700"
+                                                }`}
+                                        >
+                                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${selectedGroupIds.includes(group.id)
+                                                ? "bg-purple-500 border-purple-500 text-white"
+                                                : "border-gray-400"
+                                                }`}>
+                                                {selectedGroupIds.includes(group.id) && <CheckCircle className="w-3 h-3" />}
+                                            </div>
+                                            <span className="text-sm font-medium">{group.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <button
                         type="submit"

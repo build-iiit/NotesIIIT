@@ -91,8 +91,6 @@ model Note {
   id          String   @id @default(cuid())
   title       String
   description String?
-  isPublic    Boolean  @default(true)
-  
   // Authorship
   authorId    String
   author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -112,20 +110,21 @@ model Note {
   views       View[]
   bookmarks   Bookmark[]
 
-  folderId    String?
-  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
-
-  // Course Relation
-  courseId    String?
-  course      Course?  @relation(fields: [courseId], references: [id])
+  folderId      String?
+  folder        Folder?   @relation(fields: [folderId], references: [id])
   
-  // Sharing & Privacy
-  visibility  NoteVisibility @default(PUBLIC)
-  sharedGroups Group[]
-  
-  // Metadata
-  semester    String?  // e.g., "1-1", "1-2", "2-1"...
+  courseId      String?
+  course        Course?   @relation(fields: [courseId], references: [id])
+  semester      String? // e.g., "1-1", "1-2", "2-1"...
 
+  // Social & Media
+  isPublic      Boolean   @default(true) // Legacy, use visibility
+  visibility    NoteVisibility @default(PUBLIC)
+  
+  thumbnailS3Key String?
+
+  sharedGroups   Group[]  @relation("SharedNotes")
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -373,7 +372,7 @@ model Group {
   creator   User     @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   
   members   GroupMember[]
-  sharedNotes Note[]
+  sharedNotes Note[] @relation("SharedNotes")
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import { getPresignedDownloadUrl } from "@/lib/s3";
 
 export const socialRouter = createTRPCRouter({
     // --- 1. User Search & Friends ---
@@ -142,13 +143,26 @@ export const socialRouter = createTRPCRouter({
                             _count: { select: { members: true } },
                             members: {
                                 take: 3,
-                                include: { user: { select: { image: true, name: true } } }
+                                include: { user: { select: { image: true, name: true, id: true } } }
                             }
                         }
                     }
                 }
             });
-            return memberships.map(m => m.group);
+
+            // Resolve images
+            const groups = await Promise.all(memberships.map(async (m) => {
+                const group = m.group;
+                const membersWithImages = await Promise.all(group.members.map(async (gm) => {
+                    if (gm.user.image && !gm.user.image.startsWith("http")) {
+                        gm.user.image = await getPresignedDownloadUrl(gm.user.image);
+                    }
+                    return gm;
+                }));
+                return { ...group, members: membersWithImages };
+            }));
+
+            return groups;
         }),
 
     getGroupDetails: protectedProcedure

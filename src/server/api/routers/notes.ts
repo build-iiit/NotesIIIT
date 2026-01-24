@@ -49,7 +49,16 @@ export const notesRouter = createTRPCRouter({
                 nextCursor = nextItem!.id;
             }
 
-            return { items, nextCursor };
+            // Resolve thumbnails
+            const itemsWithThumbnails = await Promise.all(items.map(async (item) => {
+                let thumbnailUrl = "";
+                if (item.thumbnailS3Key) {
+                    thumbnailUrl = await getPresignedDownloadUrl(item.thumbnailS3Key);
+                }
+                return { ...item, thumbnailUrl };
+            }));
+
+            return { items: itemsWithThumbnails, nextCursor };
         }),
 
     /**
@@ -60,7 +69,8 @@ export const notesRouter = createTRPCRouter({
         .query(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({
                 where: { id: input.id },
-                include: { versions: true, author: true, course: true },
+                // Include sharedGroups to let frontend know about current sharing status
+                include: { versions: true, author: true, course: true, sharedGroups: { select: { id: true, name: true } } },
             });
 
             if (!note) return null;
@@ -123,7 +133,8 @@ export const notesRouter = createTRPCRouter({
                 courseId: z.string().optional(),
                 semester: z.string().optional(),
                 visibility: z.enum(["PUBLIC", "PRIVATE", "GROUP"]).default("PUBLIC"),
-                groupIds: z.array(z.string()).optional()
+                groupIds: z.array(z.string()).optional(),
+                thumbnailS3Key: z.string().optional()
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -138,6 +149,7 @@ export const notesRouter = createTRPCRouter({
                         semester: input.semester ?? undefined,
                         visibility: input.visibility,
                         isPublic: input.visibility === "PUBLIC",
+                        thumbnailS3Key: input.thumbnailS3Key,
                         versions: {
                             create: { version: 1, s3Key: input.s3Key },
                         },
@@ -167,7 +179,9 @@ export const notesRouter = createTRPCRouter({
             description: z.string().optional(),
             folderId: z.string().nullable().optional(),
             courseId: z.string().optional(),
-            semester: z.string().optional()
+            semester: z.string().optional(),
+            visibility: z.enum(["PUBLIC", "PRIVATE", "GROUP"]).optional(),
+            groupIds: z.array(z.string()).optional()
         }))
         .mutation(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
@@ -178,8 +192,20 @@ export const notesRouter = createTRPCRouter({
                 title: input.title,
                 description: input.description,
                 courseId: input.courseId,
-                semester: input.semester
+                semester: input.semester,
+                // Add visibility logic
+                visibility: input.visibility,
+                isPublic: input.visibility === "PUBLIC", // Update legacy field
             };
+
+            // Handle Groups
+            if (input.visibility === "GROUP" && input.groupIds) {
+                updateData.sharedGroups = {
+                    set: input.groupIds.map(id => ({ id }))
+                };
+            } else if (input.visibility !== "GROUP") {
+                updateData.sharedGroups = { set: [] }; // Clear groups if not GROUP visibility
+            }
 
             // Folder logic from Feature branch
             if (input.folderId !== undefined) {
