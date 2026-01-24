@@ -13,7 +13,7 @@ type UserWithScore = {
 };
 
 export function LeaderboardTable() {
-    const { data: topNotes } = api.leaderboards.trending.useQuery();
+    const { data: topNotes } = api.leaderboards.topNotes.useQuery();
     const { data: topContributors } = api.leaderboards.topContributors.useQuery();
 
     return (
@@ -21,7 +21,7 @@ export function LeaderboardTable() {
             {/* Top Notes */}
             <div className="bg-white dark:bg-zinc-900 shadow-xl rounded-2xl p-6 border border-gray-100 dark:border-zinc-800">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <span className="text-3xl">🔥</span> Trending Notes
+                    <span className="text-3xl">🔥</span> Top Notes by Upvotes
                 </h2>
                 <div className="space-y-4">
                     {topNotes?.map((note, idx) => (
@@ -41,7 +41,7 @@ export function LeaderboardTable() {
                                     {note.title}
                                 </h3>
                                 <p className="text-xs text-gray-500">
-                                    {note.viewCount} views • By {note.author.name}
+                                    {note.voteScore} {note.voteScore === 1 ? 'upvote' : 'upvotes'} • By {note.author.name}
                                 </p>
                             </div>
                         </Link>

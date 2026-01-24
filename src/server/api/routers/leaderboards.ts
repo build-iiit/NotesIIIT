@@ -25,12 +25,12 @@ type TrendingNoteRaw = {
 
 export const leaderboardsRouter = createTRPCRouter({
     /**
-     * Top notes by view count.
+     * Top notes by total upvotes (vote score).
      */
     topNotes: publicProcedure.query(async ({ ctx }) => {
         return ctx.prisma.note.findMany({
             take: 10,
-            orderBy: { viewCount: "desc" },
+            orderBy: { voteScore: "desc" },
             include: { author: true },
         });
     }),

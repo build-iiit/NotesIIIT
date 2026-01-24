@@ -124,9 +124,29 @@ export function PdfViewer({ url, pageNum, onPageChange }: PdfViewerProps) {
         renderPage();
     }, [pdfDoc, pageNum, scale]);
 
-    const changePage = (offset: number) => {
-        onPageChange(Math.min(Math.max(pageNum + offset, 1), pdfDoc?.numPages || 1));
-    };
+    const changePage = useCallback((offset: number) => {
+        if (!pdfDoc) return;
+        onPageChange(Math.min(Math.max(pageNum + offset, 1), pdfDoc.numPages));
+    }, [pageNum, pdfDoc, onPageChange]);
+
+    // Keyboard navigation for arrow keys
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            switch (e.key) {
+                case "ArrowLeft":
+                    e.preventDefault();
+                    changePage(-1);
+                    break;
+                case "ArrowRight":
+                    e.preventDefault();
+                    changePage(1);
+                    break;
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [changePage]);
 
     if (error) return <div className="text-red-500">{error}</div>;
 
