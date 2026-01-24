@@ -51,10 +51,19 @@ export default function SearchPage() {
         "1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2", "5-1", "5-2"
     ];
 
-    // Use getInfinite query but as a regular query for search results (first page)
-    const { data, isLoading } = api.notes.getInfinite.useQuery(
-        { search: debouncedSearch, semester: semester || undefined, sortBy: sortBy, limit: 50 }
+    // Use Infinite Query
+    const {
+        data,
+        isLoading,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = api.notes.getInfinite.useInfiniteQuery(
+        { search: debouncedSearch, semester: semester || undefined, sortBy: sortBy, limit: 10 },
+        { getNextPageParam: (lastPage) => lastPage.nextCursor }
     );
+
+    const allNotes = data?.pages.flatMap((page) => page.items) ?? [];
 
     return (
         <div className="container mx-auto px-4 py-8 min-h-screen">
@@ -121,7 +130,6 @@ export default function SearchPage() {
                     )}
                 </div>
 
-                {/* Semester Filter */}
                 {/* Semester Custom Dropdown */}
                 <div className="relative min-w-[200px]" ref={dropdownRef}>
                     <button
@@ -180,53 +188,86 @@ export default function SearchPage() {
                 </div>
             ) : (
                 <>
-                    {!data?.items.length ? (
+                    {!allNotes.length ? (
                         <div className="text-center text-gray-500 mt-20">
                             {debouncedSearch ? `No notes found matching "${debouncedSearch}"` : "Try searching for something like 'Data Structures' or 'CS1.201'"}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {data.items.map((note) => (
-                                <Link href={`/notes/${note.id}`} key={note.id} className="group">
-                                    <div className="bg-card border border-border rounded-xl p-5 hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col backdrop-blur-md relative overflow-hidden">
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="bg-primary/20 p-2 rounded-lg group-hover:bg-primary/30 transition-colors">
-                                                <FileText className="h-6 w-6 text-primary" />
+                        <div className="space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                {allNotes.map((note) => (
+                                    <Link href={`/notes/${note.id}`} key={note.id} className="group">
+                                        <div className="bg-card border border-border rounded-xl hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col backdrop-blur-md relative overflow-hidden">
+
+                                            {/* Thumbnail Section */}
+                                            <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800">
+                                                {note.versions[0]?.thumbnailKey ? (
+                                                    <img
+                                                        src={note.versions[0].thumbnailKey}
+                                                        alt={`Thumbnail for ${note.title}`}
+                                                        className="w-full h-full object-cover object-top"
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-full text-gray-400">
+                                                        <FileText className="h-12 w-12" />
+                                                    </div>
+                                                )}
+                                                {/* Course Badge */}
+                                                {note.course && (
+                                                    <span className="absolute top-2 right-2 text-xs font-mono text-white bg-black/60 px-2 py-1 rounded backdrop-blur-md border border-white/10">
+                                                        {note.course.code}
+                                                    </span>
+                                                )}
                                             </div>
-                                            {note.course ? (
-                                                <span className="text-xs font-mono text-gray-400 bg-white/5 px-2 py-1 rounded border border-white/10">
-                                                    {note.course.code}
-                                                </span>
-                                            ) : (
-                                                <span className="text-xs font-mono text-gray-500 bg-white/5 px-2 py-1 rounded border border-white/10">General</span>
-                                            )}
+
+                                            <div className="p-5 flex flex-col flex-grow">
+                                                <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+                                                    {note.title}
+                                                </h3>
+
+                                                {note.course && (
+                                                    <p className="text-xs text-gray-400 mb-2 truncate">
+                                                        {note.course.name}
+                                                    </p>
+                                                )}
+
+                                                <p className="text-gray-500 text-sm line-clamp-2 mb-4 flex-grow">
+                                                    {note.description || "No description provided."}
+                                                </p>
+
+                                                <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-white/5 mt-auto">
+                                                    <span className="flex items-center gap-1">
+                                                        By {note.author?.name || "Unknown"}
+                                                    </span>
+                                                    <span>
+                                                        {new Date(note.createdAt).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
+                                    </Link>
+                                ))}
+                            </div>
 
-                                        <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-primary transition-colors">
-                                            {note.title}
-                                        </h3>
-
-                                        {note.course && (
-                                            <p className="text-xs text-gray-400 mb-2 truncate">
-                                                {note.course.name}
-                                            </p>
+                            {hasNextPage && (
+                                <div className="flex justify-center pt-8">
+                                    <button
+                                        onClick={() => fetchNextPage()}
+                                        disabled={isFetchingNextPage}
+                                        className="px-6 py-2 rounded-full font-medium bg-primary/20 text-primary border border-primary/20 hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {isFetchingNextPage ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Loading...
+                                            </>
+                                        ) : (
+                                            "Load More"
                                         )}
-
-                                        <p className="text-gray-500 text-sm line-clamp-2 mb-4 flex-grow">
-                                            {note.description || "No description provided."}
-                                        </p>
-
-                                        <div className="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-white/5 mt-auto">
-                                            <span className="flex items-center gap-1">
-                                                By {note.author?.name || "Unknown"}
-                                            </span>
-                                            <span>
-                                                {new Date(note.createdAt).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                 </>
