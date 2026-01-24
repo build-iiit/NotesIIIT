@@ -13,13 +13,13 @@ export function HeroSection() {
             <div className="flex gap-4">
                 <Link
                     href="/login"
-                    className="bg-blue-600 text-white px-8 py-3 rounded-full font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
+                    className="px-8 py-3 rounded-full font-semibold text-lg text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
                 >
                     Get Started
                 </Link>
                 <Link
                     href="/leaderboard"
-                    className="bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 px-8 py-3 rounded-full font-semibold text-lg border hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
+                    className="px-8 py-3 rounded-full font-semibold text-lg text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
                 >
                     View Leaderboard
                 </Link>

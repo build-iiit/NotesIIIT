@@ -105,7 +105,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                 {onSignOut && (
                                     <button
                                         onClick={onSignOut}
-                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 backdrop-blur-sm bg-white/20 dark:bg-white/10 hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all duration-200 border border-white/30 hover:border-red-300/50"
+                                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
                                     >
                                         <LogOut className="h-4 w-4" />
                                         <span className="hidden lg:inline">Sign Out</span>
@@ -115,7 +115,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         ) : (
                             <Link
                                 href="/login"
-                                className="px-6 py-2 rounded-full font-semibold text-sm backdrop-blur-2xl bg-gradient-to-r from-orange-500/80 to-pink-500/80 text-white hover:from-orange-600/90 hover:to-pink-600/90 transition-all duration-300 shadow-[0_4px_16px_0_rgba(251,113,133,0.3)] hover:shadow-[0_6px_24px_0_rgba(251,113,133,0.4)] border border-white/40 hover:scale-[1.05]"
+                                className="px-6 py-2 rounded-full font-semibold text-sm text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
                             >
                                 Sign In
                             </Link>
@@ -125,7 +125,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                     {/* Mobile menu button */}
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="md:hidden p-2 rounded-lg backdrop-blur-sm bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 transition-colors border border-white/20"
+                        className="md:hidden p-2 rounded-lg backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
                         aria-label="Toggle menu"
                     >
                         {mobileMenuOpen ? (
@@ -185,7 +185,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                                 onSignOut();
                                                 setMobileMenuOpen(false);
                                             }}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 backdrop-blur-sm bg-red-100/50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 transition-all duration-200 border border-red-300/50 dark:border-red-800/50"
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
                                         >
                                             <LogOut className="h-4 w-4" />
                                             Sign Out
@@ -196,7 +196,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                 <Link
                                     href="/login"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="mx-4 px-6 py-3 rounded-lg font-semibold text-sm text-center backdrop-blur-md bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600 transition-all duration-200 shadow-lg border border-white/30"
+                                    className="mx-4 px-6 py-3 rounded-lg font-semibold text-sm text-center text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
                                 >
                                     Sign In
                                 </Link>

@@ -4,7 +4,7 @@ import { BookOpen, Github } from "lucide-react"
 
 export default function SignIn() {
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 py-12 sm:px-6 lg:px-8 relative dark:from-gray-900 dark:via-purple-950 dark:to-orange-950 transition-colors duration-500">
+        <div className="flex min-h-screen flex-col items-center justify-center py-12 sm:px-6 lg:px-8 relative transition-colors duration-500">
             <div className="absolute top-4 right-4">
                 <ThemeToggle className="backdrop-blur-2xl bg-white/10 dark:bg-black/20 text-white hover:bg-white/20 dark:hover:bg-black/30 border border-white/30 p-2 rounded-xl transition-all hover:scale-[1.05]" />
             </div>
@@ -39,7 +39,7 @@ export default function SignIn() {
                         >
                             <button
                                 type="submit"
-                                className="w-full flex items-center justify-center py-3 px-4 rounded-xl shadow-xl text-sm font-bold backdrop-blur-md bg-white text-orange-600 hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02] hover:shadow-2xl gap-2 border border-white/50"
+                                className="w-full flex items-center justify-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200 relative rounded-xl backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95] gap-2"
                             >
                                 <Github className="h-5 w-5" />
                                 <span>Sign in with GitHub</span>

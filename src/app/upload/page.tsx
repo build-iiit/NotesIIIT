@@ -3,9 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
-import { Folder } from "lucide-react";
 import { Upload, FileText, X, CheckCircle, Loader2 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 type UploadStep = "idle" | "getting-url" | "uploading" | "creating-record" | "complete";
 
@@ -146,53 +144,54 @@ export default function UploadPage() {
         }
     };
 
-    return 
-        <div className="max-w-xl mx-auto p-8">
-            {/* Sunset Gradient Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-400/15 via-pink-500/15 to-purple-600/15 rounded-xl -z-10" />
+    return (
+        <div className="min-h-screen py-12 px-4">
+            <div className="max-w-xl mx-auto">
+                {/* Sunset Gradient Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-pink-500/5 to-purple-600/5 rounded-xl -z-10" />
 
-            {/* Layered Glass Container - iOS Style */}
-            <div className="relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.12] via-white/[0.06] to-white/[0.12] dark:from-black/15 dark:via-black/10 dark:to-black/15 rounded-3xl shadow-[0_16px_48px_0_rgba(0,0,0,0.15)] dark:shadow-[0_16px_48px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/15 p-8">
-                {/* Inner glass layer */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/8 to-transparent pointer-events-none" />
-                <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">Upload Note</h1>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                    <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Title</label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                            className="w-full px-4 py-3 rounded-xl backdrop-blur-2xl bg-white/30 dark:bg-black/20 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all shadow-inner"
-                            placeholder="Enter note title"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Description</label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 min-h-[100px] transition-all"
-                            placeholder="Add a description (optional)"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Folder (Optional)</label>
-                        <select
-                            value={folderId || ""}
-                            onChange={(e) => setFolderId(e.target.value || null)}
-                            className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white transition-all"
-                        >
-                            <option value="">No Folder (Root)</option>
-                            {allFolders && (allFolders as any).folders?.map((folder: any) => (
-                                <option key={folder.id} value={folder.id}>
-                                    {folder.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                   {/* File Upload Zone */}
+                {/* Layered Glass Container - iOS Style */}
+                <div className="relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.12] via-white/[0.06] to-white/[0.12] dark:from-black/15 dark:via-black/10 dark:to-black/15 rounded-3xl shadow-[0_16px_48px_0_rgba(0,0,0,0.15)] dark:shadow-[0_16px_48px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/15 p-8">
+                    {/* Inner glass layer */}
+                    <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/8 to-transparent pointer-events-none" />
+                    <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">Upload Note</h1>
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Title</label>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                required
+                                className="w-full px-4 py-3 rounded-xl backdrop-blur-2xl bg-white/30 dark:bg-black/20 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all shadow-inner"
+                                placeholder="Enter note title"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Description</label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 min-h-[100px] transition-all"
+                                placeholder="Add a description (optional)"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Folder (Optional)</label>
+                            <select
+                                value={folderId || ""}
+                                onChange={(e) => setFolderId(e.target.value || null)}
+                                className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white transition-all"
+                            >
+                                <option value="">No Folder (Root)</option>
+                                {allFolders && (allFolders as any).folders?.map((folder: any) => (
+                                    <option key={folder.id} value={folder.id}>
+                                        {folder.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {/* File Upload Zone */}
                         <div>
                             <label className="block text-sm font-semibold text-white mb-2">
                                 PDF File *
@@ -241,7 +240,7 @@ export default function UploadPage() {
                                         type="button"
                                         onClick={removeFile}
                                         disabled={uploading}
-                                        className="bg-white/10 hover:bg-white/20 p-2 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                                        className="relative flex items-center justify-center p-2 rounded-lg backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95] disabled:opacity-50"
                                     >
                                         <X className="h-5 w-5 text-white" />
                                     </button>
@@ -269,7 +268,7 @@ export default function UploadPage() {
                         <button
                             type="submit"
                             disabled={uploading || !file}
-                            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-bold text-indigo-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 gap-2"
+                            className="w-full flex items-center justify-center py-3 px-4 rounded-lg text-sm font-bold text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 gap-2"
                         >
                             {uploading ? (
                                 <>

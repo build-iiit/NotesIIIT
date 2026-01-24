@@ -79,7 +79,7 @@ export function UserProfileClient({ user, achievements, currentUserId, isOwnProf
                             <div className="absolute top-28 right-0 sm:right-10 flex justify-center w-full sm:w-auto mt-4 px-4 sm:mt-0 sm:px-0 pointer-events-none sm:pointer-events-auto">
                                 <button
                                     onClick={() => setIsEditOpen(true)}
-                                    className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 border border-white/20 text-sm font-medium text-gray-700 dark:text-gray-200"
+                                    className="pointer-events-auto flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
                                 >
                                     <Edit size={16} />
                                     Edit Profile
