@@ -144,7 +144,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId }: PdfViewerProps
     }, [pageJumpInput, pdfDoc, onPageChange]);
 
     // Bookmark functionality
-    const { data: bookmarks, refetch: refetchBookmarks, error: bookmarksError } = api.bookmarks.getForNote.useQuery(
+    const { data: bookmarks, refetch: refetchBookmarks } = api.bookmarks.getForNote.useQuery(
         { noteId: noteId! },
         { enabled: !!noteId }
     );

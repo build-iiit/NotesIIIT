@@ -3,11 +3,9 @@
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
 import { Bookmark, FileText, ArrowRight } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export default function BookmarksPage() {
     const { data: bookmarks, isLoading } = api.bookmarks.getAll.useQuery();
-    const router = useRouter();
 
     // Group bookmarks by note
     type BookmarkWithNote = NonNullable<typeof bookmarks>[number];

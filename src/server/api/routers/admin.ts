@@ -7,7 +7,7 @@ export const adminRouter = createTRPCRouter({
      * Auth: Admin only
      */
     getStats: adminProcedure.query(async ({ ctx }) => {
-        const [totalUsers, totalNotes, totalViews, totalVotes] = await Promise.all([
+        const [totalUsers, totalNotes, , totalVotes] = await Promise.all([
             ctx.prisma.user.count(),
             ctx.prisma.note.count(),
             ctx.prisma.view.count(),
