@@ -1,4 +1,5 @@
 
+import { type Folder } from "@prisma/client";
 import { z } from "zod";
 import {
     createTRPCRouter,
@@ -91,15 +92,15 @@ export const foldersRouter = createTRPCRouter({
             let currentId: string | null = input.folderId;
 
             while (currentId) {
-                const folder = await ctx.prisma.folder.findUnique({
+                const currentFolder: Folder | null = await ctx.prisma.folder.findUnique({
                     where: { id: currentId }
                 });
 
-                if (!folder) break;
-                if (folder.userId !== ctx.session.user.id) break; // Security check
+                if (!currentFolder) break;
+                if (currentFolder.userId !== ctx.session.user.id) break; // Security check
 
-                breadcrumbs.unshift(folder);
-                currentId = folder.parentId;
+                breadcrumbs.unshift(currentFolder);
+                currentId = currentFolder.parentId;
             }
 
             return breadcrumbs;

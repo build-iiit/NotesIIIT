@@ -75,7 +75,7 @@ export function LeaderboardTable() {
                                     {user.name}
                                 </h3>
                                 <div className="text-xs text-gray-500 font-medium bg-gray-100 dark:bg-zinc-800 inline-block px-2 py-0.5 rounded-full mt-1">
-                                    {user.totalScore} karma • {user._count.notes} notes
+                                    {(user as unknown as { totalScore: number }).totalScore} karma • {user._count.notes} notes
                                 </div>
                             </div>
                             {idx < 3 && (

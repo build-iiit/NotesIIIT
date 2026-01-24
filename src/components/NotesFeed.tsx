@@ -2,37 +2,44 @@
 
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 
 export function NotesFeed() {
-    // Infinite query for pagination
-    const {
-        data,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading
-    } = api.notes.getAll.useInfiniteQuery(
-        { limit: 10 },
-        { getNextPageParam: (lastPage) => lastPage.nextCursor }
-    );
+    const [sort, setSort] = useState<"newest" | "popular">("popular");
+    const [displayCount, setDisplayCount] = useState(10);
+
+    // Regular query instead of infinite query
+    const { data, isLoading } = api.notes.getAll.useQuery({
+        cursor: undefined,
+        limit: 100 // Load more at once
+    });
 
     const { ref, inView } = useInView();
 
     useEffect(() => {
-        if (inView && hasNextPage) {
-            fetchNextPage();
+        if (inView && data?.items && displayCount < data.items.length) {
+            setDisplayCount(prev => prev + 10);
         }
-    }, [inView, hasNextPage, fetchNextPage]);
+    }, [inView, data?.items, displayCount]);
+
+    // Client-side sorting
+    const sortedNotes = (data?.items || []).sort((a: { voteScore?: number; createdAt: Date | string }, b: { voteScore?: number; createdAt: Date | string }) => {
+        if (sort === "popular") {
+            return (b.voteScore || 0) - (a.voteScore || 0);
+        } else {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+    });
+
+    // Display subset
+    const allNotes = sortedNotes.slice(0, displayCount);
 
     if (isLoading) {
         return <div className="text-center py-10">Loading notes...</div>;
     }
 
-    const allNotes = data?.pages.flatMap((page) => page.items) ?? [];
-
-    if (allNotes.length === 0) {
+    if (sortedNotes.length === 0 && !isLoading) {
         return (
             <div className="text-center py-20 border-2 border-dashed rounded-xl">
                 <p className="text-gray-500 mb-4">No notes shared yet.</p>
@@ -45,8 +52,26 @@ export function NotesFeed() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-gray-50 dark:bg-zinc-800/50 p-4 rounded-lg">
-                <h2 className="text-2xl font-bold">Recent Uploads</h2>
+            <div className="flex justify-between items-center bg-muted/50 p-4 rounded-lg">
+                <div className="flex items-center gap-4">
+                    <h2 className="text-2xl font-bold">
+                        {sort === "popular" ? "Trending Notes" : "Recent Uploads"}
+                    </h2>
+                    <div className="flex bg-black/20 p-1.5 rounded-lg">
+                        <button
+                            onClick={() => setSort("popular")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${sort === "popular" ? "bg-primary text-white shadow" : "text-gray-400 hover:text-white"}`}
+                        >
+                            Trending
+                        </button>
+                        <button
+                            onClick={() => setSort("newest")}
+                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${sort === "newest" ? "bg-primary text-white shadow" : "text-gray-400 hover:text-white"}`}
+                        >
+                            Recent
+                        </button>
+                    </div>
+                </div>
                 <Link
                     href="/upload"
                     className="px-4 py-2 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
@@ -86,7 +111,7 @@ export function NotesFeed() {
                 ))}
             </div>
 
-            {isFetchingNextPage && (
+            {displayCount < sortedNotes.length && (
                 <div className="text-center py-4 text-gray-500">Loading more...</div>
             )}
 

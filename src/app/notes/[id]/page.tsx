@@ -30,7 +30,10 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
 
     // Find current version
     const currentVersion = note.versions.find(v => v.id === note.currentVersionId) || note.versions[0];
-    const s3Url = note.fileUrl;
+    let s3Url = currentVersion?.s3Key;
+    if (s3Url && !s3Url.startsWith("http") && !s3Url.startsWith("/")) {
+        s3Url = `/${s3Url}`;
+    }
 
     return (
         <>
@@ -107,7 +110,8 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                     initialPage={pageNum}
                     isOpen={isFullPageOpen}
                     onClose={() => setIsFullPageOpen(false)}
-                    noteTitle={note.title}
+                    noteTitle={note?.title || ""}
+                    versionId={note?.currentVersionId || ""}
                 />
             )}
         </>

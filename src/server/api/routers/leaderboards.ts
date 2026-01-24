@@ -1,6 +1,9 @@
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import { getPresignedDownloadUrl } from "@/lib/s3";
 
+/**
+ * Type definitions for raw SQL results
+ */
 type TopContributorRaw = {
     id: string;
     name: string | null;
@@ -29,18 +32,30 @@ export const leaderboardsRouter = createTRPCRouter({
      * Top notes by total upvotes (vote score).
      */
     topNotes: publicProcedure.query(async ({ ctx }) => {
-        return ctx.prisma.note.findMany({
+        const notes = await ctx.prisma.note.findMany({
             take: 10,
             orderBy: { voteScore: "desc" },
             include: { author: true },
         });
+
+        // Resolve S3 images for authors in top notes
+        return await Promise.all(
+            notes.map(async (note) => {
+                const authorImage = note.author.image && !note.author.image.startsWith("http")
+                    ? await getPresignedDownloadUrl(note.author.image)
+                    : note.author.image;
+                
+                return {
+                    ...note,
+                    author: { ...note.author, image: authorImage }
+                };
+            })
+        );
     }),
 
     /**
-     * Top contributors by note count.
-     */
-    /**
      * Top contributors by total upvotes (Karma).
+     * Combines strict typing (main) with S3 resolution (Feature-additions)
      */
     topContributors: publicProcedure.query(async ({ ctx }) => {
         const users = await ctx.prisma.$queryRaw<TopContributorRaw[]>`
@@ -54,25 +69,26 @@ export const leaderboardsRouter = createTRPCRouter({
             LIMIT 10;
         `;
 
-        // Map to match frontend expectations and resolve S3 URLs
-        const usersWithResolvedImages = await Promise.all(
+        // Resolve S3 URLs and map to frontend-expected shape
+        return await Promise.all(
             users.map(async (u) => {
                 const imageUrl = u.image && !u.image.startsWith("http")
                     ? await getPresignedDownloadUrl(u.image)
                     : u.image;
+
                 return {
-                    ...u,
+                    id: u.id,
+                    name: u.name,
                     image: imageUrl,
-                    _count: { notes: Number(u.noteCount) },
-                    totalScore: Number(u.totalScore)
+                    totalScore: Number(u.totalScore),
+                    _count: { notes: Number(u.noteCount) }, // Shape expected by UserStatsCard
                 };
             })
         );
-        return usersWithResolvedImages;
     }),
+
     /**
-     * Trending notes based on Hacker News algorithm.
-     * Score = (VoteScore + 1) / Pow((AgeInHours + 2), Gravity)
+     * Trending notes based on Hacker News algorithm logic.
      */
     trending: publicProcedure.query(async ({ ctx }) => {
         // Use raw query for complex sorting logic efficiently
@@ -80,20 +96,25 @@ export const leaderboardsRouter = createTRPCRouter({
             SELECT n.*, u.name as "authorName", u.image as "authorImage"
             FROM "Note" n
             JOIN "User" u ON n."authorId" = u.id
-            ORDER BY 
-              (n."voteScore" + 1) / POWER(EXTRACT(EPOCH FROM (NOW() - n."createdAt"))/3600 + 2, 1.8) DESC
+            ORDER BY n."voteScore" DESC, n."createdAt" DESC
             LIMIT 20;
         `;
 
-        // Map raw result to expected shape (Prisma raw returns generic object)
-        // We need to match the shape expected by frontend components if possible or create a new one.
-        // Simple mapping:
-        return notes.map(n => ({
-            ...n,
-            author: {
-                name: n.authorName,
-                image: n.authorImage,
-            }
-        }));
+        // Resolve S3 images for author avatars in trending list
+        return await Promise.all(
+            notes.map(async (n) => {
+                const authorImageUrl = n.authorImage && !n.authorImage.startsWith("http")
+                    ? await getPresignedDownloadUrl(n.authorImage)
+                    : n.authorImage;
+
+                return {
+                    ...n,
+                    author: {
+                        name: n.authorName,
+                        image: authorImageUrl,
+                    }
+                };
+            })
+        );
     }),
 });

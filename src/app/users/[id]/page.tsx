@@ -33,5 +33,5 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
     const session = await auth();
     const isOwnProfile = session?.user?.id === id;
 
-    return <UserProfileClient user={user} achievements={achievements} currentUserId={session?.user?.id} isOwnProfile={isOwnProfile} />;
+    return <UserProfileClient user={user} achievements={achievements} isOwnProfile={isOwnProfile} />;
 }

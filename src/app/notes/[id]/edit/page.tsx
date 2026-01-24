@@ -1,10 +1,11 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useRef, useEffect } from "react";
 import { api } from "@/app/_trpc/client";
 import { useRouter } from "next/navigation";
 import DeleteNoteButton from "@/components/DeleteNoteButton";
 import { Folder } from "lucide-react";
+import { Search, X, ChevronDown, CheckCircle } from "lucide-react";
 
 export default function EditNotePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
@@ -15,26 +16,53 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
         enabled: !!currentUser,
     });
     const updateNote = api.notes.update.useMutation();
-    const getUploadUrl = api.notes.getUploadUrl.useMutation();
     const addVersion = api.versions.addVersion.useMutation();
+
+    const { data: courses } = api.course.getAll.useQuery();
 
     const [title, setTitle] = useState(note?.title || "");
     const [description, setDescription] = useState(note?.description || "");
-    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(note?.folderId || null);
+
+    // Course & Semester State
+    const [selectedCourseId, setSelectedCourseId] = useState<string>(note?.courseId || "");
+    const [selectedSemester, setSelectedSemester] = useState<string>(note?.semester || "");
+    const [courseSearch, setCourseSearch] = useState(note?.course ? `${note.course.code} - ${note.course.name}` : note?.courseId ? `Course ${note.courseId}` : "");
+    const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
+    const [isSemesterDropdownOpen, setIsSemesterDropdownOpen] = useState(false);
     const [uploading, setUploading] = useState(false);
+
+    // Refs
+    const courseDropdownRef = useRef<HTMLDivElement>(null);
+    const semesterDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Click Outside Handler
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
+                setIsCourseDropdownOpen(false);
+            }
+            if (semesterDropdownRef.current && !semesterDropdownRef.current.contains(event.target as Node)) {
+                setIsSemesterDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    // Authorization Check Logic helpers
+    // We cannot return early here because it violates rules of hooks if hooks are below.
+    const isAuthorized = currentUser && note && currentUser.id === note.authorId;
 
     if (!note) return <div>Note not found</div>;
 
-
-    // Authorization check: Only note owner can edit
-    if (!currentUser || currentUser.id !== note.authorId) {
+    if (!isAuthorized) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="max-w-md text-center">
                     <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/20 dark:to-red-800/20 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
+                        <X className="h-12 w-12 text-red-500 dark:text-red-400" />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Unauthorized</h1>
                     <p className="text-gray-500 dark:text-gray-400 mb-6">
@@ -51,6 +79,15 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
         );
     }
 
+    // Filter courses for search
+    const filteredCourses = courses?.filter(course =>
+        course.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+        course.code.toLowerCase().includes(courseSearch.toLowerCase())
+    );
+
+    const semesters = [
+        "1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2", "5-1", "5-2"
+    ];
 
     const handleUpdateMetadata = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,7 +96,8 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
                 id,
                 title,
                 description,
-                folderId: selectedFolderId,
+                courseId: selectedCourseId || undefined,
+                semester: selectedSemester || undefined
             });
             router.push(`/notes/${id}`);
         } catch (error) {
@@ -68,26 +106,33 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
         }
     };
 
+    // Authorization check moved here or handled above (handled above)
+    // We need to return the JSX now.
+
     const handleNewVersion = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         try {
             setUploading(true);
-            // 1. Get Presigned URL
-            const { url, s3Key } = await getUploadUrl.mutateAsync({
-                filename: file.name,
-                contentType: file.type,
+            // 1. Upload Locally (Bypass S3)
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const uploadResponse = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
             });
 
-            // 2. Upload to S3
-            await fetch(url, {
-                method: "PUT",
-                body: file,
-                headers: { "Content-Type": file.type },
-            });
+            if (!uploadResponse.ok) {
+                const errorData = await uploadResponse.json();
+                throw new Error(errorData.error || "Upload failed");
+            }
 
-            // 3. Add Version
+            const uploadResult = await uploadResponse.json();
+            const s3Key = uploadResult.key;
+
+            // 2. Add Version
             await addVersion.mutateAsync({
                 noteId: id,
                 s3Key: s3Key,
@@ -119,6 +164,108 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
                             className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 text-gray-900 dark:text-white"
                         />
                     </div>
+
+                    {/* Course Selector */}
+                    <div className="relative" ref={courseDropdownRef}>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                            Course
+                        </label>
+                        <div className="relative">
+                            <div className="flex items-center border rounded-lg bg-white dark:bg-zinc-800 dark:border-zinc-700 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+                                <Search className="h-5 w-5 text-gray-500 ml-3" />
+                                <input
+                                    type="text"
+                                    value={courseSearch}
+                                    onChange={(e) => {
+                                        setCourseSearch(e.target.value);
+                                        setSelectedCourseId("");
+                                        setIsCourseDropdownOpen(true);
+                                    }}
+                                    onFocus={() => setIsCourseDropdownOpen(true)}
+                                    placeholder="Search for a course..."
+                                    className="w-full p-2 bg-transparent outline-none"
+                                />
+                                {courseSearch && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setCourseSearch("");
+                                            setSelectedCourseId("");
+                                        }}
+                                        className="p-2 mr-1 hover:text-red-500 text-gray-500"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Dropdown Results */}
+                            {isCourseDropdownOpen && (
+                                <div className="absolute z-[100] w-full mt-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+                                    {!courses?.length ? (
+                                        <div className="p-4 text-center text-gray-500 text-sm">LOADING...</div>
+                                    ) : filteredCourses?.length === 0 ? (
+                                        <div className="p-4 text-center text-gray-500 text-sm">No courses found</div>
+                                    ) : (
+                                        filteredCourses?.map((course: { id: string; code: string; name: string }) => (
+                                            <button
+                                                key={course.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedCourseId(course.id);
+                                                    setCourseSearch(`${course.code} - ${course.name}`);
+                                                    setIsCourseDropdownOpen(false);
+                                                }}
+                                                className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-zinc-800 border-b border-gray-100 dark:border-zinc-800 last:border-0"
+                                            >
+                                                <div className="font-semibold text-sm">{course.code}</div>
+                                                <div className="text-xs text-gray-500 truncate">{course.name}</div>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Semester Selector */}
+                    <div className="relative" ref={semesterDropdownRef}>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                            Semester (Optional)
+                        </label>
+                        <button
+                            type="button"
+                            onClick={() => setIsSemesterDropdownOpen(!isSemesterDropdownOpen)}
+                            className="w-full flex items-center justify-between p-2 border rounded-lg bg-white dark:bg-zinc-800 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                        >
+                            <span className={selectedSemester ? "text-gray-900 dark:text-gray-100" : "text-gray-500"}>
+                                {selectedSemester ? `Semester ${selectedSemester}` : "Select a semester..."}
+                            </span>
+                            <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isSemesterDropdownOpen ? "rotate-180" : ""}`} />
+                        </button>
+
+                        {isSemesterDropdownOpen && (
+                            <div className="absolute z-[100] w-full mt-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-xl max-h-60 overflow-y-auto p-1">
+                                {semesters.map(sem => (
+                                    <button
+                                        key={sem}
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedSemester(sem);
+                                            setIsSemesterDropdownOpen(false);
+                                        }}
+                                        className={`w-full text-left px-4 py-2 rounded-md transition-colors flex items-center justify-between ${selectedSemester === sem ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-zinc-800"
+                                            }`}
+                                    >
+                                        <span>Semester {sem}</span>
+                                        {selectedSemester === sem && <CheckCircle className="h-4 w-4" />}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+
                     <div>
                         <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Description</label>
                         <textarea

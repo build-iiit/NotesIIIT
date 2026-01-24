@@ -28,6 +28,7 @@ model User {
   views         View[]
   folders       Folder[]
   bookmarks     Bookmark[]
+  annotations   Annotation[]
 
   role          Role      @default(USER)
 
@@ -107,10 +108,18 @@ model Note {
   folderId    String?
   folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
+  // Course Relation
+  courseId    String?
+  course      Course?  @relation(fields: [courseId], references: [id])
+  
+  // Metadata
+  semester    String?  // e.g., "1-1", "1-2", "2-1"...
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([authorId])
+  @@index([courseId])
   @@index([createdAt])
   @@index([folderId])
 }
@@ -134,6 +143,23 @@ model Folder {
   @@unique([userId, parentId, name]) // Unique folder names within the same parent/root
   @@index([userId])
   @@index([parentId])
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Linear Algebra"
+  code        String   // e.g., "MA101"
+  branch      String   // e.g., "CSE", "ECE", "MTH" (Group key)
+  
+  description String?
+  
+  notes       Note[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([code])     // Course codes should be unique
+  @@index([branch])
 }
 
 model NoteVersion {
@@ -166,6 +192,7 @@ model Page {
   // Explicit Relations for Page-Level Interactivity
   votes         Vote[]
   comments      Comment[]
+  annotations   Annotation[]
 
   @@unique([versionId, number]) // One record per page number per version
   @@index([versionId])
@@ -271,3 +298,27 @@ model Bookmark {
   @@index([noteId])
 }
 
+
+model Annotation {
+  id        String   @id @default(cuid())
+  
+  // Content: Array of Stroke objects and TextNote objects
+  // Stroke: { points: {x,y}[], color: string, type: 'pen'|'highlighter', width: number }
+  // TextNote: { id: string, x: number, y: number, content: string, color: string, ... }
+  // Points are stored in 0-1 coordinate space relative to page size
+  content   Json     
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, pageId]) // One annotation record per user per page
+  @@index([pageId])
+  @@index([userId])
+}
