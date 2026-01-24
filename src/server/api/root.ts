@@ -5,6 +5,7 @@ import { versionsRouter } from "@/server/api/routers/versions";
 import { votesRouter } from "@/server/api/routers/votes";
 import { commentsRouter } from "@/server/api/routers/comments";
 import { leaderboardsRouter } from "@/server/api/routers/leaderboards";
+import { foldersRouter } from "@/server/api/routers/folders";
 import { adminRouter } from "@/server/api/routers/admin";
 import { bookmarksRouter } from "@/server/api/routers/bookmarks";
 
@@ -20,6 +21,7 @@ export const appRouter = createTRPCRouter({
     votes: votesRouter,
     comments: commentsRouter,
     leaderboards: leaderboardsRouter,
+    folders: foldersRouter,
     admin: adminRouter,
     bookmarks: bookmarksRouter,
 });

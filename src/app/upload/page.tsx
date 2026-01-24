@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
+import { Folder } from "lucide-react";
 import { Upload, FileText, X, CheckCircle, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -13,11 +14,13 @@ export default function UploadPage() {
     const [file, setFile] = useState<File | null>(null);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
+    const [folderId, setFolderId] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadStep, setUploadStep] = useState<UploadStep>("idle");
     const [uploadProgress, setUploadProgress] = useState(0);
     const [dragActive, setDragActive] = useState(false);
 
+    const { data: allFolders } = api.folders.getAll.useQuery({});
     const getUploadUrlMutation = api.notes.getUploadUrl.useMutation();
     const createNoteMutation = api.notes.create.useMutation();
 
@@ -107,6 +110,7 @@ export default function UploadPage() {
                 title,
                 description,
                 s3Key,
+                folderId: folderId || undefined,
             });
             console.log("Step 3 Success: Note created");
             setUploadProgress(100);
@@ -142,77 +146,53 @@ export default function UploadPage() {
         }
     };
 
-    return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 py-12 px-4 sm:px-6 lg:px-8 relative dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 transition-colors duration-500">
-            {/* Theme Toggle */}
-            <div className="absolute top-4 right-4">
-                <ThemeToggle className="text-white hover:bg-white/20" />
-            </div>
+    return 
+        <div className="max-w-xl mx-auto p-8">
+            {/* Sunset Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-400/15 via-pink-500/15 to-purple-600/15 rounded-xl -z-10" />
 
-            {/* Back to Home */}
-            <div className="absolute top-4 left-4">
-                <button
-                    onClick={() => router.push("/")}
-                    className="text-white hover:bg-white/20 px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium"
-                >
-                    ← Back to Home
-                </button>
-            </div>
-
-            {/* Background decorations */}
-            <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-            <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-            <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-
-            <div className="w-full max-w-2xl mx-auto relative z-10">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <div className="bg-white/20 p-4 rounded-full mb-4 shadow-lg backdrop-blur-sm border border-white/30 inline-block">
-                        <Upload className="h-10 w-10 text-white" />
+            {/* Layered Glass Container - iOS Style */}
+            <div className="relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.12] via-white/[0.06] to-white/[0.12] dark:from-black/15 dark:via-black/10 dark:to-black/15 rounded-3xl shadow-[0_16px_48px_0_rgba(0,0,0,0.15)] dark:shadow-[0_16px_48px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/15 p-8">
+                {/* Inner glass layer */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/8 to-transparent pointer-events-none" />
+                <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">Upload Note</h1>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Title</label>
+                        <input
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            required
+                            className="w-full px-4 py-3 rounded-xl backdrop-blur-2xl bg-white/30 dark:bg-black/20 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all shadow-inner"
+                            placeholder="Enter note title"
+                        />
                     </div>
-                    <h1 className="text-4xl font-extrabold text-white drop-shadow-md tracking-tight">
-                        Upload Note
-                    </h1>
-                    <p className="mt-2 text-lg text-white/90 font-medium">
-                        Share your knowledge with the community
-                    </p>
-                </div>
-
-                {/* Main Card */}
-                <div className="bg-white/10 backdrop-blur-lg border border-white/20 py-8 px-6 sm:px-10 shadow-2xl rounded-xl relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                    <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-                        {/* Title Input */}
-                        <div>
-                            <label className="block text-sm font-semibold text-white mb-2">
-                                Title *
-                            </label>
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                                placeholder="e.g., Linear Algebra Lecture Notes"
-                                className="w-full bg-white/10 border border-white/20 text-white placeholder-white/50 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200 backdrop-blur-sm"
-                            />
-                        </div>
-
-                        {/* Description Input */}
-                        <div>
-                            <label className="block text-sm font-semibold text-white mb-2">
-                                Description
-                            </label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Add a brief description of the notes..."
-                                rows={3}
-                                className="w-full bg-white/10 border border-white/20 text-white placeholder-white/50 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all duration-200 backdrop-blur-sm resize-none"
-                            />
-                        </div>
-
-                        {/* File Upload Zone */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Description</label>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 min-h-[100px] transition-all"
+                            placeholder="Add a description (optional)"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-800 dark:text-gray-200">Folder (Optional)</label>
+                        <select
+                            value={folderId || ""}
+                            onChange={(e) => setFolderId(e.target.value || null)}
+                            className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white transition-all"
+                        >
+                            <option value="">No Folder (Root)</option>
+                            {allFolders && (allFolders as any).folders?.map((folder: any) => (
+                                <option key={folder.id} value={folder.id}>
+                                    {folder.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                   {/* File Upload Zone */}
                         <div>
                             <label className="block text-sm font-semibold text-white mb-2">
                                 PDF File *

@@ -57,11 +57,11 @@ export function UserNotesGrid({ notes, userName }: UserNotesGridProps) {
 
                             {/* Stats overlay */}
                             <div className="absolute bottom-3 right-3 flex gap-2">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/30">
                                     <Eye className="h-3 w-3 text-white" />
                                     <span className="text-xs font-medium text-white">{note.viewCount}</span>
                                 </div>
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/30">
                                     <ThumbsUp className="h-3 w-3 text-white" />
                                     <span className="text-xs font-medium text-white">{note.voteScore}</span>
                                 </div>

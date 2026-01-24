@@ -91,6 +91,7 @@ export const notesRouter = createTRPCRouter({
                 title: z.string().min(1),
                 description: z.string().optional(),
                 s3Key: z.string(),
+                folderId: z.string().optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -100,6 +101,7 @@ export const notesRouter = createTRPCRouter({
                         title: input.title,
                         description: input.description,
                         authorId: ctx.session.user.id,
+                        folderId: input.folderId ?? undefined,
                         versions: {
                             create: { version: 1, s3Key: input.s3Key },
                         },
