@@ -104,10 +104,11 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
             {s3Url && (
                 <FullPageNoteViewer
                     url={s3Url}
-                    initialPage={pageNum}
+                    initialPage={1}
                     isOpen={isFullPageOpen}
                     onClose={() => setIsFullPageOpen(false)}
                     noteTitle={note.title}
+                    versionId={note.currentVersionId || ""}
                 />
             )}
         </>
