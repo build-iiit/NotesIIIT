@@ -80,6 +80,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     pageNum={pageNum}
                                     onPageChange={setPageNum}
                                     noteId={note?.id}
+                                    versionId={currentVersion?.id}
                                 />
                             ) : (
                                 <div className="p-8 border text-center text-red-500">

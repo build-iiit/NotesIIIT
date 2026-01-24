@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import { v4 as uuidv4 } from "uuid";
 import {
     X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info,
-    Pen, Eraser, RotateCcw, Highlighter
+    Pen, Eraser, RotateCcw, Highlighter, Type, ChevronDown, ChevronUp
 } from "lucide-react";
 import { api } from "@/app/_trpc/client";
+import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
+import { TextNoteOverlay } from "./annotations/TextNoteOverlay";
 
 // Set worker URL to the CDN matching the installed version
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs`;
@@ -21,18 +24,8 @@ interface FullPageNoteViewerProps {
 }
 
 type ZoomMode = "fit-width" | "fit-height" | "custom";
-type Tool = "pen" | "eraser" | "highlighter";
+type Tool = "pen" | "eraser" | "highlighter" | "text";
 
-interface Point {
-    x: number; // 0-1 relative to page width
-    y: number; // 0-1 relative to page height
-}
-
-interface Stroke {
-    points: Point[];
-    color: string;
-    type: "pen" | "highlighter";
-}
 
 const COLORS = [
     { name: "Black", value: "#000000" },
@@ -49,6 +42,18 @@ const HIGHLIGHT_COLORS = [
     { name: "Blue", value: "rgba(33, 150, 243, 0.3)" },
     { name: "Orange", value: "rgba(255, 152, 0, 0.3)" },
 ];
+
+const TEXT_COLORS = [
+    { name: "Black", value: "#000000" },
+    { name: "Blue", value: "#2563eb" },
+    { name: "Red", value: "#dc2626" },
+    { name: "Green", value: "#16a34a" },
+    { name: "Purple", value: "#9333ea" },
+    { name: "Orange", value: "#ea580c" },
+];
+
+const FONT_SIZES = [12, 14, 16, 18, 20, 24];
+
 
 export function FullPageNoteViewer({
     url,
@@ -90,6 +95,17 @@ export function FullPageNoteViewer({
     const [showSavePrompt, setShowSavePrompt] = useState(false);
     const [isErasing, setIsErasing] = useState(false);
 
+    // Text Note State
+    const [textNotes, setTextNotes] = useState<Record<number, TextNote[]>>({});
+    const [editingNote, setEditingNote] = useState<{ pageNum: number; noteId: string } | null>(null);
+    const [textColor, setTextColor] = useState(TEXT_COLORS[0].value);
+    const [textBold, setTextBold] = useState(false);
+    const [textItalic, setTextItalic] = useState(false);
+    const [textUnderline, setTextUnderline] = useState(false);
+    const [textFontSize, setTextFontSize] = useState(14);
+    const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+    const textColorPickerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     // API Hooks
     const utils = api.useUtils();
     const { data: savedAnnotations } = api.notes.getAnnotations.useQuery(
@@ -105,7 +121,23 @@ export function FullPageNoteViewer({
     // Load annotations from DB when opened
     useEffect(() => {
         if (savedAnnotations) {
-            setAnnotations(savedAnnotations as unknown as Record<number, Stroke[]>);
+            const parsed = savedAnnotations as unknown as Record<number, PageAnnotations>;
+
+            // Extract strokes
+            const strokesData: Record<number, Stroke[]> = {};
+            const textNotesData: Record<number, TextNote[]> = {};
+
+            Object.entries(parsed).forEach(([pageNum, data]) => {
+                if (data.strokes) {
+                    strokesData[parseInt(pageNum)] = data.strokes;
+                }
+                if (data.textNotes) {
+                    textNotesData[parseInt(pageNum)] = data.textNotes;
+                }
+            });
+
+            setAnnotations(strokesData);
+            setTextNotes(textNotesData);
             setUnsavedChanges(false);
             setHistory({});
             setFuture({});
@@ -337,6 +369,8 @@ export function FullPageNoteViewer({
             setIsErasing(true);
             addToHistory(pageNum); // Save state before erasing session
             performErase(point);
+        } else if (tool === 'text') {
+            handleCanvasClick(e);
         }
     };
 
@@ -423,6 +457,102 @@ export function FullPageNoteViewer({
         }
     };
 
+    const handleSaveTextNote = (id: string, content: string) => {
+        if (!content.trim()) {
+            handleDeleteTextNote(id);
+            return;
+        }
+
+        setTextNotes(prev => ({
+            ...prev,
+            [pageNum]: (prev[pageNum] || []).map(note =>
+                note.id === id ? { ...note, content, updatedAt: Date.now() } : note
+            )
+        }));
+        setEditingNote(null);
+        setUnsavedChanges(true);
+    };
+
+    const handleCancelTextNote = (id: string) => {
+        const note = textNotes[pageNum]?.find(n => n.id === id);
+        if (note && !note.content.trim()) {
+            handleDeleteTextNote(id);
+        }
+        setEditingNote(null);
+    };
+
+    const handleDeleteTextNote = (id: string) => {
+        setTextNotes(prev => ({
+            ...prev,
+            [pageNum]: (prev[pageNum] || []).filter(note => note.id !== id)
+        }));
+        setUnsavedChanges(true);
+    };
+
+    const handleToggleCollapse = (id: string) => {
+        setTextNotes(prev => ({
+            ...prev,
+            [pageNum]: (prev[pageNum] || []).map(note =>
+                note.id === id ? { ...note, collapsed: !note.collapsed } : note
+            )
+        }));
+        setUnsavedChanges(true);
+    };
+
+    const handleUpdateTextNote = (id: string, updates: Partial<TextNote>) => {
+        setTextNotes(prev => ({
+            ...prev,
+            [pageNum]: (prev[pageNum] || []).map(note =>
+                note.id === id ? { ...note, ...updates, updatedAt: Date.now() } : note
+            )
+        }));
+        setUnsavedChanges(true);
+    };
+
+    const handleCanvasClick = (e: React.PointerEvent) => {
+        if (tool !== 'text') return;
+
+        // If already editing, auto-save the current one if it has content, then move on
+        if (editingNote) {
+            const currentNote = textNotes[editingNote.pageNum]?.find(n => n.id === editingNote.noteId);
+            if (currentNote && !currentNote.content.trim()) {
+                // If current is empty, just remove it before adding new one
+                setTextNotes(prev => ({
+                    ...prev,
+                    [editingNote.pageNum]: (prev[editingNote.pageNum] || []).filter(n => n.id !== editingNote.noteId)
+                }));
+            }
+            // Clear editing state for now (we'll start a new one)
+            setEditingNote(null);
+        }
+
+        const point = getPoint(e);
+        if (!point) return;
+
+        const newNote: TextNote = {
+            id: uuidv4(),
+            x: point.x,
+            y: point.y,
+            content: "",
+            color: textColor,
+            bold: textBold,
+            italic: textItalic,
+            underline: textUnderline,
+            width: 0.3, // 30% of page width default
+            fontSize: textFontSize,
+            collapsed: false,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        };
+
+        setTextNotes(prev => ({
+            ...prev,
+            [pageNum]: [...(prev[pageNum] || []), newNote]
+        }));
+        setEditingNote({ pageNum, noteId: newNote.id });
+        setUnsavedChanges(true); // Crucial fix: Mark changes as unsaved immediately
+    };
+
     // -------------------------------------------------------------------------
     // CLOSE LOGIC
     // -------------------------------------------------------------------------
@@ -438,13 +568,23 @@ export function FullPageNoteViewer({
     const handleSaveExit = async () => {
         if (!versionId) return;
 
-        const promises = Object.entries(annotations).map(([pNum, content]) =>
-            saveMutation.mutateAsync({
+        // Get all unique page numbers from both annotations and textNotes
+        const allPages = new Set([
+            ...Object.keys(annotations),
+            ...Object.keys(textNotes)
+        ]);
+
+        const promises = Array.from(allPages).map(pNum => {
+            const pageNum = parseInt(pNum);
+            return saveMutation.mutateAsync({
                 versionId,
-                pageNumber: parseInt(pNum),
-                content: content as any
-            })
-        );
+                pageNumber: pageNum,
+                content: {
+                    strokes: annotations[pageNum] || [],
+                    textNotes: textNotes[pageNum] || []
+                }
+            });
+        });
         await Promise.all(promises);
         setUnsavedChanges(false);
         utils.notes.getAnnotations.invalidate({ versionId });
@@ -455,11 +595,22 @@ export function FullPageNoteViewer({
     const handleDiscardExit = () => {
         setShowSavePrompt(false);
         setUnsavedChanges(false);
-        // CRITICAL FIX: Revert local state to matches saved state so changes don't persist in memory
+        // CRITICAL FIX: Revert local state to match saved state so changes don't persist in memory
         if (savedAnnotations) {
-            setAnnotations(savedAnnotations as unknown as Record<number, Stroke[]>);
+            const parsed = savedAnnotations as unknown as Record<number, PageAnnotations>;
+            const strokesData: Record<number, Stroke[]> = {};
+            const textNotesData: Record<number, TextNote[]> = {};
+
+            Object.entries(parsed).forEach(([pageNum, data]) => {
+                if (data.strokes) strokesData[parseInt(pageNum)] = data.strokes;
+                if (data.textNotes) textNotesData[parseInt(pageNum)] = data.textNotes;
+            });
+
+            setAnnotations(strokesData);
+            setTextNotes(textNotesData);
         } else {
             setAnnotations({});
+            setTextNotes({});
         }
         setHistory({});
         setFuture({});
@@ -552,12 +703,28 @@ export function FullPageNoteViewer({
                         <canvas ref={canvasRef} className="block" />
                         <canvas
                             ref={annotationCanvasRef}
-                            className={`absolute inset-0 z-10 touch-none ${tool === "eraser" ? "cursor-no-drop" : "cursor-crosshair"}`}
+                            className={`absolute inset-0 z-10 touch-none ${tool === "eraser" ? "cursor-no-drop" : tool === "text" ? "cursor-text" : "cursor-crosshair"}`}
                             onPointerDown={handlePointerDown}
                             onPointerMove={handlePointerMove}
                             onPointerUp={handlePointerUp}
                             onPointerLeave={handlePointerUp}
                         />
+
+                        {/* Text Notes Overlay */}
+                        {viewportDimensions && textNotes[pageNum]?.map(note => (
+                            <TextNoteOverlay
+                                key={note.id}
+                                note={note}
+                                viewportDimensions={viewportDimensions}
+                                isEditing={editingNote?.noteId === note.id}
+                                onSave={handleSaveTextNote}
+                                onUpdate={handleUpdateTextNote}
+                                onCancel={handleCancelTextNote}
+                                onClick={(id) => setEditingNote({ pageNum, noteId: id })}
+                                onDelete={handleDeleteTextNote}
+                                onToggleCollapse={handleToggleCollapse}
+                            />
+                        ))}
                     </div>
                 )}
             </div>
@@ -639,6 +806,15 @@ export function FullPageNoteViewer({
                             </div>
                         </div>
 
+                        {/* Text Tool */}
+                        <button
+                            onClick={() => setTool("text")}
+                            className={`p-2 rounded-lg transition-all ${tool === "text" ? "bg-green-600 text-white" : "text-white/70 hover:bg-white/10"}`}
+                            title="Text Note Tool"
+                        >
+                            <Type className="w-5 h-5" />
+                        </button>
+
                         {/* Eraser */}
                         <button
                             onClick={() => setTool("eraser")}
@@ -649,10 +825,101 @@ export function FullPageNoteViewer({
 
                         <div
                             className="w-6 h-6 rounded-full border border-white/20 ml-2"
-                            style={{ backgroundColor: tool === "highlighter" ? highlightColor : penColor }}
-                            title={tool === "highlighter" ? "Current Highlight Color" : "Current Pen Color"}
+                            style={{
+                                backgroundColor: tool === "highlighter" ? highlightColor :
+                                    tool === "text" ? textColor : penColor
+                            }}
+                            title={
+                                tool === "highlighter" ? "Current Highlight Color" :
+                                    tool === "text" ? "Current Text Color" : "Current Pen Color"
+                            }
                         />
                     </div>
+
+                    {/* Text Formatting Toolbar (shown when text tool active) */}
+                    {tool === "text" && (
+                        <div className="flex items-center gap-2 px-2 border-l border-white/10">
+                            {/* Font Size */}
+                            <select
+                                value={textFontSize}
+                                onChange={(e) => {
+                                    const newSize = parseInt(e.target.value);
+                                    setTextFontSize(newSize);
+                                    if (editingNote) {
+                                        handleUpdateTextNote(editingNote.noteId, { fontSize: newSize });
+                                    }
+                                }}
+                                className="px-2 py-1 bg-zinc-800 text-white rounded text-sm border border-white/10"
+                            >
+                                {FONT_SIZES.map(size => (
+                                    <option key={size} value={size}>{size}px</option>
+                                ))}
+                            </select>
+
+                            {/* Bold */}
+                            <button
+                                onClick={() => {
+                                    const newBold = !textBold;
+                                    setTextBold(newBold);
+                                    if (editingNote) {
+                                        handleUpdateTextNote(editingNote.noteId, { bold: newBold });
+                                    }
+                                }}
+                                className={`px-2 py-1 rounded font-bold ${textBold ? "bg-blue-600 text-white" : "text-white/70 hover:bg-white/10"}`}
+                                title="Bold"
+                            >
+                                B
+                            </button>
+
+                            {/* Italic */}
+                            <button
+                                onClick={() => {
+                                    const newItalic = !textItalic;
+                                    setTextItalic(newItalic);
+                                    if (editingNote) {
+                                        handleUpdateTextNote(editingNote.noteId, { italic: newItalic });
+                                    }
+                                }}
+                                className={`px-2 py-1 rounded italic ${textItalic ? "bg-blue-600 text-white" : "text-white/70 hover:bg-white/10"}`}
+                                title="Italic"
+                            >
+                                I
+                            </button>
+
+                            {/* Underline */}
+                            <button
+                                onClick={() => {
+                                    const newUnderline = !textUnderline;
+                                    setTextUnderline(newUnderline);
+                                    if (editingNote) {
+                                        handleUpdateTextNote(editingNote.noteId, { underline: newUnderline });
+                                    }
+                                }}
+                                className={`px-2 py-1 rounded underline ${textUnderline ? "bg-blue-600 text-white" : "text-white/70 hover:bg-white/10"}`}
+                                title="Underline"
+                            >
+                                U
+                            </button>
+
+                            {/* Color Picker */}
+                            <div className="flex gap-1 ml-2">
+                                {TEXT_COLORS.map(c => (
+                                    <button
+                                        key={c.name}
+                                        onClick={() => {
+                                            setTextColor(c.value);
+                                            if (editingNote) {
+                                                handleUpdateTextNote(editingNote.noteId, { color: c.value });
+                                            }
+                                        }}
+                                        className={`w-5 h-5 rounded-full border-2 ${textColor === c.value ? "border-white" : "border-transparent"} hover:scale-110 transition-transform`}
+                                        style={{ backgroundColor: c.value }}
+                                        title={c.name}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Zoom */}
                     <div className="flex items-center gap-1 px-2">
