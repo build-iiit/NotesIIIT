@@ -103,7 +103,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                         throw new Error('Failed to upload avatar image');
                     }
                     newAvatarKey = s3Key;
-                } catch (err) {
+                } catch {
                     setError('Failed to upload profile photo. Please try again.');
                     setIsSaving(false);
                     return;
@@ -129,7 +129,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                         throw new Error('Failed to upload background image');
                     }
                     newBackgroundKey = s3Key;
-                } catch (err) {
+                } catch {
                     setError('Failed to upload background image. Please try again.');
                     setIsSaving(false);
                     return;
@@ -146,7 +146,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
 
                 router.refresh();
                 onClose();
-            } catch (err) {
+            } catch {
                 setError('Failed to save profile changes. Please try again.');
                 setIsSaving(false);
             }

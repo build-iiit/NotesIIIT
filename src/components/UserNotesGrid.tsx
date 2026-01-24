@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FileText, Eye, ThumbsUp, Calendar } from "lucide-react";
 
-interface Note {
+export interface Note {
     id: string;
     title: string;
     description: string | null;

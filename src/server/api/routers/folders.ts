@@ -79,7 +79,7 @@ export const foldersRouter = createTRPCRouter({
             let currentId: string | null = input.folderId;
 
             while (currentId) {
-                const folder: any = await ctx.prisma.folder.findUnique({
+                const folder = await ctx.prisma.folder.findUnique({
                     where: { id: currentId }
                 });
 

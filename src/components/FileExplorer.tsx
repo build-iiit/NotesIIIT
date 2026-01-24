@@ -5,18 +5,12 @@ import { useState } from "react";
 import { Folder, FileText, ChevronRight, FolderPlus, Trash2, ArrowLeft } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
-interface FileExplorerProps {
-    userId: string;
-}
-
-export function FileExplorer({ userId }: FileExplorerProps) {
+export function FileExplorer() {
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
 
-    const router = useRouter();
     const utils = api.useUtils();
 
     // Data fetching

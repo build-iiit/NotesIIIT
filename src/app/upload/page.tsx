@@ -3,9 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
-import { Folder } from "lucide-react";
 import { Upload, FileText, X, CheckCircle, Loader2 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 type UploadStep = "idle" | "getting-url" | "uploading" | "creating-record" | "complete";
 
@@ -185,7 +183,7 @@ export default function UploadPage() {
                             className="w-full px-4 py-3 rounded-lg backdrop-blur-md bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white transition-all"
                         >
                             <option value="">No Folder (Root)</option>
-                            {allFolders && (allFolders as any).folders?.map((folder: any) => (
+                            {allFolders && (allFolders as { folders: { id: string; name: string }[] }).folders?.map((folder) => (
                                 <option key={folder.id} value={folder.id}>
                                     {folder.name}
                                 </option>

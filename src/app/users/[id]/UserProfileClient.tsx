@@ -2,11 +2,13 @@
 
 import { UserStatsCard } from "@/components/UserStatsCard";
 import { UserNotesGrid } from "@/components/UserNotesGrid";
+import { type Note } from "@/components/UserNotesGrid";
 import { FileExplorer } from "@/components/FileExplorer";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FileText, Eye, TrendingUp, Trophy, Award, Sparkles, Medal, Edit } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+
 
 
 interface Badge {
@@ -15,7 +17,7 @@ interface Badge {
     color: string;
 }
 
-const ICON_MAP: Record<string, any> = {
+const ICON_MAP: Record<string, React.ElementType> = {
     Sparkles,
     Award,
     Trophy,
@@ -23,14 +25,28 @@ const ICON_MAP: Record<string, any> = {
     TrendingUp
 };
 
+interface UserProfile {
+    id: string;
+    name: string | null;
+    image: string | null;
+    backgroundImage: string | null;
+    createdAt: Date | string;
+    _count: {
+        notes: number;
+    };
+    totalViews: number;
+    totalKarma: number;
+    rank: number;
+    notes: Note[];
+}
+
 interface UserProfileClientProps {
-    user: any; // Using any for simplicity as it matches the trpc return type
+    user: UserProfile;
     achievements: Badge[];
-    currentUserId?: string;
     isOwnProfile: boolean;
 }
 
-export function UserProfileClient({ user, achievements, currentUserId, isOwnProfile }: UserProfileClientProps) {
+export function UserProfileClient({ user, achievements, isOwnProfile }: UserProfileClientProps) {
     const [isEditOpen, setIsEditOpen] = useState(false);
 
     return (

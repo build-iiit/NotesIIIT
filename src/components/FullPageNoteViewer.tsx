@@ -65,7 +65,7 @@ export function FullPageNoteViewer({
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsAnimatingIn(true);
         } else {
-             
+
             setIsAnimatingIn(false);
         }
     }, [isOpen]);
@@ -93,7 +93,7 @@ export function FullPageNoteViewer({
                 return;
             }
 
-            setScale(Math.max(0.5, Math.min(newScale, 3.0))); // Clamp between 0.5 and 3.0
+            setScale(Math.max(0.5, Math.min(newScale, 5.0))); // Clamp between 0.5 and 5.0
         } catch (e) {
             console.error("Error updating scale:", e);
         }
@@ -204,7 +204,7 @@ export function FullPageNoteViewer({
 
     const handleZoomIn = useCallback(() => {
         setZoomMode("custom");
-        setScale((prev) => Math.min(prev + 0.2, 3.0));
+        setScale((prev) => Math.min(prev + 0.2, 5.0));
     }, []);
 
     const handleZoomOut = useCallback(() => {
@@ -352,7 +352,7 @@ export function FullPageNoteViewer({
                 {!loading && !error && (
                     <div className="flex flex-col items-center gap-4">
                         <div className="shadow-2xl rounded-lg overflow-hidden bg-white">
-                            <canvas ref={canvasRef} className="max-w-full" />
+                            <canvas ref={canvasRef} />
                         </div>
                     </div>
                 )}
