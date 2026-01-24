@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
 import { Upload, FileText, X, CheckCircle, Loader2, Search } from "lucide-react";
@@ -23,6 +23,22 @@ export default function UploadPage() {
     const [selectedSemester, setSelectedSemester] = useState<string>(""); // New Semester State
     const [courseSearch, setCourseSearch] = useState("");
     const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
+
+    // Ref for click outside
+    const courseDropdownRef = useRef<HTMLDivElement>(null);
+
+    // Click Outside Handler
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
+                setIsCourseDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     // Semester Options
     const semesters = [
@@ -216,7 +232,7 @@ export default function UploadPage() {
                         </div>
 
                         {/* Course Selector (Searchable) */}
-                        <div className="relative">
+                        <div className="relative" ref={courseDropdownRef}>
                             <label className="block text-sm font-semibold text-gray-200 mb-2">
                                 Course
                             </label>
@@ -232,7 +248,6 @@ export default function UploadPage() {
                                             setIsCourseDropdownOpen(true);
                                         }}
                                         onFocus={() => setIsCourseDropdownOpen(true)}
-                                        // onBlur={() => setTimeout(() => setIsCourseDropdownOpen(false), 200)} // Delay to allow click
                                         placeholder="Search for a course (e.g., CS1.201, Data Structures)..."
                                         className="w-full bg-transparent text-white placeholder-gray-500 px-4 py-3 focus:outline-none"
                                     />
@@ -267,8 +282,7 @@ export default function UploadPage() {
                                                 <button
                                                     key={course.id}
                                                     type="button"
-                                                    onMouseDown={(e) => {
-                                                        e.preventDefault(); // Prevent blur
+                                                    onClick={() => {
                                                         setSelectedCourseId(course.id);
                                                         setCourseSearch(`${course.code} - ${course.name}`);
                                                         setIsCourseDropdownOpen(false);
