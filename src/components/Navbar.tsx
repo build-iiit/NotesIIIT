@@ -40,14 +40,14 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
             {/* Frosted glass overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+                <div className="flex items-center justify-between h-16 gap-4">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2 group">
+                    <Link href="/" className="flex items-center gap-2 group shrink-0">
                         <div className="relative">
                             <BookOpen className="h-8 w-8 text-orange-500 dark:text-orange-400 transition-transform group-hover:rotate-12 duration-300 drop-shadow-lg" />
                             <div className="absolute inset-0 bg-orange-500/30 blur-xl group-hover:bg-orange-500/50 transition-all duration-300 rounded-full" />
                         </div>
-                        <span className="text-xl font-bold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent drop-shadow">
+                        <span className="text-xl font-bold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent drop-shadow hidden sm:block">
                             NotesIIIT
                         </span>
                     </Link>
@@ -125,7 +125,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                     {/* Mobile menu button */}
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="md:hidden p-2 rounded-lg backdrop-blur-sm bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 transition-colors border border-white/20"
+                        className="md:hidden p-2 rounded-lg backdrop-blur-sm bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 transition-colors border border-white/20 ml-auto"
                         aria-label="Toggle menu"
                     >
                         {mobileMenuOpen ? (

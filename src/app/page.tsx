@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { NotesFeed } from "@/components/NotesFeed";
 import { prisma as db } from "@/lib/prisma";
 import { HomeFolderGrid } from "@/components/HomeFolderGrid";
+import { TrendingNotes } from "@/components/TrendingNotes";
 
 export default async function Home() {
   const session = await auth();
@@ -62,6 +63,9 @@ export default async function Home() {
               <HomeFolderGrid folders={userFolders} />
             </div>
           )}
+
+          {/* Trending Notes */}
+          <TrendingNotes />
 
           {/* Notes Feed */}
           <div className="w-full max-w-6xl">

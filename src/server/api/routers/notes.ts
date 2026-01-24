@@ -13,16 +13,26 @@ export const notesRouter = createTRPCRouter({
             z.object({
                 limit: z.number().min(1).max(100).default(20),
                 cursor: z.string().nullish(), // For infinite scroll
+                search: z.string().optional(),
             }).optional()
         )
         .query(async ({ ctx, input }) => {
             const limit = input?.limit ?? 20;
             const cursor = input?.cursor;
+            const search = input?.search;
 
             const items = await ctx.prisma.note.findMany({
                 take: limit + 1,
                 cursor: cursor ? { id: cursor } : undefined,
-                where: { isPublic: true },
+                where: {
+                    isPublic: true,
+                    AND: search ? {
+                        OR: [
+                            { title: { contains: search, mode: "insensitive" } },
+                            { author: { name: { contains: search, mode: "insensitive" } } },
+                        ]
+                    } : undefined,
+                },
                 orderBy: { createdAt: "desc" },
                 include: { author: true },
             });
@@ -34,6 +44,20 @@ export const notesRouter = createTRPCRouter({
             }
 
             return { items, nextCursor };
+        }),
+
+    /**
+     * Get trending notes (most viewed).
+     * Auth: Public
+     */
+    getTrending: publicProcedure
+        .query(async ({ ctx }) => {
+            return ctx.prisma.note.findMany({
+                take: 6,
+                where: { isPublic: true },
+                orderBy: { viewCount: "desc" },
+                include: { author: true },
+            });
         }),
 
     /**

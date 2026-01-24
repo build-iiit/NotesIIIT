@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { useInView } from "react-intersection-observer";
 
 export function NotesFeed() {
-    // Infinite query for pagination
     const {
         data,
         fetchNextPage,
@@ -32,7 +31,7 @@ export function NotesFeed() {
 
     const allNotes = data?.pages.flatMap((page) => page.items) ?? [];
 
-    if (allNotes.length === 0) {
+    if (allNotes.length === 0 && !isLoading) {
         return (
             <div className="text-center py-20 border-2 border-dashed rounded-xl">
                 <p className="text-gray-500 mb-4">No notes shared yet.</p>
