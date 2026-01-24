@@ -1,0 +1,16 @@
+
+> notes-platform@0.1.0 lint
+> eslint
+
+
+/home/ViniVici/Downloads/NotesIIIT/scripts/create-bucket.ts
+  13:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/ViniVici/Downloads/NotesIIIT/src/components/FileExplorer.tsx
+  8:10  warning  'useRouter' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/ViniVici/Downloads/NotesIIIT/src/server/utils/pdf.ts
+  47:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 3 problems (2 errors, 1 warning)
+

@@ -12,7 +12,7 @@ export const notesRouter = createTRPCRouter({
         .input(
             z.object({
                 limit: z.number().min(1).max(100).default(20),
-                cursor: z.string().nullish(), // For infinite scroll
+                cursor: z.string().nullish(),
             }).optional()
         )
         .query(async ({ ctx, input }) => {
@@ -37,8 +37,7 @@ export const notesRouter = createTRPCRouter({
         }),
 
     /**
-     * Get a single note by ID with its current version.
-     * Auth: Public
+     * Get a single note by ID with its current version and S3 URL.
      */
     getById: publicProcedure
         .input(z.object({ id: z.string() }))
@@ -50,13 +49,9 @@ export const notesRouter = createTRPCRouter({
 
             if (!note) return null;
 
-            // Security Check
             const isAuthor = ctx.session?.user?.id === note.authorId;
-            if (!note.isPublic && !isAuthor) {
-                return null;
-            }
+            if (!note.isPublic && !isAuthor) return null;
 
-            // Generate Signed URL
             let fileUrl = "";
             const currentVersion = note.versions.find(v => v.id === note.currentVersionId) || note.versions[0];
 
@@ -69,7 +64,6 @@ export const notesRouter = createTRPCRouter({
 
     /**
      * Generate S3 Upload URL.
-     * Auth: Protected
      */
     getUploadUrl: protectedProcedure
         .input(z.object({ filename: z.string(), contentType: z.string() }))
@@ -82,8 +76,7 @@ export const notesRouter = createTRPCRouter({
         }),
 
     /**
-     * Create a new note.
-     * Auth: Protected
+     * Create a new note with both Folder and Course context.
      */
     create: protectedProcedure
         .input(
@@ -123,117 +116,71 @@ export const notesRouter = createTRPCRouter({
         }),
 
     /**
-     * Delete a note.
-     * Auth: Author or Admin
-     */
-    delete: protectedProcedure
-        .input(z.object({ id: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
-            if (!note) return null;
-
-            if (note.authorId !== ctx.session.user.id && ctx.session.user.role !== "ADMIN") {
-                throw new Error("UNAUTHORIZED");
-            }
-
-            return ctx.prisma.note.delete({ where: { id: input.id } });
-        }),
-
-    /**
-     * Update note metadata.
-     * Auth: Author
+     * Update metadata: Combines Course/Semester (main) with Folder ownership (Feature).
      */
     update: protectedProcedure
         .input(z.object({
             id: z.string(),
             title: z.string().min(1),
             description: z.string().optional(),
+            folderId: z.string().nullable().optional(),
             courseId: z.string().optional(),
             semester: z.string().optional()
         }))
         .mutation(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
             if (!note) throw new Error("Note not found");
+            if (note.authorId !== ctx.session.user.id) throw new Error("UNAUTHORIZED");
 
-            if (note.authorId !== ctx.session.user.id) {
-                throw new Error("UNAUTHORIZED");
+            const updateData: any = {
+                title: input.title,
+                description: input.description,
+                courseId: input.courseId,
+                semester: input.semester
+            };
+
+            // Folder logic from Feature branch
+            if (input.folderId !== undefined) {
+                if (input.folderId !== null) {
+                    const folder = await ctx.prisma.folder.findUnique({ where: { id: input.folderId } });
+                    if (!folder || folder.userId !== ctx.session.user.id) {
+                        throw new Error("Folder not found or unauthorized");
+                    }
+                }
+                updateData.folderId = input.folderId;
             }
 
             return ctx.prisma.note.update({
                 where: { id: input.id },
-                data: {
-                    title: input.title,
-                    description: input.description,
-                    courseId: input.courseId,
-                    semester: input.semester
-                },
+                data: updateData,
             });
         }),
 
     /**
-     * Track a view on a note.
-     * Auth: Public (both authenticated and anonymous users can view)
+     * Move a note to a different folder.
      */
-    trackView: publicProcedure
-        .input(z.object({ noteId: z.string() }))
+    moveToFolder: protectedProcedure
+        .input(z.object({
+            noteId: z.string(),
+            folderId: z.string().nullable(),
+        }))
         .mutation(async ({ ctx, input }) => {
-            const userId = ctx.session?.user?.id;
+            const note = await ctx.prisma.note.findUnique({ where: { id: input.noteId } });
+            if (!note || note.authorId !== ctx.session.user.id) throw new Error("UNAUTHORIZED");
 
-            // Check if the note exists
-            const note = await ctx.prisma.note.findUnique({
+            if (input.folderId) {
+                const folder = await ctx.prisma.folder.findUnique({ where: { id: input.folderId } });
+                if (!folder || folder.userId !== ctx.session.user.id) throw new Error("UNAUTHORIZED");
+            }
+
+            return ctx.prisma.note.update({
                 where: { id: input.noteId },
+                data: { folderId: input.folderId },
             });
-
-            if (!note) {
-                throw new Error("Note not found");
-            }
-
-            // Only track if the viewer is not the author (to avoid self-inflation)
-            if (userId && userId === note.authorId) {
-                return { success: false, message: "Authors don't count views on their own notes" };
-            }
-
-            // Check if this user has already viewed this note recently (within last 24 hours)
-            // to prevent spam from refreshes
-            if (userId) {
-                const recentView = await ctx.prisma.view.findFirst({
-                    where: {
-                        noteId: input.noteId,
-                        userId: userId,
-                        createdAt: {
-                            gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 hours ago
-                        },
-                    },
-                });
-
-                if (recentView) {
-                    return { success: false, message: "View already counted recently" };
-                }
-            }
-
-            // Create a new view and increment the view count in a transaction
-            await ctx.prisma.$transaction([
-                ctx.prisma.view.create({
-                    data: {
-                        noteId: input.noteId,
-                        userId: userId || null,
-                    },
-                }),
-                ctx.prisma.note.update({
-                    where: { id: input.noteId },
-                    data: {
-                        viewCount: {
-                            increment: 1,
-                        },
-                    },
-                }),
-            ]);
-
-            return { success: true, message: "View tracked successfully" };
         }),
 
     /**
-     * Get annotations for a version.
+     * Annotation Features from Main branch.
      */
     getAnnotations: protectedProcedure
         .input(z.object({ versionId: z.string() }))
@@ -246,7 +193,6 @@ export const notesRouter = createTRPCRouter({
                 include: { page: true }
             });
 
-            // Map to [pageNum]: content
             const result: Record<number, any> = {};
             annotations.forEach(a => {
                 result[a.page.number] = a.content;
@@ -254,9 +200,6 @@ export const notesRouter = createTRPCRouter({
             return result;
         }),
 
-    /**
-     * Save annotation for a page.
-     */
     saveAnnotation: protectedProcedure
         .input(z.object({
             versionId: z.string(),
@@ -264,7 +207,6 @@ export const notesRouter = createTRPCRouter({
             content: z.any()
         }))
         .mutation(async ({ ctx, input }) => {
-            // Lazy create page
             let page = await ctx.prisma.page.findUnique({
                 where: { versionId_number: { versionId: input.versionId, number: input.pageNumber } }
             });
@@ -282,20 +224,50 @@ export const notesRouter = createTRPCRouter({
             }
 
             return ctx.prisma.annotation.upsert({
-                where: {
-                    userId_pageId: {
-                        userId: ctx.session.user.id,
-                        pageId: page.id
-                    }
-                },
-                create: {
-                    userId: ctx.session.user.id,
-                    pageId: page.id,
-                    content: input.content
-                },
-                update: {
-                    content: input.content
-                }
+                where: { userId_pageId: { userId: ctx.session.user.id, pageId: page.id } },
+                create: { userId: ctx.session.user.id, pageId: page.id, content: input.content },
+                update: { content: input.content }
             });
+        }),
+
+    trackView: publicProcedure
+        .input(z.object({ noteId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const userId = ctx.session?.user?.id;
+            const note = await ctx.prisma.note.findUnique({ where: { id: input.noteId } });
+            if (!note) throw new Error("Note not found");
+
+            if (userId === note.authorId) return { success: false };
+
+            if (userId) {
+                const recentView = await ctx.prisma.view.findFirst({
+                    where: {
+                        noteId: input.noteId,
+                        userId: userId,
+                        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+                    },
+                });
+                if (recentView) return { success: false };
+            }
+
+            await ctx.prisma.$transaction([
+                ctx.prisma.view.create({ data: { noteId: input.noteId, userId: userId || null } }),
+                ctx.prisma.note.update({
+                    where: { id: input.noteId },
+                    data: { viewCount: { increment: 1 } },
+                }),
+            ]);
+            return { success: true };
+        }),
+
+    delete: protectedProcedure
+        .input(z.object({ id: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
+            if (!note) return null;
+            if (note.authorId !== ctx.session.user.id && ctx.session.user.role !== "ADMIN") {
+                throw new Error("UNAUTHORIZED");
+            }
+            return ctx.prisma.note.delete({ where: { id: input.id } });
         }),
 });

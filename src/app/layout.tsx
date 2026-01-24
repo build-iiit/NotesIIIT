@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-orange-100 via-pink-50 to-purple-100 dark:from-gray-900 dark:via-purple-950/20 dark:to-orange-950/20 min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative overflow-x-hidden`}
       >
         <TRPCReactProvider>
           <NavbarWrapper />

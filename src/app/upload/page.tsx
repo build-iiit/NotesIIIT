@@ -1,37 +1,43 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { use, useState, useRef, useEffect } from "react";
 import { api } from "@/app/_trpc/client";
-import { Upload, FileText, X, CheckCircle, Loader2, Search } from "lucide-react";
-type UploadStep = "idle" | "getting-url" | "uploading" | "creating-record" | "complete";
+import { useRouter } from "next/navigation";
+import DeleteNoteButton from "@/components/DeleteNoteButton";
+import { Folder, Search, X, ChevronDown, CheckCircle, FileText, Upload, Loader2 } from "lucide-react";
 
-
-export default function UploadPage() {
+export default function EditNotePage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = use(params);
     const router = useRouter();
-    const [file, setFile] = useState<File | null>(null);
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const [uploadStep, setUploadStep] = useState<"idle" | "uploading" | "complete">("idle");
-    const [folderId, setFolderId] = useState<string | null>(null);
+
+    // --- DATA FETCHING ---
+    const [note] = api.notes.getById.useSuspenseQuery({ id });
+    const [currentUser] = api.auth.getMe.useSuspenseQuery();
+    const { data: folders } = api.folders.getAllFlat.useQuery(undefined, { enabled: !!currentUser });
+    const { data: courses } = api.course.getAll.useQuery();
+    
+    const updateNote = api.notes.update.useMutation();
+    const addVersion = api.versions.addVersion.useMutation();
+
+    // --- STATE MANAGEMENT ---
+    const [title, setTitle] = useState(note?.title || "");
+    const [description, setDescription] = useState(note?.description || "");
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(note?.folderId || null);
+    const [selectedCourseId, setSelectedCourseId] = useState<string>(note?.courseId || "");
+    const [selectedSemester, setSelectedSemester] = useState<string>(note?.semester || "");
+    
+    const [courseSearch, setCourseSearch] = useState(
+        note?.course ? `${note.course.code} - ${note.course.name}` : ""
+    );
+    
     const [uploading, setUploading] = useState(false);
-    //     const [uploadStep, setUploadStep] = useState<UploadStep>("idle");
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const [dragActive, setDragActive] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Course Selection State
-    const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-    const [selectedSemester, setSelectedSemester] = useState<string>(""); // New Semester State
-    const [courseSearch, setCourseSearch] = useState("");
     const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
+    const [isSemesterDropdownOpen, setIsSemesterDropdownOpen] = useState(false);
 
-    // Ref for click outside
     const courseDropdownRef = useRef<HTMLDivElement>(null);
-    const semesterDropdownRef = useRef<HTMLDivElement>(null); // New Ref
-    const [isSemesterDropdownOpen, setIsSemesterDropdownOpen] = useState(false); // New State
+    const semesterDropdownRef = useRef<HTMLDivElement>(null);
 
-    // Click Outside Handler
+    // --- EFFECTS ---
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (courseDropdownRef.current && !courseDropdownRef.current.contains(event.target as Node)) {
@@ -42,465 +48,234 @@ export default function UploadPage() {
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Semester Options
-    const semesters = [
-        "1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2", "5-1", "5-2"
-    ];
-
-    // Fetch courses
-    const { data: courses } = api.course.getAll.useQuery();
-
-    // Filter courses client-side for better UX
-    interface Course {
-        id: string;
-        name: string;
-        code: string;
-        branch: string;
-    }
-
-    const filteredCourses = courses?.filter((c: Course) =>
-        c.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
-        c.code.toLowerCase().includes(courseSearch.toLowerCase()) ||
-        c.branch.toLowerCase().includes(courseSearch.toLowerCase())
-    );
-
-    const createNoteMutation = api.notes.create.useMutation({
-        onSuccess: () => {
-            setUploadStep("complete");
-            setUploadProgress(100);
-            setTimeout(() => {
-                router.push("/");
-                router.refresh();
-            }, 1000);
-        },
-        onError: (err) => {
-            setError(err.message);
-            setUploadStep("idle");
-            setUploadProgress(0);
-        }
-    });
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
-            setError(null);
-        }
-    };
-
-    const handleDrag = (e: React.DragEvent) => {
+    // --- HANDLERS ---
+    const handleUpdateMetadata = async (e: React.FormEvent) => {
         e.preventDefault();
-        e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {
-            setDragActive(true);
-        } else if (e.type === "dragleave") {
-            setDragActive(false);
+        try {
+            await updateNote.mutateAsync({
+                id,
+                title,
+                description,
+                folderId: selectedFolderId,
+                courseId: selectedCourseId || undefined,
+                semester: selectedSemester || undefined
+            });
+            router.push(`/notes/${id}`);
+            router.refresh();
+        } catch (error) {
+            alert("Failed to update note metadata");
         }
     };
 
-    const handleDrop = async (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setDragActive(false);
-
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            const droppedFile = e.dataTransfer.files[0];
-            if (droppedFile.type === "application/pdf") {
-                setFile(droppedFile);
-                setError(null);
-            } else {
-                setError("Please upload a PDF file.");
-            }
-        }
-    };
-
-    const removeFile = () => {
-        setFile(null);
-        setError(null);
-    };
-
-    const formatFileSize = (bytes: number) => {
-        if (bytes === 0) return "0 Bytes";
-        const k = 1024;
-        const sizes = ["Bytes", "KB", "MB", "GB"];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!file || !title) {
-            setError("Title and PDF file are required.");
-            return;
-        }
+    const handleNewVersion = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
 
         try {
-            setError(null);
-            setUploadProgress(0);
-            setUploadStep("uploading");
-
-            // 1. Upload Locally (Bypass S3 for local dev)
-            setUploadProgress(10);
-            console.log("Step 1: Uploading locally...");
-
+            setUploading(true);
             const formData = new FormData();
             formData.append("file", file);
 
+            // 1. Upload to local API
             const uploadResponse = await fetch("/api/upload", {
                 method: "POST",
                 body: formData,
             });
 
-            if (!uploadResponse.ok) {
-                const errorData = await uploadResponse.json();
-                throw new Error(errorData.error || "Upload failed");
-            }
+            if (!uploadResponse.ok) throw new Error("Upload failed");
 
             const uploadResult = await uploadResponse.json();
-            const s3Key = uploadResult.key; // Using local path as "s3Key"
+            const s3Key = uploadResult.key;
 
-            console.log("Step 1 Success: Uploaded to", s3Key);
-            setUploadProgress(70);
-
-            // 2. Create Note Record
-            console.log("Step 2: Creating note record...");
-            await createNoteMutation.mutateAsync({
-                title,
-                description,
-
-                s3Key, // Pass the local path
-                courseId: selectedCourseId || undefined,
-                semester: selectedSemester || undefined,
-                folderId: folderId || undefined,
+            // 2. Add Version to Database
+            await addVersion.mutateAsync({
+                noteId: id,
+                s3Key: s3Key,
             });
-            console.log("Step 2 Success: Note created");
 
-        } catch (error: unknown) {
-            console.error("Upload failed:", error);
-            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-            setError(errorMessage);
-            setUploadStep("idle");
-            setUploadProgress(0);
+            alert("New version uploaded successfully!");
+            router.push(`/notes/${id}`);
+            router.refresh();
+        } catch (error) {
+            console.error(error);
+            alert("Upload failed. Please try again.");
+        } finally {
+            setUploading(false);
         }
     };
 
-    const getStepMessage = () => {
-        if (uploadStep === "uploading") return "Uploading to storage...";
-        if (uploadStep === "complete") return "Redirecting...";
-        return "Preparing...";
-    };
+    // --- AUTH CHECK ---
+    const isAuthorized = currentUser && note && currentUser.id === note.authorId;
+    if (!note) return <div className="p-8 text-center">Note not found</div>;
+    if (!isAuthorized) return <UnauthorizedState router={router} id={id} />;
 
-    const isUploading = uploadStep === "uploading" || uploadStep === "complete";
+    const filteredCourses = courses?.filter(c =>
+        c.name.toLowerCase().includes(courseSearch.toLowerCase()) ||
+        c.code.toLowerCase().includes(courseSearch.toLowerCase())
+    );
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+        <div className="min-h-screen py-12 px-4 relative overflow-hidden pt-24">
+            {/* High Contrast Background Layers */}
+            <div className="fixed inset-0 -z-20 bg-white dark:bg-black" />
+            <div className="fixed top-0 left-0 right-0 h-[45vh] bg-gradient-to-b from-orange-300/30 via-rose-200/10 to-transparent dark:from-orange-700/20 dark:via-rose-600/10 dark:to-transparent -z-10" />
+            <div className="fixed bottom-0 left-0 right-0 h-[45vh] bg-gradient-to-t from-purple-300/30 via-fuchsia-200/10 to-transparent dark:from-purple-800/20 dark:via-fuchsia-600/10 dark:to-transparent -z-10" />
 
-            {/* Back to Home */}
-            <div className="absolute top-4 left-4">
-                <button
-                    onClick={() => router.push("/")}
-                    className="text-white hover:text-primary hover:bg-white/10 px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 font-medium"
-                >
-                    ← Back to Home
-                </button>
-            </div>
-
-            <div className="w-full max-w-2xl mx-auto relative z-10">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <div className="bg-card p-4 rounded-full mb-4 shadow-lg backdrop-blur-sm border border-primary/20 inline-block animate-pulse">
-                        <Upload className="h-10 w-10 text-primary" />
-                    </div>
-                    <h1 className="text-4xl font-extrabold text-white drop-shadow-md tracking-tight">
-                        Upload Note
+            <div className="max-w-2xl mx-auto relative">
+                {/* The Main Glass Card */}
+                <div className="backdrop-blur-3xl bg-white/40 dark:bg-black/40 rounded-3xl shadow-[0_16px_48px_0_rgba(0,0,0,0.1)] dark:shadow-[0_16px_48px_0_rgba(0,0,0,0.4)] border border-white/50 dark:border-white/10 p-8">
+                    <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
+                        Edit Note
                     </h1>
-                    <p className="mt-2 text-lg text-gray-300 font-medium">
-                        Share your knowledge with the community
-                    </p>
-                </div>
 
-                {/* Main Card */}
-                <div className="bg-card backdrop-blur-lg border border-border py-8 px-6 sm:px-10 shadow-2xl rounded-xl relative overflow-hidden group">
-                    <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-                        {/* Title Input */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-200 mb-2">
-                                Title *
-                            </label>
-                            <input
-                                type="text"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                required
-                                placeholder="e.g., Linear Algebra Lecture Notes"
-                                className="w-full bg-black/40 border border-white/10 text-white placeholder-gray-500 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
-                            />
-                        </div>
+                    <section className="space-y-8">
+                        <form onSubmit={handleUpdateMetadata} className="space-y-6">
+                            {/* Title */}
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Title</label>
+                                <input
+                                    type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-orange-500/50 outline-none transition-all text-gray-900 dark:text-white"
+                                />
+                            </div>
 
-                        {/* Course Selector (Searchable) */}
-                        <div className="relative" ref={courseDropdownRef}>
-                            <label className="block text-sm font-semibold text-gray-200 mb-2">
-                                Course
-                            </label>
-                            <div className="relative">
-                                <div className="flex items-center bg-black/40 border border-white/10 rounded-lg focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent transition-all duration-200">
-                                    <Search className="h-5 w-5 text-gray-500 ml-3" />
+                            {/* Course Selector */}
+                            <div className="relative" ref={courseDropdownRef}>
+                                <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Course</label>
+                                <div className="flex items-center px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus-within:ring-2 focus-within:ring-orange-500/50 transition-all">
+                                    <Search className="h-4 w-4 text-gray-400 mr-2" />
                                     <input
                                         type="text"
                                         value={courseSearch}
-                                        onChange={(e) => {
-                                            setCourseSearch(e.target.value);
-                                            setSelectedCourseId(""); // Clear selection on search change to force re-selection
-                                            setIsCourseDropdownOpen(true);
-                                        }}
+                                        onChange={(e) => { setCourseSearch(e.target.value); setIsCourseDropdownOpen(true); }}
                                         onFocus={() => setIsCourseDropdownOpen(true)}
-                                        placeholder="Search for a course (e.g., CS1.201, Data Structures)..."
-                                        className="w-full bg-transparent text-white placeholder-gray-500 px-4 py-3 focus:outline-none"
+                                        className="bg-transparent outline-none w-full text-sm text-gray-900 dark:text-white"
                                     />
-                                    {courseSearch && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setCourseSearch("");
-                                                setSelectedCourseId("");
-                                            }}
-                                            className="p-2 mr-1 hover:text-white text-gray-500"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
+                                    {courseSearch && <X className="h-4 w-4 text-gray-400 cursor-pointer hover:text-red-500" onClick={() => {setCourseSearch(""); setSelectedCourseId("");}} />}
+                                </div>
+                                {isCourseDropdownOpen && (
+                                    <div className="absolute z-50 w-full mt-2 rounded-xl bg-white/90 dark:bg-zinc-900/95 backdrop-blur-xl border border-white/20 shadow-2xl max-h-48 overflow-y-auto ring-1 ring-black/5">
+                                        {filteredCourses?.map((c: any) => (
+                                            <button key={c.id} type="button" onClick={() => { setSelectedCourseId(c.id); setCourseSearch(`${c.code} - ${c.name}`); setIsCourseDropdownOpen(false); }}
+                                                className="w-full text-left px-4 py-3 hover:bg-orange-500/10 text-sm border-b border-gray-100 dark:border-white/5 last:border-0 transition-colors">
+                                                <span className="font-bold text-orange-600 dark:text-orange-400">{c.code}</span> — <span className="text-gray-600 dark:text-gray-300">{c.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Semester Select */}
+                                <div className="relative" ref={semesterDropdownRef}>
+                                    <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Semester</label>
+                                    <button type="button" onClick={() => setIsSemesterDropdownOpen(!isSemesterDropdownOpen)}
+                                        className="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 flex justify-between items-center text-sm text-gray-900 dark:text-white">
+                                        {selectedSemester ? `Sem ${selectedSemester}` : "Select Semester"}
+                                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                                    </button>
+                                    {isSemesterDropdownOpen && (
+                                        <div className="absolute z-50 w-full mt-2 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl border border-white/20 p-1 shadow-2xl ring-1 ring-black/5">
+                                            {["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2"].map(sem => (
+                                                <button key={sem} type="button" onClick={() => { setSelectedSemester(sem); setIsSemesterDropdownOpen(false); }}
+                                                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${selectedSemester === sem ? "bg-orange-500/20 text-orange-600 font-bold" : "hover:bg-gray-100 dark:hover:bg-white/5"}`}>
+                                                    Semester {sem}
+                                                </button>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
 
-                                {/* Dropdown Results */}
-                                {isCourseDropdownOpen && (
-                                    <div className="absolute z-[100] w-full mt-1 bg-black/95 border border-white/20 rounded-lg shadow-2xl max-h-60 overflow-y-auto backdrop-blur-xl ring-1 ring-white/10">
-                                        {!courses?.length ? (
-                                            <div className="p-4 text-center text-gray-400 text-sm">
-                                                Loading courses or no courses found. <br />
-                                                <span className="text-xs text-gray-600">(Check if database is seeded)</span>
-                                            </div>
-                                        ) : filteredCourses?.length === 0 ? (
-                                            <div className="p-4 text-center text-gray-400 text-sm">
-                                                No courses found matching &quot;{courseSearch}&quot;
-                                            </div>
-                                        ) : (
-                                            filteredCourses?.map((course: Course) => (
-                                                <button
-                                                    key={course.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedCourseId(course.id);
-                                                        setCourseSearch(`${course.code} - ${course.name}`);
-                                                        setIsCourseDropdownOpen(false);
-                                                    }}
-                                                    className="w-full text-left px-4 py-3 hover:bg-white/10 transition-colors border-b border-white/5 last:border-0 flex flex-col group"
-                                                >
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="font-bold text-white text-sm">{course.code}</span>
-                                                        <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">{course.branch}</span>
-                                                    </div>
-                                                    <span className="text-gray-300 text-sm truncate">{course.name}</span>
-                                                </button>
-                                            ))
-                                        )}
+                                {/* Folder Select */}
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Folder</label>
+                                    <div className="relative">
+                                        <select 
+                                            value={selectedFolderId || ""} 
+                                            onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                                            className="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 outline-none text-sm appearance-none cursor-pointer text-gray-900 dark:text-white"
+                                        >
+                                            <option value="">📁 Root (No Folder)</option>
+                                            {folders?.map(f => <option key={f.id} value={f.id}>📂 {f.name}</option>)}
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                                     </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Description</label>
+                                <textarea
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-orange-500/50 outline-none transition-all h-24 resize-none text-gray-900 dark:text-white"
+                                    placeholder="Brief summary of the notes..."
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={updateNote.isPending}
+                                className="w-full py-4 rounded-xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white font-bold shadow-lg hover:shadow-orange-500/20 hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {updateNote.isPending ? <Loader2 className="animate-spin h-5 w-5" /> : "Save Changes"}
+                            </button>
+                        </form>
+
+                        <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+                        {/* New Version Section */}
+                        <div className="space-y-4">
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">File Versioning</h2>
+                            <div className="relative border-2 border-dashed border-white/30 dark:border-white/10 rounded-2xl p-8 text-center bg-white/5 hover:bg-white/10 dark:hover:bg-white/5 transition-all group overflow-hidden">
+                                {uploading ? (
+                                    <div className="flex flex-col items-center gap-3 text-orange-500">
+                                        <Loader2 className="animate-spin h-10 w-10" />
+                                        <span className="text-sm font-bold animate-pulse">Uploading and creating version...</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <input type="file" accept=".pdf" onChange={handleNewVersion} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                        <div className="relative z-0">
+                                            <Upload className="h-10 w-10 mx-auto mb-3 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                                            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                Click to upload a <span className="text-orange-500 font-bold">New PDF Version</span>
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-1">Previous versions will be archived in history</p>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         </div>
 
-                        {/* Semester Selector */}
-                        <div className="relative" ref={semesterDropdownRef}>
-                            <label className="block text-sm font-semibold text-gray-200 mb-2">
-                                Semester (Optional)
-                            </label>
-                            <button
-                                type="button"
-                                onClick={() => setIsSemesterDropdownOpen(!isSemesterDropdownOpen)}
-                                className="w-full flex items-center justify-between bg-black/40 border border-white/10 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:bg-white/5"
-                            >
-                                <span className={selectedSemester ? "text-white" : "text-gray-500"}>
-                                    {selectedSemester ? `Semester ${selectedSemester}` : "Select a semester..."}
-                                </span>
-                                <div className={`transition-transform duration-200 ${isSemesterDropdownOpen ? "rotate-180" : ""}`}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500"><path d="m6 9 6 6 6-6" /></svg>
-                                </div>
-                            </button>
-
-                            {/* Dropdown Menu */}
-                            {isSemesterDropdownOpen && (
-                                <div className="absolute z-[100] w-full mt-1 bg-black/95 border border-white/20 rounded-lg shadow-2xl max-h-60 overflow-y-auto backdrop-blur-xl ring-1 ring-white/10 p-1">
-                                    {semesters.map((sem) => (
-                                        <button
-                                            key={sem}
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedSemester(sem);
-                                                setIsSemesterDropdownOpen(false);
-                                            }}
-                                            className={`w-full text-left px-4 py-2.5 rounded-md transition-all duration-200 flex items-center justify-between group ${selectedSemester === sem
-                                                ? "bg-primary/20 text-primary border border-primary/20"
-                                                : "text-gray-300 hover:bg-white/10 hover:text-white"
-                                                }`}
-                                        >
-                                            <span className="font-medium">Semester {sem}</span>
-                                            {selectedSemester === sem && (
-                                                <CheckCircle className="h-4 w-4 text-primary" />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                        <div className="pt-4 flex justify-end">
+                            <DeleteNoteButton noteId={id} />
                         </div>
-                        {/* Description Input */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-200 mb-2">
-                                Description
-                            </label>
-                            <textarea
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Add a brief description of the notes..."
-                                rows={3}
-                                className="w-full bg-black/40 border border-white/10 text-white placeholder-gray-500 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 resize-none"
-                            />
-                        </div>
-
-                        {/* File Upload Zone */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-200 mb-2">
-                                PDF File *
-                            </label>
-
-                            {!file ? (
-                                <div
-                                    onDragEnter={handleDrag}
-                                    onDragLeave={handleDrag}
-                                    onDragOver={handleDrag}
-                                    onDrop={handleDrop}
-                                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 cursor-pointer ${dragActive
-                                        ? "border-primary bg-primary/10 scale-105"
-                                        : "border-white/20 bg-black/20 hover:border-primary/50 hover:bg-black/40"
-                                        }`}
-                                >
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        onChange={handleFileChange}
-                                        required
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                    <Upload className="h-12 w-12 text-primary mx-auto mb-4" />
-                                    <p className="text-white font-medium mb-1">
-                                        Drop your PDF here, or click to browse
-                                    </p>
-                                    <p className="text-gray-400 text-sm">
-                                        PDF files only
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="bg-black/30 border border-primary/30 rounded-lg p-4 flex items-center gap-4">
-                                    <div className="bg-primary/10 p-3 rounded-lg">
-                                        <FileText className="h-8 w-8 text-primary" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-white font-medium truncate">
-                                            {file.name}
-                                        </p>
-                                        <p className="text-gray-400 text-sm">
-                                            {formatFileSize(file.size)}
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={removeFile}
-                                        disabled={isUploading}
-                                        className="hover:bg-red-500/20 p-2 rounded-lg transition-colors duration-200 disabled:opacity-50 group"
-                                    >
-                                        <X className="h-5 w-5 text-gray-400 group-hover:text-red-500" />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Upload Progress */}
-                        {isUploading && (
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm text-white">
-                                    <span className="font-medium">{getStepMessage()}</span>
-                                    <span>{uploadProgress}%</span>
-                                </div>
-                                <div className="h-2 bg-black/50 rounded-full overflow-hidden border border-white/5">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-orange-500 to-red-600 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(249,115,22,0.5)]"
-                                        style={{ width: `${uploadProgress}%` }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-
-                        {/* Error Message */}
-                        {error && (
-                            <div className="bg-red-950/50 border border-red-500/50 rounded-lg p-4 text-sm text-red-200 backdrop-blur-sm">
-                                <p className="font-bold">Upload Failed</p>
-                                <p>{error}</p>
-                            </div>
-                        )}
-
-                        {/* Submit Button */}
-                        <button
-                            type="submit"
-                            disabled={isUploading || !file}
-                            className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-black font-bold text-sm bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-400 hover:to-red-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 ease-in-out transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 gap-2"
-                        >
-                            {uploadStep === "uploading" ? (
-                                <>
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                    <span>Uploading...</span>
-                                </>
-                            ) : uploadStep === "complete" ? (
-                                <>
-                                    <CheckCircle className="h-5 w-5" />
-                                    <span>Upload Complete!</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Upload className="h-5 w-5" />
-                                    <span>Upload Note</span>
-                                </>
-                            )}
-                        </button>
-                    </form>
+                    </section>
                 </div>
-
-                <p className="mt-6 text-center text-xs text-gray-500">
-                    &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
-                </p>
-                {/* Upload Progress */}
-                {uploading && (
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm text-white">
-                            <span className="font-medium">{getStepMessage()}</span>
-                            <span>{uploadProgress}%</span>
-                        </div>
-                        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-green-400 to-blue-500 transition-all duration-300 ease-out"
-                                style={{ width: `${uploadProgress}%` }}
-                            />
-                        </div>
-                    </div>
-                )}
-
             </div>
+        </div>
+    );
+}
 
-            <p className="mt-6 text-center text-xs text-white/60">
-                &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
-            </p>
+function UnauthorizedState({ router, id }: any) {
+    return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="backdrop-blur-3xl bg-white/10 dark:bg-black/10 p-12 rounded-3xl border border-white/20 text-center shadow-2xl max-w-sm mx-4">
+                <div className="bg-rose-500/20 p-4 rounded-full w-fit mx-auto mb-6">
+                    <X className="h-10 w-10 text-rose-500" />
+                </div>
+                <h1 className="text-2xl font-bold mb-2 dark:text-white">Unauthorized</h1>
+                <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">You don't have permission to edit this note. Only the author can modify metadata or upload versions.</p>
+                <button onClick={() => router.push(`/notes/${id}`)} className="w-full py-3 bg-white dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 rounded-xl transition-all font-bold text-sm border border-gray-200 dark:border-white/10 shadow-sm">
+                    Return to Note View
+                </button>
+            </div>
         </div>
     );
 }
