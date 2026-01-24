@@ -5,7 +5,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { v4 as uuidv4 } from "uuid";
 import {
     X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info,
-    Pen, Eraser, RotateCcw, Highlighter, Type, ChevronDown, ChevronUp
+    Pen, Eraser, RotateCcw, Highlighter, Type, ChevronDown, ChevronUp, Plus
 } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
@@ -50,9 +50,17 @@ const TEXT_COLORS = [
     { name: "Green", value: "#16a34a" },
     { name: "Purple", value: "#9333ea" },
     { name: "Orange", value: "#ea580c" },
+    { name: "Yellow", value: "#facc15" },
 ];
 
 const FONT_SIZES = [12, 14, 16, 18, 20, 24];
+
+const hexToRgba = (hex: string, alpha: number) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 
 
 export function FullPageNoteViewer({
@@ -66,6 +74,9 @@ export function FullPageNoteViewer({
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const annotationCanvasRef = useRef<HTMLCanvasElement>(null);
+    const penColorInputRef = useRef<HTMLInputElement>(null);
+    const highlightColorInputRef = useRef<HTMLInputElement>(null);
+    const textColorInputRef = useRef<HTMLInputElement>(null);
 
     // PDF State
     const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -88,6 +99,8 @@ export function FullPageNoteViewer({
     const [penColor, setPenColor] = useState(COLORS[0].value);
     const [highlightColor, setHighlightColor] = useState(HIGHLIGHT_COLORS[0].value);
     const [annotations, setAnnotations] = useState<Record<number, Stroke[]>>({});
+    const [penWidth, setPenWidth] = useState(2);
+    const [highlightWidth, setHighlightWidth] = useState(20);
     const [currentStroke, setCurrentStroke] = useState<Point[] | null>(null);
     const [history, setHistory] = useState<Record<number, Stroke[][]>>({});
     const [future, setFuture] = useState<Record<number, Stroke[][]>>({});
@@ -271,10 +284,10 @@ export function FullPageNoteViewer({
         const { width, height } = viewportDimensions;
 
         // Helper to draw stroke
-        const drawStroke = (points: Point[], color: string, strokeType: "pen" | "highlighter") => {
+        const drawStroke = (points: Point[], color: string, strokeType: "pen" | "highlighter", width_val?: number) => {
             if (points.length < 2) return;
             ctx.beginPath();
-            ctx.lineWidth = strokeType === "highlighter" ? 20 : 2; // Wider for highlights to cover text lines
+            ctx.lineWidth = width_val || (strokeType === "highlighter" ? 20 : 2);
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
             ctx.strokeStyle = color;
@@ -287,15 +300,17 @@ export function FullPageNoteViewer({
             ctx.stroke();
         };
 
-        // Draw saved strokes
-        const pageStrokes = annotations[pageNum] || [];
-        pageStrokes.forEach(stroke => drawStroke(stroke.points, stroke.color, stroke.type));
+        // Draw existing annotations
+        (annotations[pageNum] || []).forEach(stroke => {
+            drawStroke(stroke.points, stroke.color, stroke.type, stroke.width);
+        });
 
-        // Draw current stroke
+        // Draw current stroke being drawn
         if (currentStroke) {
-            const currentColor = tool === "highlighter" ? highlightColor : penColor;
-            const currentType = tool === "highlighter" ? "highlighter" : "pen";
-            drawStroke(currentStroke, currentColor, currentType);
+            const strokeColor = tool === 'highlighter' ? highlightColor : penColor;
+            const strokeType = tool === 'highlighter' ? "highlighter" : "pen";
+            const strokeWidth = tool === 'highlighter' ? highlightWidth : penWidth;
+            drawStroke(currentStroke, strokeColor, strokeType, strokeWidth);
         }
 
     }, [annotations, currentStroke, pageNum, viewportDimensions, penColor, highlightColor, tool]);
@@ -444,9 +459,15 @@ export function FullPageNoteViewer({
                 addToHistory(pageNum);
                 const strokeColor = tool === 'highlighter' ? highlightColor : penColor;
                 const strokeType = tool === 'highlighter' ? "highlighter" : "pen";
+                const strokeWidth = tool === 'highlighter' ? highlightWidth : penWidth;
                 setAnnotations(prev => ({
                     ...prev,
-                    [pageNum]: [...(prev[pageNum] || []), { points: currentStroke, color: strokeColor, type: strokeType }]
+                    [pageNum]: [...(prev[pageNum] || []), {
+                        points: currentStroke,
+                        color: strokeColor,
+                        type: strokeType,
+                        width: strokeWidth
+                    }]
                 }));
                 setUnsavedChanges(true);
             }
@@ -773,6 +794,30 @@ export function FullPageNoteViewer({
                                             title={c.name}
                                         />
                                     ))}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); penColorInputRef.current?.click(); }}
+                                        className="w-6 h-6 rounded-full border-2 border-white/20 hover:border-white/50 hover:scale-110 transition-all flex items-center justify-center bg-zinc-700"
+                                        title="Custom Color"
+                                    >
+                                        <Plus className="w-3 h-3 text-white" />
+                                    </button>
+                                    <input
+                                        ref={penColorInputRef}
+                                        type="color"
+                                        className="hidden"
+                                        onChange={(e) => { setPenColor(e.target.value); setTool("pen"); }}
+                                    />
+                                    <div className="flex flex-col gap-1 pl-2 ml-1 border-l border-white/10">
+                                        <span className="text-[10px] text-white/50 uppercase font-bold">Size</span>
+                                        <input
+                                            type="range"
+                                            min="1" max="20" step="1"
+                                            value={penWidth}
+                                            onChange={(e) => setPenWidth(parseInt(e.target.value))}
+                                            className="w-24 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -802,6 +847,34 @@ export function FullPageNoteViewer({
                                             title={c.name}
                                         />
                                     ))}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); highlightColorInputRef.current?.click(); }}
+                                        className="w-6 h-6 rounded-full border-2 border-white/20 hover:border-white/50 hover:scale-110 transition-all flex items-center justify-center bg-zinc-700"
+                                        title="Custom Highlight Color"
+                                    >
+                                        <Plus className="w-3 h-3 text-white" />
+                                    </button>
+                                    <input
+                                        ref={highlightColorInputRef}
+                                        type="color"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const rgbaColor = hexToRgba(e.target.value, 0.3);
+                                            setHighlightColor(rgbaColor);
+                                            setTool("highlighter");
+                                        }}
+                                    />
+                                    <div className="flex flex-col gap-1 pl-2 ml-1 border-l border-white/10">
+                                        <span className="text-[10px] text-white/50 uppercase font-bold">Size</span>
+                                        <input
+                                            type="range"
+                                            min="10" max="60" step="2"
+                                            value={highlightWidth}
+                                            onChange={(e) => setHighlightWidth(parseInt(e.target.value))}
+                                            className="w-24 h-1 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -917,6 +990,25 @@ export function FullPageNoteViewer({
                                         title={c.name}
                                     />
                                 ))}
+                                <button
+                                    onClick={() => textColorInputRef.current?.click()}
+                                    className="w-5 h-5 rounded-full border-2 border-white/20 hover:border-white/50 hover:scale-110 transition-all flex items-center justify-center bg-zinc-700"
+                                    title="Custom Text Color"
+                                >
+                                    <Plus className="w-2.5 h-2.5 text-white" />
+                                </button>
+                                <input
+                                    ref={textColorInputRef}
+                                    type="color"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const newColor = e.target.value;
+                                        setTextColor(newColor);
+                                        if (editingNote) {
+                                            handleUpdateTextNote(editingNote.noteId, { color: newColor });
+                                        }
+                                    }}
+                                />
                             </div>
                         </div>
                     )}

@@ -120,10 +120,9 @@ export const TextNoteOverlay = ({
             onMouseDown={handleMouseDown}
         >
             <div
-                className={`min-w-[120px] backdrop-blur-[1px] border rounded p-1 transition-all ${isEditing ? 'bg-white/10 ring-1 ring-blue-500/40 z-30 border-white/20' : !readOnly ? 'hover:scale-[1.01] cursor-move select-none border-white/5 hover:border-white/20' : 'border-white/5'}`}
+                className={`min-w-[120px] backdrop-blur-[1px] border border-transparent hover:border-white/10 rounded p-1 transition-all ${isEditing ? 'bg-white/10 ring-1 ring-blue-500/40 z-30' : !readOnly ? 'hover:scale-[1.01] cursor-move select-none' : ''}`}
                 style={{
                     backgroundColor: `${note.color}11`, // 11 is hex for ~7% opacity
-                    borderColor: `${note.color}44`, // 44 is hex for ~25% opacity
                 }}
                 onClick={(e) => {
                     e.stopPropagation();

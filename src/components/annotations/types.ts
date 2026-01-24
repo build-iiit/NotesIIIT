@@ -7,6 +7,7 @@ export interface Stroke {
     points: Point[];
     color: string;
     type: "pen" | "highlighter";
+    width: number;
 }
 
 export interface TextNote {

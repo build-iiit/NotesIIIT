@@ -73,7 +73,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
 
             ctx.beginPath();
             ctx.strokeStyle = stroke.color;
-            ctx.lineWidth = stroke.type === "highlighter" ? 15 : 2;
+            ctx.lineWidth = stroke.width || (stroke.type === "highlighter" ? 15 : 2);
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
             ctx.globalAlpha = stroke.type === "highlighter" ? 0.3 : 1;
