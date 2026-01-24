@@ -2,7 +2,7 @@
 
 import { UserStatsCard } from "@/components/UserStatsCard";
 import { UserNotesGrid } from "@/components/UserNotesGrid";
-import { FileExplorerWrapper } from "@/components/FileExplorerWrapper";
+import { FileExplorer } from "@/components/FileExplorer";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FileText, Eye, TrendingUp, Trophy, Award, Sparkles, Medal, Edit } from "lucide-react";
 import Image from "next/image";
@@ -27,11 +27,11 @@ interface UserProfileClientProps {
     user: any; // Using any for simplicity as it matches the trpc return type
     achievements: Badge[];
     currentUserId?: string;
+    isOwnProfile: boolean;
 }
 
-export function UserProfileClient({ user, achievements, currentUserId }: UserProfileClientProps) {
+export function UserProfileClient({ user, achievements, currentUserId, isOwnProfile }: UserProfileClientProps) {
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const isOwnProfile = currentUserId === user.id;
 
     return (
         <div className="min-h-screen pb-12">
@@ -130,9 +130,11 @@ export function UserProfileClient({ user, achievements, currentUserId }: UserPro
                     </div>
                 </div>
 
-                <div className="mb-12">
-                    <FileExplorerWrapper userId={user.id} />
-                </div>
+                {isOwnProfile && (
+                    <div className="mb-12">
+                        <FileExplorer userId={user.id} />
+                    </div>
+                )}
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">

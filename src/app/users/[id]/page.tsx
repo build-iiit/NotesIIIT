@@ -31,6 +31,7 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
     if (user.totalKarma >= 50) achievements.push({ iconName: "TrendingUp", label: "50 Karma", color: "green" });
 
     const session = await auth();
+    const isOwnProfile = session?.user?.id === id;
 
-    return <UserProfileClient user={user} achievements={achievements} currentUserId={session?.user?.id} />;
+    return <UserProfileClient user={user} achievements={achievements} currentUserId={session?.user?.id} isOwnProfile={isOwnProfile} />;
 }

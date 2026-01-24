@@ -24,6 +24,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
     const [avatarPreview, setAvatarPreview] = useState<string | null>(user.image);
     const [backgroundPreview, setBackgroundPreview] = useState<string | null>(user.backgroundImage);
     const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Refs for file inputs
     const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +36,20 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             const file = e.target.files[0];
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError('Please select a valid image file');
+                return;
+            }
+
+            // Validate file size (5MB max for avatars)
+            if (file.size > 5 * 1024 * 1024) {
+                setError('Avatar image must be less than 5MB');
+                return;
+            }
+
+            setError(null);
             setAvatarFile(file);
             setAvatarPreview(URL.createObjectURL(file));
         }
@@ -43,6 +58,20 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
     const handleBackgroundChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
             const file = e.target.files[0];
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError('Please select a valid image file');
+                return;
+            }
+
+            // Validate file size (10MB max for backgrounds)
+            if (file.size > 10 * 1024 * 1024) {
+                setError('Background image must be less than 10MB');
+                return;
+            }
+
+            setError(null);
             setBackgroundFile(file);
             setBackgroundPreview(URL.createObjectURL(file));
         }
@@ -51,54 +80,79 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
     const handleSave = async () => {
         try {
             setIsSaving(true);
+            setError(null);
             let newAvatarKey = undefined;
             let newBackgroundKey = undefined;
 
             // 1. Upload Avatar if changed
             if (avatarFile) {
-                const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
-                    filename: avatarFile.name,
-                    contentType: avatarFile.type,
-                    type: "avatar",
-                });
+                try {
+                    const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
+                        filename: avatarFile.name,
+                        contentType: avatarFile.type,
+                        type: "avatar",
+                    });
 
-                await fetch(url, {
-                    method: "PUT",
-                    body: avatarFile,
-                    headers: { "Content-Type": avatarFile.type },
-                });
-                newAvatarKey = s3Key;
+                    const uploadResponse = await fetch(url, {
+                        method: "PUT",
+                        body: avatarFile,
+                        headers: { "Content-Type": avatarFile.type },
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error('Failed to upload avatar image');
+                    }
+                    newAvatarKey = s3Key;
+                } catch (err) {
+                    setError('Failed to upload profile photo. Please try again.');
+                    setIsSaving(false);
+                    return;
+                }
             }
 
             // 2. Upload Background if changed
             if (backgroundFile) {
-                const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
-                    filename: backgroundFile.name,
-                    contentType: backgroundFile.type,
-                    type: "background",
-                });
+                try {
+                    const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
+                        filename: backgroundFile.name,
+                        contentType: backgroundFile.type,
+                        type: "background",
+                    });
 
-                await fetch(url, {
-                    method: "PUT",
-                    body: backgroundFile,
-                    headers: { "Content-Type": backgroundFile.type },
-                });
-                newBackgroundKey = s3Key;
+                    const uploadResponse = await fetch(url, {
+                        method: "PUT",
+                        body: backgroundFile,
+                        headers: { "Content-Type": backgroundFile.type },
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error('Failed to upload background image');
+                    }
+                    newBackgroundKey = s3Key;
+                } catch (err) {
+                    setError('Failed to upload background image. Please try again.');
+                    setIsSaving(false);
+                    return;
+                }
             }
 
             // 3. Update Profile
-            await updateProfileMutation.mutateAsync({
-                name,
-                image: newAvatarKey,
-                backgroundImage: newBackgroundKey,
-            });
+            try {
+                await updateProfileMutation.mutateAsync({
+                    name: name !== user.name ? name : undefined,
+                    image: newAvatarKey,
+                    backgroundImage: newBackgroundKey,
+                });
 
-            router.refresh();
-            onClose();
+                router.refresh();
+                onClose();
+            } catch (err) {
+                setError('Failed to save profile changes. Please try again.');
+                setIsSaving(false);
+            }
         } catch (error) {
             console.error("Failed to update profile:", error);
-            alert("Failed to update profile. Please try again.");
-        } finally {
+            setError('An unexpected error occurred. Please try again.');
             setIsSaving(false);
         }
     };
@@ -177,6 +231,12 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                                 placeholder="Your name"
                             />
                         </div>
+
+                        {error && (
+                            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                            </div>
+                        )}
 
                         <div className="flex justify-end gap-3 pt-4">
                             <button
