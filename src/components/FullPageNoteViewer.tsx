@@ -753,7 +753,7 @@ export function FullPageNoteViewer({
                             <div className="flex flex-col gap-4">
                                 <button
                                     onClick={handleSaveExit}
-                                    className="w-full py-5 rounded-2xl font-black text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.03] active:scale-95 uppercase tracking-[0.2em] text-xs"
+                                    className="w-full py-5 backdrop-blur-3xl rounded-2xl transition-all border shadow-2xl bg-orange-500/10 dark:bg-orange-500/5 border-orange-500/40 text-orange-400 font-black hover:bg-orange-500/20 hover:scale-[1.03] hover:shadow-orange-500/20 active:scale-95 uppercase tracking-[0.2em] text-xs"
                                 >
                                     {saveMutation.isPending ? "Syncing..." : "Save & Exit"}
                                 </button>
@@ -789,7 +789,7 @@ export function FullPageNoteViewer({
                     onClick={handleSaveOnly}
                     disabled={!unsavedChanges || saveMutation.isPending}
                     className={`p-3.5 backdrop-blur-3xl rounded-[1.25rem] transition-all flex items-center gap-3 group border shadow-2xl ${unsavedChanges
-                        ? "bg-gradient-to-r from-orange-500/20 via-orange-600/10 to-purple-700/20 border-orange-500/40 text-orange-400 hover:scale-[1.05] hover:shadow-orange-500/20"
+                        ? "bg-orange-500/10 dark:bg-orange-500/5 border-orange-500/40 text-orange-400 hover:bg-orange-500/20 hover:scale-[1.05] hover:shadow-orange-500/20"
                         : "bg-white/5 border-white/10 text-white/30 cursor-not-allowed"
                         }`}
                     title="Save Annotations"
