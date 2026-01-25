@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
+import { getPresignedDownloadUrl } from "@/lib/s3";
 
 export const adminRouter = createTRPCRouter({
     /**
@@ -94,7 +95,7 @@ export const adminRouter = createTRPCRouter({
                 nextCursor = nextItem!.id;
             }
 
-            // Get karma for each user
+            // Get karma for each user and resolve image
             const usersWithKarma = await Promise.all(
                 users.map(async (user) => {
                     const noteStats = await ctx.prisma.note.aggregate({
@@ -102,8 +103,15 @@ export const adminRouter = createTRPCRouter({
                         _sum: { voteScore: true, viewCount: true },
                     });
 
+                    // Resolve image if needed
+                    let imageUrl = user.image;
+                    if (imageUrl && !imageUrl.startsWith("http")) {
+                        imageUrl = await getPresignedDownloadUrl(imageUrl);
+                    }
+
                     return {
                         ...user,
+                        image: imageUrl,
                         karma: noteStats._sum.voteScore || 0,
                         totalViews: noteStats._sum.viewCount || 0,
                     };
@@ -214,7 +222,19 @@ export const adminRouter = createTRPCRouter({
                 nextCursor = nextItem!.id;
             }
 
-            return { notes, nextCursor };
+            // Resolve author images
+            const notesWithImages = await Promise.all(notes.map(async (note) => {
+                let authorImage = note.author.image;
+                if (authorImage && !authorImage.startsWith("http")) {
+                    authorImage = await getPresignedDownloadUrl(authorImage);
+                }
+                return {
+                    ...note,
+                    author: { ...note.author, image: authorImage }
+                };
+            }));
+
+            return { notes: notesWithImages, nextCursor };
         }),
 
     /**

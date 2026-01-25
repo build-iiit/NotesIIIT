@@ -25,7 +25,14 @@ export const socialRouter = createTRPCRouter({
                     email: true
                 }
             });
-            return users;
+
+            // Resolve images
+            return await Promise.all(users.map(async (user) => {
+                if (user.image && !user.image.startsWith("http")) {
+                    user.image = await getPresignedDownloadUrl(user.image);
+                }
+                return user;
+            }));
         }),
 
     sendFriendRequest: protectedProcedure
@@ -57,7 +64,7 @@ export const socialRouter = createTRPCRouter({
 
     getFriendRequests: protectedProcedure
         .query(async ({ ctx }) => {
-            return ctx.prisma.friendRequest.findMany({
+            const requests = await ctx.prisma.friendRequest.findMany({
                 where: {
                     receiverId: ctx.session.user.id,
                     status: "PENDING"
@@ -68,6 +75,14 @@ export const socialRouter = createTRPCRouter({
                     }
                 }
             });
+
+            // Resolve images
+            return await Promise.all(requests.map(async (req) => {
+                if (req.sender.image && !req.sender.image.startsWith("http")) {
+                    req.sender.image = await getPresignedDownloadUrl(req.sender.image);
+                }
+                return req;
+            }));
         }),
 
     respondToRequest: protectedProcedure
@@ -108,9 +123,13 @@ export const socialRouter = createTRPCRouter({
                 }
             });
 
-            return requests.map(req => {
-                return req.senderId === userId ? req.receiver : req.sender;
-            });
+            return await Promise.all(requests.map(async (req) => {
+                const friend = req.senderId === userId ? req.receiver : req.sender;
+                if (friend.image && !friend.image.startsWith("http")) {
+                    friend.image = await getPresignedDownloadUrl(friend.image);
+                }
+                return friend;
+            }));
         }),
 
     // --- 2. Groups ---

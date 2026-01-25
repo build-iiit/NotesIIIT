@@ -4,8 +4,14 @@ A modern, full-featured notes sharing platform built with the T3 Stack (Next.js,
 
 ## 🌟 Features
 
-### 📚 content & Organization
+### 🎨 User Interface
+- **Glassmorphic Design**: Premium visual aesthetic with background blurs and gradients.
+- **Theming**: Full Light and Dark mode support with dynamic color palettes.
+- **Responsive**: Mobile-first design ensuring great experience on all devices.
+
+### 📚 Content & Organization
 - **Smart PDF Viewing**: High-performance PDF viewer with lazy loading, zoom, and rotation.
+- **Page Jump**: Direct navigation to specific page numbers for quick access.
 - **Academic Structure**: Organize notes by **Courses**, **Branches**, and **Semesters**.
 - **Personal Library**: "My Files" section with nested **Folder** support for organizing personal notes.
 - **Annotations**: Draw, highlight, and add text notes directly onto PDF pages (Shared or Private).
@@ -136,7 +142,7 @@ Visit **http://localhost:3000**
 
 ## � Admin Setup
 
-Accessing the admin dashboard requires the `ADMIN` role.
+Accessing the admin dashboard requires the `ADMIN` role. **By default, all new users are assigned the `USER` role.** You must manually promote the first admin using one of the methods below.
 
 ### Option 1: Using Prisma Studio (Recommended)
 1. Run `npx prisma studio`

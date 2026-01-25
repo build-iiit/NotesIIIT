@@ -78,8 +78,14 @@ export const foldersRouter = createTRPCRouter({
             // Resolve thumbnails
             const notesWithThumbnails = await Promise.all(notes.map(async (note) => {
                 let thumbnailUrl = "";
-                if (note.thumbnailS3Key) {
-                    thumbnailUrl = await getPresignedDownloadUrl(note.thumbnailS3Key);
+                const key = note.thumbnailS3Key || note.versions[0]?.thumbnailKey;
+
+                if (key) {
+                    try {
+                        thumbnailUrl = await getPresignedDownloadUrl(key);
+                    } catch (e) {
+                        console.error("Failed to generate presigned URL for note", note.id, e);
+                    }
                 }
                 return { ...note, thumbnailUrl };
             }));

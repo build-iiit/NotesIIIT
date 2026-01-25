@@ -292,9 +292,9 @@ function MyFilesContent() {
 
                                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                                     <div className="relative w-full aspect-square mb-2 flex items-center justify-center overflow-hidden rounded-xl">
-                                        {(note as any).thumbnailUrl || note.versions?.[0]?.thumbnailKey ? (
+                                        {(note as any).thumbnailUrl ? (
                                             <img
-                                                src={(note as any).thumbnailUrl || note.versions?.[0]?.thumbnailKey}
+                                                src={(note as any).thumbnailUrl}
                                                 alt={note.title}
                                                 className="w-full h-full object-cover"
                                             />
@@ -302,7 +302,7 @@ function MyFilesContent() {
                                             <FileText className="h-10 w-10 text-gray-600 dark:text-gray-300 group-hover:text-purple-500 transition-colors drop-shadow-lg" />
                                         )}
 
-                                        {!((note as any).thumbnailUrl || note.versions?.[0]?.thumbnailKey) && (
+                                        {!(note as any).thumbnailUrl && (
                                             <div className="absolute -bottom-1 -right-1 backdrop-blur-sm bg-white/60 dark:bg-black/40 text-[10px] px-1.5 py-0.5 rounded border border-white/40 text-gray-700 dark:text-gray-300 font-semibold">
                                                 PDF
                                             </div>

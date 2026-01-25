@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { PdfViewer } from "@/components/PdfViewer";
+import dynamic from "next/dynamic";
+
+const PdfViewer = dynamic(() => import("@/components/PdfViewer").then(mod => mod.PdfViewer), {
+    ssr: false
+});
 
 export function PdfViewerWrapper({ url }: { url: string }) {
     const [pageNum, setPageNum] = useState(1);

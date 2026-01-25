@@ -58,13 +58,23 @@ export const notesRouter = createTRPCRouter({
                 nextCursor = nextItem!.id;
             }
 
-            // Resolve thumbnails
+            // Resolve thumbnails and author images
             const itemsWithThumbnails = await Promise.all(items.map(async (item) => {
                 let thumbnailUrl = "";
                 if (item.thumbnailS3Key) {
                     thumbnailUrl = await getPresignedDownloadUrl(item.thumbnailS3Key);
                 }
-                return { ...item, thumbnailUrl };
+
+                let authorImage = item.author.image;
+                if (authorImage && !authorImage.startsWith("http")) {
+                    authorImage = await getPresignedDownloadUrl(authorImage);
+                }
+
+                return {
+                    ...item,
+                    thumbnailUrl,
+                    author: { ...item.author, image: authorImage }
+                };
             }));
 
             return { items: itemsWithThumbnails, nextCursor };
@@ -122,13 +132,23 @@ export const notesRouter = createTRPCRouter({
                 nextCursor = nextItem!.id;
             }
 
-            // Resolve thumbnails
+            // Resolve thumbnails and author images
             const itemsWithThumbnails = await Promise.all(items.map(async (item) => {
                 let thumbnailUrl = "";
                 if (item.thumbnailS3Key) {
                     thumbnailUrl = await getPresignedDownloadUrl(item.thumbnailS3Key);
                 }
-                return { ...item, thumbnailUrl };
+
+                let authorImage = item.author.image;
+                if (authorImage && !authorImage.startsWith("http")) {
+                    authorImage = await getPresignedDownloadUrl(authorImage);
+                }
+
+                return {
+                    ...item,
+                    thumbnailUrl,
+                    author: { ...item.author, image: authorImage }
+                };
             }));
 
             return {
@@ -156,13 +176,23 @@ export const notesRouter = createTRPCRouter({
                 },
             });
 
-            // Resolve thumbnails
+            // Resolve thumbnails and author images
             const itemsWithThumbnails = await Promise.all(items.map(async (item) => {
                 let thumbnailUrl = "";
                 if (item.thumbnailS3Key) {
                     thumbnailUrl = await getPresignedDownloadUrl(item.thumbnailS3Key);
                 }
-                return { ...item, thumbnailUrl };
+
+                let authorImage = item.author.image;
+                if (authorImage && !authorImage.startsWith("http")) {
+                    authorImage = await getPresignedDownloadUrl(authorImage);
+                }
+
+                return {
+                    ...item,
+                    thumbnailUrl,
+                    author: { ...item.author, image: authorImage }
+                };
             }));
 
             return itemsWithThumbnails;
@@ -210,7 +240,16 @@ export const notesRouter = createTRPCRouter({
                 fileUrl = await getPresignedDownloadUrl(currentVersion.s3Key);
             }
 
-            return { ...note, fileUrl };
+            let authorImage = note.author.image;
+            if (authorImage && !authorImage.startsWith("http")) {
+                authorImage = await getPresignedDownloadUrl(authorImage);
+            }
+
+            return {
+                ...note,
+                fileUrl,
+                author: { ...note.author, image: authorImage }
+            };
         }),
 
     /**

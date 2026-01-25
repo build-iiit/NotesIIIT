@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
 import { Camera, Image as ImageIcon, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { ProfileImage } from "@/components/ProfileImage";
 
 interface EditProfileDialogProps {
     user: {
@@ -199,11 +200,13 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                     <div className="absolute -top-12 left-6">
                         <div className="relative group">
                             <div className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-900 overflow-hidden bg-white dark:bg-zinc-800 relative shadow-lg">
-                                <Image
+                                <ProfileImage
                                     src={avatarPreview || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                                     alt="Avatar"
+                                    fallback={name || "User"}
                                     fill
                                     className="object-cover"
+                                    unoptimized={!!avatarPreview?.startsWith('blob:')}
                                 />
                             </div>
                             <button

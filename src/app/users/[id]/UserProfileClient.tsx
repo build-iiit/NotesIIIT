@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import Image from "next/image"; // Keep Image for background checks if needed, but we used it for background too
 import Link from "next/link";
+import { ProfileImage } from "@/components/ProfileImage";
 import { UserStatsCard } from "@/components/UserStatsCard";
 import { UserNotesGrid, type Note } from "@/components/UserNotesGrid";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
@@ -79,12 +80,12 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                         <div className="relative inline-block">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-purple-600 rounded-full blur-2xl opacity-40 animate-pulse" />
                             <div className="relative w-32 h-32 rounded-full border-4 border-white/50 dark:border-zinc-900/50 shadow-2xl bg-white/20 backdrop-blur-xl overflow-hidden">
-                                <Image
+                                <ProfileImage
                                     src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                                     alt={user.name || "User"}
+                                    fallback={user.name || "User"}
                                     fill
                                     className="object-cover"
-                                    unoptimized
                                 />
                             </div>
                             <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-4 border-white dark:border-zinc-900 rounded-full shadow-lg" />
