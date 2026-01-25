@@ -84,7 +84,8 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                                     src={null}
                                     alt={user.name || "User"}
                                     fallback={user.name || "User"}
-                                    fill
+                                    width={120}
+                                    height={120}
                                     className="object-cover"
                                 />
                             </div>

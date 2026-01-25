@@ -64,7 +64,8 @@ export function HomeGroupsGrid() {
                                         <ProfileImage
                                             src={null}
                                             alt={member.user.name || "Member"}
-                                            fill
+                                            width={128}
+                                            height={128}
                                             className="object-cover"
                                         />
                                     </div>

@@ -113,12 +113,14 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
 
                 {/* Header Preview Section */}
                 <div className="relative h-32 bg-gray-100 dark:bg-zinc-800">
-                    {backgroundPreview ? (
+                    {user.backgroundImage ? (
                         <Image
-                            src={backgroundPreview}
+                            src={user.backgroundImage}
                             alt="Background Cover"
                             fill
                             className="object-cover"
+                            // priority
+                            unoptimized
                         />
                     ) : (
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600" />
@@ -149,7 +151,8 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                                     src={null}
                                     alt="Avatar"
                                     fallback={name || "User"}
-                                    fill
+                                    width={90}
+                                    height={90}
                                     className="object-cover"
                                 />
                             </div>

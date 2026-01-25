@@ -108,7 +108,8 @@ export function GroupsList() {
                                         <ProfileImage
                                             src={null}
                                             alt={member.user.name || "Member"}
-                                            fill
+                                            width={33}
+                                            height={33}
                                             className="object-cover"
                                         />
                                     </div>

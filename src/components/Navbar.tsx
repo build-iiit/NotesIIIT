@@ -103,8 +103,9 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                         src={null}
                                         alt={user.name || "Profile"}
                                         fallback={user.name || "User"}
-                                        fill
-                                        className="rounded-full"
+                                        width={36}
+                                        height={36}
+                                        className="w-10 h-10 rounded-full bg-white/20 ring-2 ring-white/20"
                                     />
                                     <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900 z-10" />
                                 </Link>

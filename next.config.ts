@@ -35,6 +35,12 @@ const nextConfig: NextConfig = {
         port: '9000',
         pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: '172.22.49.165',
+        port: '9000',
+        pathname: '/**',
+      },
     ],
   },
   serverExternalPackages: ["canvas", "pdfjs-dist"],

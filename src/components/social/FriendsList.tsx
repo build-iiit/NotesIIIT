@@ -63,7 +63,8 @@ export function FriendsList() {
                                             src={friend.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend.id}`}
                                             alt={friend.name || "User"}
                                             fallback={friend.name || "User"}
-                                            fill
+                                            width={45}
+                                            height={45}
                                             className="object-cover"
                                         />
                                     </div>
@@ -99,7 +100,8 @@ export function FriendsList() {
                                                 src={req.sender.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.sender.id}`}
                                                 alt={req.sender.name || "User"}
                                                 fallback={req.sender.name || "User"}
-                                                fill
+                                                width={45}
+                                                height={45}
                                                 className="object-cover"
                                             />
                                         </div>

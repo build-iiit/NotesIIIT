@@ -840,39 +840,67 @@ export function FullPageNoteViewer({
 
 
             {/* --- MAIN CANVAS AREA --- */}
-            <div ref={containerRef} className="w-full h-full flex p-8 overflow-auto relative">
-                {loading && <div className="text-white text-xl m-auto">Loading PDF...</div>}
-                {error && <div className="text-red-400 text-xl m-auto">{error}</div>}
+            <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 14px;
+                    height: 14px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: rgba(156, 163, 175, 0.5);
+                    border-radius: 7px;
+                    border: 3px solid transparent;
+                    background-clip: content-box;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background-color: rgba(107, 114, 128, 0.8);
+                }
+                .custom-scrollbar::-webkit-scrollbar-corner {
+                    background: transparent;
+                }
+                /* Firefox */
+                .custom-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+                }
+            `}</style>
+            <div ref={containerRef} className="custom-scrollbar w-full h-full overflow-auto relative bg-neutral-100 dark:bg-neutral-900/50">
+                <div className="min-w-full min-h-full flex items-center justify-center p-8">
+                    {loading && <div className="text-white text-xl m-auto">Loading PDF...</div>}
+                    {error && <div className="text-red-400 text-xl m-auto">{error}</div>}
 
-                {!loading && !error && (
-                    <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair m-auto">
-                        <canvas ref={canvasRef} className="block" />
-                        <canvas
-                            ref={annotationCanvasRef}
-                            className={`absolute inset-0 z-10 touch-none ${tool === "eraser" ? "cursor-no-drop" : tool === "text" ? "cursor-text" : "cursor-crosshair"}`}
-                            onPointerDown={handlePointerDown}
-                            onPointerMove={handlePointerMove}
-                            onPointerUp={handlePointerUp}
-                            onPointerLeave={handlePointerUp}
-                        />
-
-                        {/* Text Notes Overlay */}
-                        {viewportDimensions && textNotes[pageNum]?.map(note => (
-                            <TextNoteOverlay
-                                key={note.id}
-                                note={note}
-                                viewportDimensions={viewportDimensions}
-                                isEditing={editingNote?.noteId === note.id}
-                                onSave={handleSaveTextNote}
-                                onUpdate={handleUpdateTextNote}
-                                onCancel={handleCancelTextNote}
-                                onClick={(id) => setEditingNote({ pageNum, noteId: id })}
-                                onDelete={handleDeleteTextNote}
-                                onToggleCollapse={handleToggleCollapse}
+                    {!loading && !error && (
+                        <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair">
+                            <canvas ref={canvasRef} className="block" />
+                            <canvas
+                                ref={annotationCanvasRef}
+                                className={`absolute inset-0 z-10 touch-none ${tool === "eraser" ? "cursor-no-drop" : tool === "text" ? "cursor-text" : "cursor-crosshair"}`}
+                                onPointerDown={handlePointerDown}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={handlePointerUp}
+                                onPointerLeave={handlePointerUp}
                             />
-                        ))}
-                    </div>
-                )}
+
+                            {/* Text Notes Overlay */}
+                            {viewportDimensions && textNotes[pageNum]?.map(note => (
+                                <TextNoteOverlay
+                                    key={note.id}
+                                    note={note}
+                                    viewportDimensions={viewportDimensions}
+                                    isEditing={editingNote?.noteId === note.id}
+                                    onSave={handleSaveTextNote}
+                                    onUpdate={handleUpdateTextNote}
+                                    onCancel={handleCancelTextNote}
+                                    onClick={(id) => setEditingNote({ pageNum, noteId: id })}
+                                    onDelete={handleDeleteTextNote}
+                                    onToggleCollapse={handleToggleCollapse}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* --- BOTTOM TOOLBAR --- */}
