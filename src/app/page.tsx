@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/HeroSection";
 import { NotesFeed } from "@/components/NotesFeed";
 import { prisma as db } from "@/lib/prisma";
 import { HomeFolderGrid } from "@/components/HomeFolderGrid";
+import { HomeGroupsGrid } from "@/components/HomeGroupsGrid";
 import { TrendingNotes } from "@/components/TrendingNotes";
 
 export default async function Home() {
@@ -25,6 +26,39 @@ export default async function Home() {
         userId: true,
         _count: {
           select: { notes: true }
+        }
+      }
+    })
+    : [];
+
+  // Fetch user's groups if logged in
+  const userGroups = session?.user?.id
+    ? await db.group.findMany({
+      where: {
+        members: {
+          some: { userId: session.user.id }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: { members: true }
+        },
+        members: {
+          take: 4,
+          select: {
+            id: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true
+              }
+            }
+          }
         }
       }
     })
@@ -60,7 +94,10 @@ export default async function Home() {
             </div>
           )}
 
-
+          {/* Groups Grid */}
+          <div className="w-full max-w-6xl mb-8">
+            <HomeGroupsGrid />
+          </div>
 
           {/* Notes Feed */}
           <div className="w-full max-w-6xl">
