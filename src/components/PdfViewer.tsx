@@ -14,11 +14,12 @@ interface PdfViewerProps {
     url: string;
     pageNum: number;
     onPageChange: (page: number) => void;
+    onDoubleClick?: () => void;
     noteId?: string;
     versionId?: string;
 }
 
-export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: PdfViewerProps) {
+export function PdfViewer({ url, pageNum, onPageChange, onDoubleClick, noteId, versionId }: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -252,7 +253,10 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
         <div ref={containerRef} className="flex flex-col items-center gap-6 w-full max-w-4xl mx-auto">
             {loading && <div className="animate-pulse text-gray-500">Loading document...</div>}
 
-            <div className="relative border border-white/20 shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm">
+            <div
+                className="relative border border-white/20 shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm"
+                onDoubleClick={onDoubleClick}
+            >
                 <canvas ref={canvasRef} className="max-w-full" />
                 <canvas
                     ref={annotationCanvasRef}
@@ -287,7 +291,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
 
             {/* Controls - Liquid Glass Theme */}
             <div className="space-y-4 w-full px-4">
-                <div className="flex gap-3 items-center justify-center flex-wrap backdrop-blur-xl bg-white/30 dark:bg-black/30 rounded-3xl p-5 border border-white/30 dark:border-white/10 shadow-xl">
+                <div className="flex gap-3 items-center justify-center flex-wrap backdrop-blur-3xl bg-white/10 dark:bg-black/40 rounded-3xl p-5 border border-white/20 dark:border-white/10 shadow-xl">
                     <button
                         onClick={() => changePage(-1)}
                         disabled={pageNum <= 1}
