@@ -5,7 +5,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { v4 as uuidv4 } from "uuid";
 import {
     X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info,
-    Pen, Eraser, RotateCcw, Highlighter, Type, ChevronDown, ChevronUp, Plus, Save
+    Pen, Eraser, RotateCcw, Highlighter, StickyNote, ChevronDown, ChevronUp, Plus, Save
 } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
@@ -179,11 +179,18 @@ export function FullPageNoteViewer({
     // Animation entry
     useEffect(() => {
         if (isOpen) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsAnimatingIn(true);
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
         } else {
             setIsAnimatingIn(false);
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
         }
+        return () => {
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+        };
     }, [isOpen]);
 
     // -------------------------------------------------------------------------
@@ -231,6 +238,13 @@ export function FullPageNoteViewer({
             if (!pdfDoc || !canvasRef.current || scale === 0) return;
             if (renderTaskRef.current) renderTaskRef.current.cancel();
 
+            // Save scroll position BEFORE render
+            const container = containerRef.current;
+            const scrollRatio = container ? {
+                x: container.scrollWidth > 0 ? container.scrollLeft / container.scrollWidth : 0,
+                y: container.scrollHeight > 0 ? container.scrollTop / container.scrollHeight : 0
+            } : null;
+
             try {
                 const page = await pdfDoc.getPage(pageNum);
                 const viewport = page.getViewport({ scale });
@@ -257,6 +271,14 @@ export function FullPageNoteViewer({
                 const renderTask = page.render(renderContext);
                 renderTaskRef.current = renderTask;
                 await renderTask.promise;
+
+                // Restore scroll position AFTER render
+                if (container && scrollRatio && zoomMode === "custom") {
+                    requestAnimationFrame(() => {
+                        container.scrollLeft = scrollRatio.x * container.scrollWidth;
+                        container.scrollTop = scrollRatio.y * container.scrollHeight;
+                    });
+                }
             } catch (err: unknown) {
                 if (err instanceof Error && err.name !== "RenderingCancelledException") {
                     console.error("Render error:", err);
@@ -264,7 +286,7 @@ export function FullPageNoteViewer({
             }
         };
         renderPage();
-    }, [pdfDoc, pageNum, scale]);
+    }, [pdfDoc, pageNum, scale, zoomMode]);
 
     // -------------------------------------------------------------------------
     // ANNOTATION LOGIC (Refined)
@@ -726,7 +748,7 @@ export function FullPageNoteViewer({
 
     return (
         <div
-            className={`fixed inset-0 z-50 bg-black/95 flex items-center justify-center transition-opacity duration-300 ${isAnimatingIn ? "opacity-100" : "opacity-0"}`}
+            className={`fixed inset-0 z-50 bg-black/95 transition-opacity duration-300 ${isAnimatingIn ? "opacity-100" : "opacity-0"}`}
             onMouseDown={(e) => {
                 // Only close if clicking backdrop specifically (and not drawing)
                 if (e.target === e.currentTarget && !showSavePrompt) handleCloseRequest();
@@ -753,7 +775,7 @@ export function FullPageNoteViewer({
                             <div className="flex flex-col gap-4">
                                 <button
                                     onClick={handleSaveExit}
-                                    className="w-full py-5 backdrop-blur-3xl rounded-2xl transition-all border shadow-2xl bg-orange-500/10 dark:bg-orange-500/5 border-orange-500/40 text-orange-400 font-black hover:bg-orange-500/20 hover:scale-[1.03] hover:shadow-orange-500/20 active:scale-95 uppercase tracking-[0.2em] text-xs"
+                                    className="w-full py-5 backdrop-blur-3xl rounded-2xl transition-all border shadow-2xl bg-orange-500/10 dark:bg-orange-500/5 border-orange-500/40 text-orange-400 font-black hover:bg-gradient-to-r hover:from-orange-400/20 hover:via-pink-400/20 hover:to-purple-500/20 hover:border-pink-400/50 hover:text-pink-300 hover:scale-[1.03] hover:shadow-[0_8px_32px_0_rgba(251,146,60,0.3)] active:scale-95 uppercase tracking-[0.2em] text-xs"
                                 >
                                     {saveMutation.isPending ? "Syncing..." : "Save & Exit"}
                                 </button>
@@ -809,7 +831,7 @@ export function FullPageNoteViewer({
 
 
             {/* --- MAIN CANVAS AREA --- */}
-            <div ref={containerRef} className="w-full h-full flex items-center justify-center p-8 overflow-auto relative touch-none">
+            <div ref={containerRef} className="w-full h-full flex items-center justify-center p-8 overflow-auto relative">
                 {loading && <div className="text-white text-xl">Loading PDF...</div>}
                 {error && <div className="text-red-400 text-xl">{error}</div>}
 
@@ -988,9 +1010,9 @@ export function FullPageNoteViewer({
                                 ? "bg-gradient-to-tr from-emerald-500 to-green-600 text-white shadow-lg shadow-green-500/30 scale-110"
                                 : "text-gray-600 dark:text-gray-300 hover:bg-white/20"
                                 }`}
-                            title="Text Note Tool"
+                            title="Sticky Note Tool"
                         >
-                            <Type className="w-5 h-5" />
+                            <StickyNote className="w-5 h-5" />
                         </button>
 
                         {/* Eraser */}
