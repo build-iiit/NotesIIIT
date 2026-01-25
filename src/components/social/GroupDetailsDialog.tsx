@@ -112,20 +112,42 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId }: GroupDetailsDia
                     {activeTab === 'MEMBERS' && (
                         <div className="space-y-6">
                             {/* Stats Row */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-2xl border border-orange-100 dark:border-orange-900/20">
-                                    <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-1">
-                                        <Trophy className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Group Rank</span>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-900/20">
+                                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
+                                        <FileText className="w-4 h-4" />
+                                        <span className="text-xs font-bold uppercase tracking-wider">Total Files</span>
                                     </div>
-                                    <p className="text-2xl font-black text-gray-900 dark:text-white">#{((groupId.length * 7) % 100) + 1}</p>
+                                    <p className="text-2xl font-black text-gray-900 dark:text-white">{groupFiles?.length || 0}</p>
                                 </div>
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
                                     <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
                                         <Users className="w-4 h-4" />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Activity</span>
+                                        <span className="text-xs font-bold uppercase tracking-wider">Your Files</span>
                                     </div>
-                                    <p className="text-2xl font-black text-gray-900 dark:text-white">High</p>
+                                    <p className="text-2xl font-black text-gray-900 dark:text-white">
+                                        {groupFiles?.filter((f: any) => f.author?.id === user?.id).length || 0}
+                                    </p>
+                                </div>
+                                <div className="p-4 bg-orange-50 dark:bg-orange-900/10 rounded-2xl border border-orange-100 dark:border-orange-900/20">
+                                    <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 mb-1">
+                                        <Trophy className="w-4 h-4" />
+                                        <span className="text-xs font-bold uppercase tracking-wider">Top Member</span>
+                                    </div>
+                                    <p className="text-lg font-black text-gray-900 dark:text-white truncate">
+                                        {(() => {
+                                            const contributions = groupFiles?.reduce((acc: any, file: any) => {
+                                                const authorId = file.author?.id;
+                                                if (authorId) acc[authorId] = (acc[authorId] || 0) + 1;
+                                                return acc;
+                                            }, {});
+                                            const topId = contributions && Object.keys(contributions).length > 0
+                                                ? Object.entries(contributions).sort(([, a]: any, [, b]: any) => b - a)[0][0]
+                                                : null;
+                                            const topMember = group?.members.find((m: any) => m.user.id === topId);
+                                            return topMember?.user.name?.split(' ')[0] || 'None';
+                                        })()}
+                                    </p>
                                 </div>
                             </div>
 
