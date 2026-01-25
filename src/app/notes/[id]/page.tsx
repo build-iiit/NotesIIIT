@@ -61,9 +61,9 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                         </div>
                     </div>
 
-                    {/* Focus Mode Button */}
+                    {/* Focus Mode Button - Desktop Only */}
                     {s3Url && (
-                        <div className="mb-4 flex justify-end">
+                        <div className="hidden md:flex justify-end mb-4">
                             <button
                                 onClick={() => setIsFullPageOpen(true)}
                                 className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
@@ -75,8 +75,8 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                         </div>
                     )}
 
-                    <div className="flex gap-8 items-start">
-                        <div className="flex-1">
+                    <div className="flex flex-col lg:flex-row gap-8 items-start">
+                        <div className="flex-1 w-full">
                             {s3Url ? (
                                 <PdfViewer
                                     url={s3Url}
@@ -85,6 +85,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     onDoubleClick={() => setIsFullPageOpen(true)}
                                     noteId={note?.id}
                                     versionId={currentVersion?.id}
+                                    onDoubleClick={() => setIsFullPageOpen(true)}
                                 />
                             ) : (
                                 <div className="p-8 border text-center text-red-500">
@@ -94,7 +95,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                         </div>
 
                         {currentVersion && (
-                            <div className="shrink-0">
+                            <div className="shrink-0 w-full lg:w-[350px]">
                                 <InteractionsPanel
                                     versionId={currentVersion.id}
                                     pageNumber={pageNum}

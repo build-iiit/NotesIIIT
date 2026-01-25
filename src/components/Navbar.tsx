@@ -180,6 +180,15 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                         <div className="h-2 w-2 rounded-full bg-green-500 shadow-lg shadow-green-500/50" />
                                         Signed in as {user.name}
                                     </div>
+
+                                    <Link
+                                        href={`/users/${user.id}`}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 transition-all duration-500 border border-black/5 dark:border-white/25 hover:border-orange-300/50"
+                                    >
+                                        <User className="h-4 w-4" />
+                                        My Profile
+                                    </Link>
                                     {onSignOut && (
                                         <button
                                             onClick={() => {

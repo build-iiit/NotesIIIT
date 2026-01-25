@@ -31,11 +31,11 @@ export default async function Home() {
     : [];
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-8 sm:p-24 relative overflow-hidden">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 sm:p-8 md:p-24 relative overflow-hidden">
       {session?.user ? (
         <div className="flex flex-col items-center gap-8 w-full z-10">
           <div className="flex flex-col items-center gap-4 mb-4 text-center">
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-pink-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-pink-600 bg-clip-text text-transparent">
               Welcome, {session.user.name?.split(" ")[0]}!
             </h1>
 

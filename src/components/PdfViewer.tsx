@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-import { Star, Bookmark, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Bookmark, X, ChevronDown, ChevronUp, Maximize } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import { TextNoteOverlay } from "./annotations/TextNoteOverlay";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
@@ -17,9 +17,11 @@ interface PdfViewerProps {
     onDoubleClick?: () => void;
     noteId?: string;
     versionId?: string;
+    onDoubleClick?: () => void;
+    onMaximize?: () => void;
 }
 
-export function PdfViewer({ url, pageNum, onPageChange, onDoubleClick, noteId, versionId }: PdfViewerProps) {
+export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDoubleClick, onMaximize }: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -250,7 +252,11 @@ export function PdfViewer({ url, pageNum, onPageChange, onDoubleClick, noteId, v
     if (error) return <div className="text-red-500 font-bold p-4 bg-red-100 rounded-lg">{error}</div>;
 
     return (
-        <div ref={containerRef} className="flex flex-col items-center gap-6 w-full max-w-4xl mx-auto">
+        <div
+            ref={containerRef}
+            className="flex flex-col items-center gap-6 w-full max-w-4xl mx-auto"
+            onDoubleClick={onDoubleClick}
+        >
             {loading && <div className="animate-pulse text-gray-500">Loading document...</div>}
 
             <div
@@ -290,12 +296,12 @@ export function PdfViewer({ url, pageNum, onPageChange, onDoubleClick, noteId, v
             </div>
 
             {/* Controls - Liquid Glass Theme */}
-            <div className="space-y-4 w-full px-4">
-                <div className="flex gap-3 items-center justify-center flex-wrap backdrop-blur-3xl bg-white/10 dark:bg-black/40 rounded-3xl p-5 border border-white/20 dark:border-white/10 shadow-xl">
+            <div className="space-y-4 w-full px-2 sm:px-4">
+                <div className="flex gap-2 sm:gap-3 items-center justify-center flex-wrap backdrop-blur-xl bg-white/30 dark:bg-black/30 rounded-3xl p-3 sm:p-5 border border-white/30 dark:border-white/10 shadow-xl">
                     <button
                         onClick={() => changePage(-1)}
                         disabled={pageNum <= 1}
-                        className="px-5 py-2.5 rounded-2xl text-sm font-bold text-gray-800 dark:text-gray-100 backdrop-blur-3xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 transition-all border border-white/40 dark:border-white/10 shadow-lg disabled:opacity-30 active:scale-95"
+                        className="px-3 py-2 sm:px-5 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-100 backdrop-blur-3xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 transition-all border border-white/40 dark:border-white/10 shadow-lg disabled:opacity-30 active:scale-95"
                     >
                         Previous
                     </button>
@@ -326,21 +332,31 @@ export function PdfViewer({ url, pageNum, onPageChange, onDoubleClick, noteId, v
                     <button
                         onClick={() => changePage(1)}
                         disabled={!pdfDoc || pageNum >= (pdfDoc.numPages || 0)}
-                        className="px-5 py-2.5 rounded-2xl text-sm font-bold text-gray-800 dark:text-gray-100 backdrop-blur-3xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 transition-all border border-white/40 dark:border-white/10 shadow-lg disabled:opacity-30 active:scale-95"
+                        className="px-3 py-2 sm:px-5 sm:py-2.5 rounded-2xl text-xs sm:text-sm font-bold text-gray-800 dark:text-gray-100 backdrop-blur-3xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 transition-all border border-white/40 dark:border-white/10 shadow-lg disabled:opacity-30 active:scale-95"
                     >
                         Next
                     </button>
+
+                    {onMaximize && (
+                        <button
+                            onClick={onMaximize}
+                            className="p-2.5 rounded-2xl text-gray-800 dark:text-gray-100 backdrop-blur-3xl bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/20 transition-all border border-white/40 dark:border-white/10 shadow-lg active:scale-95"
+                            title="Focus Mode"
+                        >
+                            <Maximize className="w-5 h-5" />
+                        </button>
+                    )}
 
                     {noteId && (
                         <button
                             onClick={handleToggleBookmark}
                             disabled={toggleBookmarkMutation.isPending}
                             className={`p-3 rounded-2xl backdrop-blur-xl border transition-all ${isCurrentPageBookmarked
-                                ? "bg-yellow-400/20 border-yellow-400/50"
+                                ? "bg-orange-500/20 border-orange-500/50"
                                 : "bg-white/40 dark:bg-white/10 border-white/40 dark:border-white/10"
                                 }`}
                         >
-                            <Star className={`w-5 h-5 ${isCurrentPageBookmarked ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} />
+                            <Bookmark className={`w-5 h-5 ${isCurrentPageBookmarked ? "fill-orange-500 text-orange-500" : "text-gray-400"}`} />
                         </button>
                     )}
                 </div>
