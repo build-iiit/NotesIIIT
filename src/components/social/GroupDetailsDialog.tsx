@@ -37,7 +37,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId }: GroupDetailsDia
 
     if (!isOpen) return null;
 
-    const currentUserMember = group?.members.find(m => m.user.id === user?.id);
+    const currentUserMember = group?.members.find((m: any) => m.user.id === user?.id);
     const isAdmin = currentUserMember?.role === 'ADMIN';
 
     const handleUpdateName = () => {
@@ -118,7 +118,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId }: GroupDetailsDia
                                         <Trophy className="w-4 h-4" />
                                         <span className="text-xs font-bold uppercase tracking-wider">Group Rank</span>
                                     </div>
-                                    <p className="text-2xl font-black text-gray-900 dark:text-white">#{Math.floor(Math.random() * 100) + 1}</p>
+                                    <p className="text-2xl font-black text-gray-900 dark:text-white">#{((groupId.length * 7) % 100) + 1}</p>
                                 </div>
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/20">
                                     <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
@@ -201,7 +201,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId }: GroupDetailsDia
                                     <p className="text-sm font-medium">No files shared with this group yet.</p>
                                 </div>
                             ) : (
-                                groupFiles?.map(file => (
+                                groupFiles?.map((file: any) => (
                                     <div key={file.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-2xl border border-gray-100 dark:border-white/5">
                                         <div className="flex items-center gap-4">
                                             <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl text-orange-600 dark:text-orange-400">
@@ -210,7 +210,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId }: GroupDetailsDia
                                             <div>
                                                 <h4 className="font-bold text-gray-900 dark:text-white">{file.title}</h4>
                                                 <p className="text-xs text-gray-500">
-                                                    Shared by {file.author.name} • {new Date(file.createdAt).toLocaleDateString()}
+                                                    Shared by {file.author?.name} • {new Date(file.createdAt).toLocaleDateString()}
                                                 </p>
                                             </div>
                                         </div>

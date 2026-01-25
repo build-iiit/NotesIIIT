@@ -3,7 +3,7 @@
 import { api } from "@/app/_trpc/client";
 import { Loader2, Search as SearchIcon, FileText, CheckCircle, ChevronDown, BookOpen, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 // Inline Debounce Hook
@@ -67,16 +67,15 @@ export default function SearchPage() {
     const { data: coursesData } = api.course.getAll.useQuery();
 
     // Suggestions Logic
-    const [suggestions, setSuggestions] = useState<{ type: 'course' | 'note', id: string, label: string, subLabel?: string }[]>([]);
-
-    useEffect(() => {
+    // Derived state for suggestions using useMemo instead of effect + state
+    // to avoid "setState in effect" warnings and improve performance
+    const suggestions = useMemo(() => {
         if (!debouncedSearch) {
-            setSuggestions([]);
-            return;
+            return [];
         }
 
         const searchLower = debouncedSearch.toLowerCase();
-        const results: typeof suggestions = [];
+        const results: { type: 'course' | 'note', id: string, label: string, subLabel?: string }[] = [];
 
         // Match Courses
         if (coursesData) {
@@ -106,9 +105,15 @@ export default function SearchPage() {
             results.push(...matchedNotes);
         }
 
-        setSuggestions(results);
-        setShowSuggestions(results.length > 0);
-    }, [debouncedSearch, coursesData, notesData]);
+        return results;
+    }, [debouncedSearch, coursesData, notesData?.items]);
+
+    // Update showSuggestions based on results
+    useEffect(() => {
+        if (suggestions.length > 0 && document.activeElement === searchRef.current?.querySelector('input')) {
+            setShowSuggestions(true);
+        }
+    }, [suggestions]);
 
 
     // Filtering
