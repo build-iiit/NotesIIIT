@@ -21,7 +21,8 @@ export interface TextNote {
     underline: boolean;
     width: number; // 0-1 relative to page width
     fontSize: number; // in pixels
-    collapsed: boolean;
+    collapsed?: boolean; // Reserved for backward compatibility
+    displayMode: "open" | "collapsed-line" | "collapsed-icon";
     createdAt: number;
     updatedAt: number;
 }
