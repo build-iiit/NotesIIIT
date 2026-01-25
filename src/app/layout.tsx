@@ -29,6 +29,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative overflow-x-hidden`}
+        suppressHydrationWarning
       >
         {/* Liquid Glass Background */}
         {/* Liquid Glass Background */}
