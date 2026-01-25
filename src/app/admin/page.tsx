@@ -5,11 +5,12 @@ import { api } from "@/app/_trpc/client";
 import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
 import { AdminUsersTable } from "@/components/admin/AdminUsersTable";
 import { AdminNotesTable } from "@/components/admin/AdminNotesTable";
+import { AdminCoursesTable } from "@/components/admin/AdminCoursesTable";
 import Link from "next/link";
-import { LayoutDashboard, Users, FileText, Shield, AlertCircle } from "lucide-react";
+import { LayoutDashboard, Users, FileText, BookOpen, Shield, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-type TabType = "overview" | "users" | "notes";
+type TabType = "overview" | "users" | "notes" | "courses";
 
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -59,6 +60,7 @@ export default function AdminPage() {
         { id: "overview" as TabType, name: "Overview", icon: LayoutDashboard },
         { id: "users" as TabType, name: "Users", icon: Users },
         { id: "notes" as TabType, name: "Notes", icon: FileText },
+        { id: "courses" as TabType, name: "Courses", icon: BookOpen },
     ];
 
     return (
@@ -99,8 +101,8 @@ export default function AdminPage() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
-                                            ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
                                         }`}
                                 >
                                     <Icon className="w-5 h-5" />
@@ -138,6 +140,15 @@ export default function AdminPage() {
                             <h2 className="text-xl font-semibold">Content Moderation</h2>
                         </div>
                         <AdminNotesTable />
+                    </div>
+                )}
+
+                {activeTab === "courses" && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-semibold">Course Management</h2>
+                        </div>
+                        <AdminCoursesTable />
                     </div>
                 )}
             </div>

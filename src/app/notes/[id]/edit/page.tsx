@@ -125,15 +125,58 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     // Authorization check moved here or handled above (handled above)
     // We need to return the JSX now.
 
+    // Generate Thumbnail Client-Side (Reused logic)
+    const generateThumbnail = async (file: File): Promise<Blob | null> => {
+        try {
+            const pdfjsLib = await import("pdfjs-dist");
+            pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            const page = await pdf.getPage(1);
+
+            const scale = 1.0;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+
+            if (!context) return null;
+
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({
+                canvasContext: context,
+                viewport: viewport,
+            } as any).promise;
+
+            return new Promise((resolve) => {
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, "image/jpeg", 0.8);
+            });
+        } catch (error) {
+            console.error("Client-side thumbnail generation failed:", error);
+            return null;
+        }
+    };
+
     const handleNewVersion = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         try {
             setUploading(true);
-            // 1. Upload Locally (Bypass S3)
+
+            // 1. Generate & Upload
             const formData = new FormData();
             formData.append("file", file);
+
+            const thumbnailBlob = await generateThumbnail(file);
+            if (thumbnailBlob) {
+                formData.append("thumbnail", thumbnailBlob, "thumbnail.jpg");
+            }
 
             const uploadResponse = await fetch("/api/upload", {
                 method: "POST",
@@ -152,10 +195,12 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
             await addVersion.mutateAsync({
                 noteId: id,
                 s3Key: s3Key,
+                thumbnailKey: uploadResult.thumbnailKey,
             });
 
-            alert("New version uploaded!");
-            router.push(`/notes/${id}`);
+            alert("New version uploaded successfully!");
+            // router.push(`/notes/${id}`); // Keep user on edit page
+            router.refresh(); // Refresh data to show new version info if needed
         } catch (error) {
             console.error(error);
             alert("Upload failed");

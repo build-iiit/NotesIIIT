@@ -5,6 +5,7 @@ import {
     createTRPCRouter,
     protectedProcedure,
 } from "@/server/api/trpc";
+import { getPresignedDownloadUrl } from "@/lib/s3";
 import { TRPCError } from "@trpc/server";
 
 export const foldersRouter = createTRPCRouter({
@@ -64,12 +65,28 @@ export const foldersRouter = createTRPCRouter({
                 },
                 orderBy: {
                     createdAt: 'desc'
+                },
+                include: {
+                    versions: {
+                        take: 1,
+                        orderBy: { version: 'desc' },
+                        select: { thumbnailKey: true }
+                    }
                 }
             });
 
+            // Resolve thumbnails
+            const notesWithThumbnails = await Promise.all(notes.map(async (note) => {
+                let thumbnailUrl = "";
+                if (note.thumbnailS3Key) {
+                    thumbnailUrl = await getPresignedDownloadUrl(note.thumbnailS3Key);
+                }
+                return { ...note, thumbnailUrl };
+            }));
+
             return {
                 folders,
-                notes
+                notes: notesWithThumbnails
             };
         }),
 

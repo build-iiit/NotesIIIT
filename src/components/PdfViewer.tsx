@@ -14,6 +14,7 @@ interface PdfViewerProps {
     url: string;
     pageNum: number;
     onPageChange: (page: number) => void;
+    onDoubleClick?: () => void;
     noteId?: string;
     versionId?: string;
     onDoubleClick?: () => void;
@@ -258,7 +259,10 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
         >
             {loading && <div className="animate-pulse text-gray-500">Loading document...</div>}
 
-            <div className="relative border border-white/20 shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm">
+            <div
+                className="relative border border-white/20 shadow-2xl rounded-2xl overflow-hidden bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm"
+                onDoubleClick={onDoubleClick}
+            >
                 <canvas ref={canvasRef} className="max-w-full" />
                 <canvas
                     ref={annotationCanvasRef}

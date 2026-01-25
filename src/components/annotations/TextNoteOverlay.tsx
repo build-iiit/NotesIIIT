@@ -31,6 +31,7 @@ export const TextNoteOverlay = ({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
+    const hasDragged = useRef(false);
     const dragStartPos = useRef({ x: 0, y: 0 });
     const noteStartPos = useRef({ x: note.x, y: note.y });
     const noteStartWidth = useRef(note.width || 0.2);
@@ -61,6 +62,7 @@ export const TextNoteOverlay = ({
         if (readOnly || isEditing) return;
         e.stopPropagation();
         setIsDragging(true);
+        hasDragged.current = false; // Reset drag state
         dragStartPos.current = { x: e.clientX, y: e.clientY };
         noteStartPos.current = { x: note.x, y: note.y };
     };
@@ -77,10 +79,18 @@ export const TextNoteOverlay = ({
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (isDragging) {
-                const dx = (e.clientX - dragStartPos.current.x) / viewportDimensions.width;
-                const dy = (e.clientY - dragStartPos.current.y) / viewportDimensions.height;
-                const newX = Math.max(0, Math.min(1, noteStartPos.current.x + dx));
-                const newY = Math.max(0, Math.min(1, noteStartPos.current.y + dy));
+                const dx = (e.clientX - dragStartPos.current.x);
+                const dy = (e.clientY - dragStartPos.current.y);
+
+                // If moved reasonably, mark as dragged
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                    hasDragged.current = true;
+                }
+
+                const dxRel = dx / viewportDimensions.width;
+                const dyRel = dy / viewportDimensions.height;
+                const newX = Math.max(0, Math.min(1, noteStartPos.current.x + dxRel));
+                const newY = Math.max(0, Math.min(1, noteStartPos.current.y + dyRel));
                 onUpdate(note.id, { x: newX, y: newY });
             } else if (isResizing) {
                 const dx = (e.clientX - dragStartPos.current.x) / viewportDimensions.width;
@@ -108,9 +118,16 @@ export const TextNoteOverlay = ({
     const top = note.y * viewportDimensions.height;
     const width = (note.width || 0.2) * viewportDimensions.width;
 
-    // Lighter Theme for Liquid Glass
-    // If Editing or Expanded: Show content
-    // If Collapsed: Show Sticky Note Icon
+    // Determine current display mode (handle legacy data)
+    const effectiveMode = note.displayMode || (note.collapsed ? 'collapsed-icon' : 'open');
+    const isExpanded = effectiveMode === 'open';
+    const isLineMode = effectiveMode === 'collapsed-line';
+    const isIconMode = effectiveMode === 'collapsed-icon';
+
+    // UI Helpers based on note color
+    const noteColor = note.color || '#F59E0B';
+    const bgColor = `${noteColor}0D`; // ~5% opacity for extreme transparency (highlight effect)
+    const borderColor = `${noteColor}33`; // ~20% opacity for delicate border
 
     return (
         <div
@@ -118,33 +135,43 @@ export const TextNoteOverlay = ({
             style={{
                 left,
                 top,
-                width: note.collapsed ? 'auto' : width,
+                width: (isIconMode || isLineMode) ? 'auto' : width,
                 transform: 'translate(-50%, -50%)',
             }}
             onMouseDown={handleMouseDown}
         >
             <div
-                className={`transition-all duration-300 ${note.collapsed
+                className={`transition-all duration-300 rounded-2xl ${isIconMode
                     ? 'p-2 hover:scale-110 cursor-pointer drop-shadow-lg'
-                    : `min-w-[150px] backdrop-blur-xl bg-white/60 dark:bg-black/40 border border-white/40 dark:border-white/10 rounded-2xl p-3 shadow-xl ${isEditing ? 'ring-2 ring-orange-400 z-30 scale-105' : !readOnly ? 'hover:scale-[1.01] cursor-move select-none hover:shadow-2xl' : ''}`
+                    : `backdrop-blur-[2px] backdrop-saturate-150 border p-3 shadow-lg ${isEditing ? 'ring-2 ring-orange-400 z-30 scale-105' : !readOnly ? 'hover:scale-[1.01] cursor-move select-none hover:shadow-xl' : ''}`
                     }`}
+                style={{
+                    backgroundColor: (isIconMode || isLineMode) ? 'transparent' : bgColor,
+                    borderColor: (isIconMode || isLineMode) ? 'transparent' : borderColor,
+                    minWidth: isIconMode ? 'auto' : isLineMode ? '100px' : '150px',
+                    maxWidth: isLineMode ? '250px' : 'none',
+                }}
                 onClick={(e) => {
                     e.stopPropagation();
                     if (!isEditing && !readOnly) {
-                        if (note.collapsed) onToggleCollapse(note.id);
+                        if (hasDragged.current) {
+                            hasDragged.current = false; // Clear for next time
+                            return; // Don't trigger mode change after drag
+                        }
+                        if (!isExpanded) onToggleCollapse(note.id);
                         else onClick(note.id);
                     }
                 }}
             >
-                {/* Icons bar (Only when expanded) */}
-                {!readOnly && !note.collapsed && (
+                {/* Icons bar (Only when not icon mode AND not editing) */}
+                {!readOnly && !isIconMode && !isEditing && (
                     <div className="absolute -top-3 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-40 delay-75">
                         <button
                             onClick={(e) => { e.stopPropagation(); onToggleCollapse(note.id); }}
                             className="p-1.5 bg-white text-gray-700 rounded-full hover:bg-gray-100 shadow-md border border-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:border-white/10"
-                            title="Collapse to Icon"
+                            title={isExpanded ? "Collapse to Line" : "Collapse to Icon"}
                         >
-                            <ChevronUp className="w-3 h-3" />
+                            <ChevronUp className={`w-3 h-3 transition-transform ${isLineMode ? 'rotate-180' : ''}`} />
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
@@ -194,16 +221,30 @@ export const TextNoteOverlay = ({
                             </button>
                         </div>
                     </div>
-                ) : note.collapsed ? (
+                ) : isIconMode ? (
                     /* Sticky Note Icon Mode */
                     <div className="relative group">
                         <StickyNote
                             className="w-8 h-8 drop-shadow-md transition-transform group-hover:scale-110"
-                            style={{ color: note.color || '#F59E0B', fill: `${note.color || '#F59E0B'}20` }}
+                            style={{ color: noteColor, fill: `${noteColor}20` }}
                         />
                         <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-500 rounded-full ring-2 ring-white dark:ring-black animate-pulse" />
                     </div>
+                ) : isLineMode ? (
+                    /* Collapsed Line Mode - Now matching theme */
+                    <div
+                        className="truncate text-xs font-semibold px-2 py-1.5 rounded-xl border-l-[4px] shadow-sm backdrop-blur-md"
+                        style={{
+                            color: noteColor,
+                            backgroundColor: bgColor,
+                            borderColor: borderColor,
+                            borderLeftColor: noteColor,
+                        }}
+                    >
+                        {note.content.split('\n')[0] || <span className="text-gray-400 italic">Empty note</span>}
+                    </div>
                 ) : (
+                    /* Full Expanded Mode */
                     <div
                         className="overflow-hidden whitespace-pre-wrap relative px-1 min-h-[1.5em]"
                         style={{
