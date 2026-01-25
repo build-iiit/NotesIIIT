@@ -118,6 +118,8 @@ export function FullPageNoteViewer({
     const [textFontSize, setTextFontSize] = useState(14);
     const [showTextColorPicker, setShowTextColorPicker] = useState(false);
     const textColorPickerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [pageInputValue, setPageInputValue] = useState("");
+    const [isPageInputFocused, setIsPageInputFocused] = useState(false);
 
     // API Hooks
     const utils = api.useUtils();
@@ -713,8 +715,11 @@ export function FullPageNoteViewer({
     const resetControls = useCallback(() => {
         setShowControls(true);
         if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current);
-        hideControlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
-    }, []);
+        // Don't hide if page input is focused
+        if (!isPageInputFocused) {
+            hideControlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
+        }
+    }, [isPageInputFocused]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -731,6 +736,8 @@ export function FullPageNoteViewer({
     useEffect(() => {
         if (!isOpen) return;
         const kd = (e: KeyboardEvent) => {
+            if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+
             if (e.key === "Escape") handleCloseRequest();
             if (e.key === "ArrowLeft") changePage(-1);
             if (e.key === "ArrowRight") changePage(1);
@@ -831,12 +838,12 @@ export function FullPageNoteViewer({
 
 
             {/* --- MAIN CANVAS AREA --- */}
-            <div ref={containerRef} className="w-full h-full flex items-center justify-center p-8 overflow-auto relative">
-                {loading && <div className="text-white text-xl">Loading PDF...</div>}
-                {error && <div className="text-red-400 text-xl">{error}</div>}
+            <div ref={containerRef} className="w-full h-full flex p-8 overflow-auto relative">
+                {loading && <div className="text-white text-xl m-auto">Loading PDF...</div>}
+                {error && <div className="text-red-400 text-xl m-auto">{error}</div>}
 
                 {!loading && !error && (
-                    <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair">
+                    <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair m-auto">
                         <canvas ref={canvasRef} className="block" />
                         <canvas
                             ref={annotationCanvasRef}
@@ -873,7 +880,69 @@ export function FullPageNoteViewer({
                     {/* Navigation */}
                     <div className="flex items-center gap-1 px-2 border-r border-white/20">
                         <button onClick={() => changePage(-1)} disabled={pageNum <= 1} className="p-2 text-gray-800 dark:text-gray-100 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-                        <span className="text-gray-800 dark:text-gray-100 font-bold font-mono min-w-[3rem] text-center text-sm">{pageNum}/{pdfDoc?.numPages || "-"}</span>
+                        <div className="flex items-center gap-1">
+                            <input
+                                type="text"
+                                value={pageInputValue}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || /^\d+$/.test(val)) {
+                                        setPageInputValue(val);
+                                    }
+                                }}
+                                onFocus={() => {
+                                    setIsPageInputFocused(true);
+                                    setPageInputValue(pageNum.toString());
+                                    setShowControls(true);
+                                    if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current);
+                                }}
+                                onBlur={() => {
+                                    setIsPageInputFocused(false);
+                                    setPageInputValue("");
+                                }}
+                                onKeyDown={(e) => {
+                                    e.stopPropagation(); // Stop event from reaching global listeners
+                                    if (e.key === 'Enter' && pageInputValue) {
+                                        const targetPage = parseInt(pageInputValue);
+                                        if (pdfDoc && targetPage >= 1 && targetPage <= pdfDoc.numPages) {
+                                            setPageNum(targetPage);
+                                            setPageInputValue("");
+                                            setIsPageInputFocused(false);
+                                            (e.target as HTMLInputElement).blur();
+                                        } else {
+                                            // Invalid page: keep current page, reset input
+                                            setPageInputValue(pageNum.toString());
+                                        }
+                                    } else if (e.key === 'Escape') {
+                                        setPageInputValue("");
+                                        setIsPageInputFocused(false);
+                                        (e.target as HTMLInputElement).blur();
+                                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                                        e.stopPropagation(); // Allow cursor movement
+                                    }
+                                }}
+                                className="w-12 text-gray-800 dark:text-gray-100 font-bold font-mono text-sm text-center bg-white/10 dark:bg-black/20 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-orange-400/50 border border-transparent hover:border-white/20"
+                                placeholder={pageNum.toString()}
+                            />
+                            <button
+                                onMouseDown={(e) => {
+                                    e.preventDefault(); // Prevent input from losing focus immediately
+                                    if (pageInputValue) {
+                                        const targetPage = parseInt(pageInputValue);
+                                        if (pdfDoc && targetPage >= 1 && targetPage <= pdfDoc.numPages) {
+                                            setPageNum(targetPage);
+                                            setPageInputValue("");
+                                            setIsPageInputFocused(false);
+                                        }
+                                    }
+                                }}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 border border-orange-500/30 transition-all ${isPageInputFocused ? "opacity-100 w-auto ml-1" : "opacity-0 w-0 ml-0 pointer-events-none overflow-hidden border-0 p-0"}`}
+                            >
+                                GO
+                            </button>
+                            <span className="text-gray-800 dark:text-gray-100 font-bold font-mono text-sm">/</span>
+                            <span className="text-gray-800 dark:text-gray-100 font-bold font-mono text-sm">{pdfDoc?.numPages || "-"}</span>
+                        </div>
                         <button onClick={() => changePage(1)} disabled={!pdfDoc || pageNum >= pdfDoc.numPages} className="p-2 text-gray-800 dark:text-gray-100 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors"><ChevronRight className="w-5 h-5" /></button>
                     </div>
 
