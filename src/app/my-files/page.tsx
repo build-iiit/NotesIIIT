@@ -167,8 +167,8 @@ function MyFilesContent() {
 
                 {/* Main Content */}
                 <div className="relative">
-                    {/* Sunset Gradient Background */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-orange-400/25 via-pink-500/25 to-purple-600/25 rounded-xl -z-10" />
+                    {/* Sunset Gradient Background - Removed as it's now global in layout.tsx */}
+                    {/* <div className="absolute inset-0 bg-gradient-to-br from-orange-400/25 via-pink-500/25 to-purple-600/25 rounded-xl -z-10" /> */}
 
                     {/* Layered Glass Container */}
                     <div className="relative backdrop-blur-3xl bg-gradient-to-br from-white/10 via-white/5 to-white/10 dark:from-white/[0.07] dark:via-white/[0.03] dark:to-white/[0.07] rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/20 p-6">

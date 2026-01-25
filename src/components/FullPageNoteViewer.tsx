@@ -752,21 +752,21 @@ export function FullPageNoteViewer({
 
             {/* --- BOTTOM TOOLBAR --- */}
             <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-200 ${showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
-                <div className="bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-2 border border-white/10 shadow-2xl flex items-center gap-4">
+                <div className="bg-white/30 dark:bg-black/40 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/30 dark:border-white/10 shadow-2xl flex items-center gap-4">
 
                     {/* Navigation */}
-                    <div className="flex items-center gap-1 px-2 border-r border-white/10">
-                        <button onClick={() => changePage(-1)} disabled={pageNum <= 1} className="p-2 text-white hover:bg-white/10 rounded-lg disabled:opacity-30"><ChevronLeft className="w-5 h-5" /></button>
-                        <span className="text-white font-mono min-w-[3rem] text-center">{pageNum}/{pdfDoc?.numPages || "-"}</span>
-                        <button onClick={() => changePage(1)} disabled={!pdfDoc || pageNum >= pdfDoc.numPages} className="p-2 text-white hover:bg-white/10 rounded-lg disabled:opacity-30"><ChevronRight className="w-5 h-5" /></button>
+                    <div className="flex items-center gap-1 px-2 border-r border-white/20">
+                        <button onClick={() => changePage(-1)} disabled={pageNum <= 1} className="p-2 text-gray-800 dark:text-gray-100 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+                        <span className="text-gray-800 dark:text-gray-100 font-bold font-mono min-w-[3rem] text-center text-sm">{pageNum}/{pdfDoc?.numPages || "-"}</span>
+                        <button onClick={() => changePage(1)} disabled={!pdfDoc || pageNum >= pdfDoc.numPages} className="p-2 text-gray-800 dark:text-gray-100 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors"><ChevronRight className="w-5 h-5" /></button>
                     </div>
 
                     {/* Annotation Tools */}
-                    <div className="flex items-center gap-2 px-2 border-r border-white/10">
+                    <div className="flex items-center gap-2 px-2 border-r border-white/20">
                         {/* Undo/Redo */}
                         <div className="flex items-center gap-1 mr-2">
-                            <button onClick={handleUndo} disabled={!history[pageNum]?.length} className="p-2 text-white hover:bg-white/10 rounded-lg disabled:opacity-30" title="Undo (Ctrl+Z)"><RotateCcw className="w-4 h-4" /></button>
-                            <button onClick={handleRedo} disabled={!future[pageNum]?.length} className="p-2 text-white hover:bg-white/10 rounded-lg disabled:opacity-30" title="Redo (Ctrl+Shift+Z)"><RotateCcw className="w-4 h-4 scale-x-[-1]" /></button>
+                            <button onClick={handleUndo} disabled={!history[pageNum]?.length} className="p-2 text-gray-700 dark:text-gray-300 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors" title="Undo"><RotateCcw className="w-4 h-4" /></button>
+                            <button onClick={handleRedo} disabled={!future[pageNum]?.length} className="p-2 text-gray-700 dark:text-gray-300 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors" title="Redo"><RotateCcw className="w-4 h-4 scale-x-[-1]" /></button>
                         </div>
 
                         {/* Pen */}
@@ -777,7 +777,11 @@ export function FullPageNoteViewer({
                         >
                             <button
                                 onClick={() => setTool("pen")}
-                                className={`p-2 rounded-lg transition-all ${tool === "pen" ? "bg-blue-600 text-white" : "text-white/70 hover:bg-white/10"}`}
+                                className={`p-2.5 rounded-full transition-all duration-300 ${tool === "pen"
+                                    ? "bg-gradient-to-tr from-blue-500 to-cyan-400 text-white shadow-lg shadow-blue-500/30 scale-110"
+                                    : "text-gray-600 dark:text-gray-300 hover:bg-white/20"
+                                    }`}
+                                title="Pen Tool"
                             >
                                 <Pen className="w-5 h-5" />
                             </button>
@@ -830,14 +834,18 @@ export function FullPageNoteViewer({
                         >
                             <button
                                 onClick={() => setTool("highlighter")}
-                                className={`p-2 rounded-lg transition-all ${tool === "highlighter" ? "bg-yellow-500 text-white" : "text-white/70 hover:bg-white/10"}`}
+                                className={`p-2.5 rounded-full transition-all duration-300 ${tool === "highlighter"
+                                    ? "bg-gradient-to-tr from-yellow-500 to-orange-400 text-white shadow-lg shadow-yellow-500/30 scale-110"
+                                    : "text-gray-600 dark:text-gray-300 hover:bg-white/20"
+                                    }`}
+                                title="Highlighter Tool"
                             >
                                 <Highlighter className="w-5 h-5" />
                             </button>
 
                             {/* Highlight Color Picker */}
                             <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pb-2 transition-all flex flex-col items-center ${showHighlightPicker ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
-                                <div className={`p-2 bg-zinc-800 rounded-xl border border-white/10 shadow-xl flex gap-1 transition-all origin-bottom ${showHighlightPicker ? "scale-100" : "scale-95"}`}>
+                                <div className={`p-2 bg-zinc-800/90 backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl flex gap-1 transition-all origin-bottom ${showHighlightPicker ? "scale-100" : "scale-95"}`}>
                                     {HIGHLIGHT_COLORS.map(c => (
                                         <button
                                             key={c.name}
@@ -882,7 +890,10 @@ export function FullPageNoteViewer({
                         {/* Text Tool */}
                         <button
                             onClick={() => setTool("text")}
-                            className={`p-2 rounded-lg transition-all ${tool === "text" ? "bg-green-600 text-white" : "text-white/70 hover:bg-white/10"}`}
+                            className={`p-2.5 rounded-full transition-all duration-300 ${tool === "text"
+                                ? "bg-gradient-to-tr from-emerald-500 to-green-600 text-white shadow-lg shadow-green-500/30 scale-110"
+                                : "text-gray-600 dark:text-gray-300 hover:bg-white/20"
+                                }`}
                             title="Text Note Tool"
                         >
                             <Type className="w-5 h-5" />
@@ -891,13 +902,17 @@ export function FullPageNoteViewer({
                         {/* Eraser */}
                         <button
                             onClick={() => setTool("eraser")}
-                            className={`p-2 rounded-lg transition-all ${tool === "eraser" ? "bg-red-600 text-white" : "text-white/70 hover:bg-white/10"}`}
+                            className={`p-2.5 rounded-full transition-all duration-300 ${tool === "eraser"
+                                ? "bg-gradient-to-tr from-red-500 to-rose-600 text-white shadow-lg shadow-red-500/30 scale-110"
+                                : "text-gray-600 dark:text-gray-300 hover:bg-white/20"
+                                }`}
+                            title="Eraser Tool"
                         >
                             <Eraser className="w-5 h-5" />
                         </button>
 
                         <div
-                            className="w-6 h-6 rounded-full border border-white/20 ml-2"
+                            className="w-6 h-6 rounded-full border-2 border-white/30 ml-2 shadow-sm"
                             style={{
                                 backgroundColor: tool === "highlighter" ? highlightColor :
                                     tool === "text" ? textColor : penColor

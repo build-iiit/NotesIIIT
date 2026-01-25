@@ -43,24 +43,21 @@ export function TrendingNotes() {
                     <Link
                         key={note.id}
                         href={`/notes/${note.id}`}
-                        className="group block bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:shadow-lg transition-all hover:border-orange-500/50 hover:-translate-y-1 relative"
+                        className="group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 hover:border-orange-300/30 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)] transition-all duration-300 hover:-translate-y-1"
                     >
-                        {/* Glow effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-pink-500/0 to-purple-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-tr" />
-
-                        <div className="p-5 h-full flex flex-col relative z-10">
+                        <div className="p-5 h-full flex flex-col">
                             <div className="flex justify-between items-start mb-2">
                                 <h3 className="font-bold text-lg group-hover:text-orange-600 transition-colors line-clamp-1 pr-4">
                                     {note.title}
                                 </h3>
-                                <div className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded-full">
+                                <div className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-white/20 dark:bg-black/20 px-2 py-1 rounded-full">
                                     <Eye className="h-3 w-3" />
                                     {note.viewCount}
                                 </div>
                             </div>
 
                             <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
-                                <span>By {note.author.name || "Unknown"}</span>
+                                <span>By {(note as { author?: { name?: string } }).author?.name || "Unknown"}</span>
                                 <span>•</span>
                                 <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                             </p>
@@ -71,7 +68,7 @@ export function TrendingNotes() {
                                 </p>
                             )}
 
-                            <div className="mt-auto flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-gray-100 dark:border-zinc-800">
+                            <div className="mt-auto flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-white/10">
                                 <span className="flex items-center gap-1 group-hover:text-orange-500 transition-colors">
                                     View details &rarr;
                                 </span>

@@ -8,7 +8,7 @@ import { TextNoteOverlay } from "./annotations/TextNoteOverlay";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
 
 // Set worker URL to the CDN matching the installed version
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@5.4.530/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface PdfViewerProps {
     url: string;
@@ -136,7 +136,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
                 try {
                     renderTaskRef.current.cancel();
                     await renderTaskRef.current.promise;
-                } catch {}
+                } catch { }
                 renderTaskRef.current = null;
             }
 
@@ -256,7 +256,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
                 <canvas ref={canvasRef} className="max-w-full" />
                 <canvas
                     ref={annotationCanvasRef}
-                    className="absolute inset-0 pointer-events-none"
+                    className="absolute inset-0 pointer-events-none z-10"
                     style={{ width: viewportDimensions?.width, height: viewportDimensions?.height }}
                 />
 
@@ -331,11 +331,10 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
                         <button
                             onClick={handleToggleBookmark}
                             disabled={toggleBookmarkMutation.isPending}
-                            className={`p-3 rounded-2xl backdrop-blur-xl border transition-all ${
-                                isCurrentPageBookmarked 
-                                ? "bg-yellow-400/20 border-yellow-400/50" 
+                            className={`p-3 rounded-2xl backdrop-blur-xl border transition-all ${isCurrentPageBookmarked
+                                ? "bg-yellow-400/20 border-yellow-400/50"
                                 : "bg-white/40 dark:bg-white/10 border-white/40 dark:border-white/10"
-                            }`}
+                                }`}
                         >
                             <Star className={`w-5 h-5 ${isCurrentPageBookmarked ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} />
                         </button>
@@ -356,11 +355,10 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
                                 <button
                                     key={bookmark.id}
                                     onClick={() => onPageChange(bookmark.pageNumber)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                                        bookmark.pageNumber === pageNum
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${bookmark.pageNumber === pageNum
                                         ? "bg-orange-500 text-white border-orange-400 shadow-orange-500/40 shadow-lg scale-110"
                                         : "bg-white/40 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-white/40 dark:border-white/10 hover:bg-white/60"
-                                    }`}
+                                        }`}
                                 >
                                     Page {bookmark.pageNumber}
                                 </button>

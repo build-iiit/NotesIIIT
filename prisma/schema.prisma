@@ -34,6 +34,13 @@ model User {
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  // Social Relations
+  sentRequests      FriendRequest[] @relation("SentRequests")
+  receivedRequests  FriendRequest[] @relation("ReceivedRequests")
+  
+  groups            GroupMember[]
+  createdGroups     Group[]         @relation("GroupCreator")
 }
 
 enum Role {
@@ -84,8 +91,6 @@ model Note {
   id          String   @id @default(cuid())
   title       String
   description String?
-  isPublic    Boolean  @default(true)
-  
   // Authorship
   authorId    String
   author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -105,16 +110,21 @@ model Note {
   views       View[]
   bookmarks   Bookmark[]
 
-  folderId    String?
-  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
-
-  // Course Relation
-  courseId    String?
-  course      Course?  @relation(fields: [courseId], references: [id])
+  folderId      String?
+  folder        Folder?   @relation(fields: [folderId], references: [id])
   
-  // Metadata
-  semester    String?  // e.g., "1-1", "1-2", "2-1"...
+  courseId      String?
+  course        Course?   @relation(fields: [courseId], references: [id])
+  semester      String? // e.g., "1-1", "1-2", "2-1"...
 
+  // Social & Media
+  isPublic      Boolean   @default(true) // Legacy, use visibility
+  visibility    NoteVisibility @default(PUBLIC)
+  
+  thumbnailS3Key String?
+
+  sharedGroups   Group[]  @relation("SharedNotes")
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -126,6 +136,7 @@ model Note {
 
 model Folder {
   id        String   @id @default(cuid())
+
   name      String
   
   userId    String
@@ -321,4 +332,79 @@ model Annotation {
   @@unique([userId, pageId]) // One annotation record per user per page
   @@index([pageId])
   @@index([userId])
+}
+
+// ---------------------------------------------------------
+// 4. Social System
+// ---------------------------------------------------------
+
+model FriendRequest {
+  id        String   @id @default(cuid())
+  
+  senderId  String
+  sender    User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  receiverId String
+  receiver   User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  status    RequestStatus @default(PENDING)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+  @@index([senderId])
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String
+  image     String?  // Optional group icon
+  
+  creatorId String
+  creator   User     @relation("GroupCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  members   GroupMember[]
+  sharedNotes Note[] @relation("SharedNotes")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([creatorId])
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  role      GroupRole @default(MEMBER)
+  
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+  @@index([userId])
+}
+
+enum GroupRole {
+  ADMIN
+  MEMBER
+}
+
+enum NoteVisibility {
+  PUBLIC
+  PRIVATE
+  GROUP
 }
