@@ -103,9 +103,9 @@ export function NotesFeed() {
                           2. Using data logic from 'NEW-FEATURES' (note.versions[0]?.thumbnailKey).
                         */}
                         <div className="h-40 w-full relative overflow-hidden bg-white/5 border-b border-white/10 group-hover:opacity-90 transition-opacity">
-                            {note.versions[0]?.thumbnailKey ? (
+                            {(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey ? (
                                 <img
-                                    src={note.versions[0].thumbnailKey}
+                                    src={(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey}
                                     alt={`Thumbnail for ${note.title}`}
                                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                                     loading="lazy"

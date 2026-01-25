@@ -61,11 +61,11 @@ export default function SearchPage() {
         hasNextPage,
         isFetchingNextPage
     } = api.notes.getInfinite.useInfiniteQuery(
-        { 
-            search: debouncedSearch, 
-            semester: semester || undefined, 
-            sortBy: sortBy, 
-            limit: 12 
+        {
+            search: debouncedSearch,
+            semester: semester || undefined,
+            sortBy: sortBy,
+            limit: 12
         },
         { getNextPageParam: (lastPage) => lastPage.nextCursor }
     );
@@ -231,11 +231,16 @@ export default function SearchPage() {
                                 {allNotes.map((note) => (
                                     <Link href={`/notes/${note.id}`} key={note.id} className="group">
                                         <div className="bg-white/40 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-xl hover:shadow-[0_0_20px_rgba(249,115,22,0.3)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col backdrop-blur-md overflow-hidden">
-                                            
+
                                             {/* Thumbnail */}
                                             <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800 overflow-hidden">
-                                                {note.versions[0]?.thumbnailKey ? (
-                                                    <img src={note.versions[0].thumbnailKey} alt={note.title} className="w-full h-full object-cover object-top" loading="lazy" />
+                                                {(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey ? (
+                                                    <img
+                                                        src={(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey}
+                                                        alt={note.title}
+                                                        className="w-full h-full object-cover object-top"
+                                                        loading="lazy"
+                                                    />
                                                 ) : (
                                                     <div className="flex items-center justify-center h-full text-gray-400">
                                                         <FileText className="h-12 w-12" />

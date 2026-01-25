@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { getPresignedUrl, getPresignedDownloadUrl } from "@/lib/s3";
 import { v4 as uuidv4 } from "uuid";
 
@@ -25,12 +26,12 @@ export const notesRouter = createTRPCRouter({
                 cursor: cursor ? { id: cursor } : undefined,
                 where: {
                     OR: [
-                        { visibility: "PUBLIC" },
+                        { visibility: "PUBLIC" as const },
                         // Private/Group notes visible to author
                         ...(userId ? [{ authorId: userId }] : []),
                         // Group notes visible to members
                         ...(userId ? [{
-                            visibility: "GROUP",
+                            visibility: "GROUP" as const,
                             sharedGroups: {
                                 some: {
                                     members: { some: { userId } }
@@ -40,7 +41,15 @@ export const notesRouter = createTRPCRouter({
                     ]
                 },
                 orderBy: { createdAt: "desc" },
-                include: { author: true, course: true },
+                include: {
+                    author: true,
+                    course: true,
+                    versions: {
+                        take: 1,
+                        orderBy: { version: 'desc' },
+                        select: { thumbnailKey: true }
+                    }
+                },
             });
 
             let nextCursor: typeof cursor | undefined = undefined;
@@ -61,13 +70,80 @@ export const notesRouter = createTRPCRouter({
             return { items: itemsWithThumbnails, nextCursor };
         }),
 
+    getInfinite: publicProcedure
+        .input(
+            z.object({
+                limit: z.number().min(1).max(100).default(20),
+                cursor: z.string().nullish(),
+                search: z.string().optional(),
+                semester: z.string().optional(),
+                sortBy: z.enum(["newest", "popular"]).optional(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const limit = input.limit ?? 20;
+            const cursor = input.cursor;
+
+            const whereClause: any = {
+                // Search implies public notes usually, but we can respect visibility too
+                isPublic: true,
+                semester: input.semester,
+            };
+
+            if (input.search) {
+                whereClause.OR = [
+                    { title: { contains: input.search, mode: 'insensitive' } },
+                    { course: { code: { contains: input.search, mode: 'insensitive' } } },
+                    { course: { name: { contains: input.search, mode: 'insensitive' } } },
+                ];
+            }
+
+            const items = await ctx.prisma.note.findMany({
+                take: limit + 1,
+                cursor: cursor ? { id: cursor } : undefined,
+                where: whereClause,
+                orderBy: input.sortBy === "popular"
+                    ? { voteScore: "desc" }
+                    : { createdAt: "desc" },
+                include: {
+                    author: true,
+                    course: true,
+                    versions: {
+                        take: 1,
+                        orderBy: { version: 'desc' },
+                        select: { thumbnailKey: true }
+                    }
+                },
+            });
+
+            let nextCursor: typeof cursor | undefined = undefined;
+            if (items.length > limit) {
+                const nextItem = items.pop();
+                nextCursor = nextItem!.id;
+            }
+
+            // Resolve thumbnails
+            const itemsWithThumbnails = await Promise.all(items.map(async (item) => {
+                let thumbnailUrl = "";
+                if (item.thumbnailS3Key) {
+                    thumbnailUrl = await getPresignedDownloadUrl(item.thumbnailS3Key);
+                }
+                return { ...item, thumbnailUrl };
+            }));
+
+            return {
+                items: itemsWithThumbnails,
+                nextCursor,
+            };
+        }),
+
     /**
      * Get trending notes (Top 6 by view count).
      * Source: NEW-FEATURES
      */
     getTrending: publicProcedure
         .query(async ({ ctx }) => {
-            return ctx.prisma.note.findMany({
+            const items = await ctx.prisma.note.findMany({
                 take: 6,
                 where: { isPublic: true },
                 orderBy: { viewCount: "desc" },
@@ -79,6 +155,17 @@ export const notesRouter = createTRPCRouter({
                     }
                 },
             });
+
+            // Resolve thumbnails
+            const itemsWithThumbnails = await Promise.all(items.map(async (item) => {
+                let thumbnailUrl = "";
+                if (item.thumbnailS3Key) {
+                    thumbnailUrl = await getPresignedDownloadUrl(item.thumbnailS3Key);
+                }
+                return { ...item, thumbnailUrl };
+            }));
+
+            return itemsWithThumbnails;
         }),
 
     /**
@@ -152,7 +239,7 @@ export const notesRouter = createTRPCRouter({
                 s3Key: z.string().min(1),
                 folderId: z.string().optional(),     // From Main
                 thumbnailKey: z.string().nullish(),  // From NEW-FEATURES
-                
+
                 courseId: z.string().optional(),
                 semester: z.string().optional(),
                 visibility: z.enum(["PUBLIC", "PRIVATE", "GROUP"]).default("PUBLIC"),
@@ -161,6 +248,19 @@ export const notesRouter = createTRPCRouter({
             })
         )
         .mutation(async ({ ctx, input }) => {
+            // Check if user exists (handle stale session)
+            const userExists = await ctx.prisma.user.findUnique({
+                where: { id: ctx.session.user.id },
+                select: { id: true }
+            });
+
+            if (!userExists) {
+                throw new TRPCError({
+                    code: "UNAUTHORIZED",
+                    message: "User account not found. Please log out and log in again."
+                });
+            }
+
             return ctx.prisma.$transaction(async (tx) => {
                 const note = await tx.note.create({
                     data: {
@@ -178,7 +278,7 @@ export const notesRouter = createTRPCRouter({
                                 version: 1,
                                 s3Key: input.s3Key,
                                 // Merged: Save the thumbnail key if provided
-                                thumbnailKey: input.thumbnailKey, 
+                                thumbnailKey: input.thumbnailKey,
                             },
                         },
                         // Merged: Handle Group connections
@@ -318,6 +418,19 @@ export const notesRouter = createTRPCRouter({
                         where: { versionId_number: { versionId: input.versionId, number: input.pageNumber } }
                     });
                 }
+            }
+
+            // Verify user exists to avoid Foreign Key errors (e.g. stale session)
+            const userExists = await ctx.prisma.user.findUnique({
+                where: { id: ctx.session.user.id },
+                select: { id: true }
+            });
+
+            if (!userExists) {
+                throw new TRPCError({
+                    code: "UNAUTHORIZED",
+                    message: "User account not found. Please log out and log in again."
+                });
             }
 
             return ctx.prisma.annotation.upsert({

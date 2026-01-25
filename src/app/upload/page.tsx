@@ -57,8 +57,14 @@ export default function UploadPage() {
     // Initialize PDF.js worker
     useEffect(() => {
         const initPdf = async () => {
-            const pdfjsLib = await import("pdfjs-dist");
-            pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            try {
+                const pdfjsLib = await import("pdfjs-dist");
+                // Use local worker file from public directory
+                pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+                console.log("PDF.js worker initialized with local source");
+            } catch (err) {
+                console.error("Failed to initialize PDF.js worker:", err);
+            }
         };
         initPdf();
     }, []);
@@ -66,10 +72,17 @@ export default function UploadPage() {
     // Thumbnail Generator Logic
     const generateThumbnail = async (pdfFile: File): Promise<File | null> => {
         try {
+            console.log("Generating thumbnail for:", pdfFile.name);
             const pdfjsLib = await import("pdfjs-dist");
+            // Ensure worker is set (redundant check but safe)
+            if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+            }
+
             const arrayBuffer = await pdfFile.arrayBuffer();
             const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
             const pdf = await loadingTask.promise;
+            console.log("PDF loaded, pages:", pdf.numPages);
             const page = await pdf.getPage(1);
 
             const originalViewport = page.getViewport({ scale: 1.0 });
@@ -79,20 +92,32 @@ export default function UploadPage() {
 
             const canvas = document.createElement("canvas");
             const context = canvas.getContext("2d");
-            if (!context) return null;
+            if (!context) {
+                console.error("Failed to get canvas context");
+                return null;
+            }
 
             canvas.width = scaledViewport.width;
             canvas.height = scaledViewport.height;
 
             await page.render({
                 canvasContext: context,
-                viewport: scaledViewport
+                viewport: scaledViewport,
+                // Cast to any to satisfy type definition if needed, though strictly it should be HTMLCanvasElement
+                canvas: canvas as any
             }).promise;
+
+            console.log("Thumbnail rendered to canvas");
 
             return new Promise((resolve) => {
                 canvas.toBlob((blob) => {
-                    if (!blob) resolve(null);
-                    else resolve(new File([blob], "thumbnail.jpg", { type: "image/jpeg" }));
+                    if (!blob) {
+                        console.error("Canvas to Blob failed");
+                        resolve(null);
+                    } else {
+                        console.log("Thumbnail blob created, size:", blob.size);
+                        resolve(new File([blob], "thumbnail.jpg", { type: "image/jpeg" }));
+                    }
                 }, "image/jpeg", 0.8);
             });
         } catch (error) {

@@ -16,6 +16,7 @@ export interface Note {
     versions: {
         thumbnailKey: string | null;
     }[];
+    thumbnailUrl?: string; // Add this field
 }
 
 interface UserNotesGridProps {
@@ -51,10 +52,10 @@ export function UserNotesGrid({ notes, userName }: UserNotesGridProps) {
                     <div className="h-full rounded-2xl bg-card border border-border overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                         {/* Header with gradient */}
                         <div className="h-32 relative overflow-hidden bg-gray-100 dark:bg-zinc-800">
-                            {note.versions?.[0]?.thumbnailKey ? (
+                            {note.thumbnailUrl || note.versions?.[0]?.thumbnailKey ? (
                                 <>
                                     <img
-                                        src={note.versions[0].thumbnailKey}
+                                        src={note.thumbnailUrl || note.versions[0].thumbnailKey!}
                                         alt={note.title}
                                         className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                                     />

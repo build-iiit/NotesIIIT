@@ -5,6 +5,22 @@ import { useState } from "react";
 import Image from "next/image";
 import { Shield, User, Trash2, Search, CheckSquare, Square } from "lucide-react";
 
+function getValidAvatarUrl(image: string | null | undefined, userId: string) {
+    if (!image) return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
+
+    // If it starts with /, it's a relative path (valid for Next.js)
+    if (image.startsWith("/")) return image;
+
+    try {
+        const url = new URL(image);
+        if (url.protocol === "http:" || url.protocol === "https:" || url.protocol === "data:") return image;
+    } catch (e) {
+        // Invalid URL
+    }
+
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${userId}`;
+}
+
 export function AdminUsersTable() {
     const [search, setSearch] = useState("");
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -200,7 +216,7 @@ export function AdminUsersTable() {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-3">
                                             <Image
-                                                src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                                                src={getValidAvatarUrl(user.image, user.id)}
                                                 alt={user.name || "User"}
                                                 width={40}
                                                 height={40}
