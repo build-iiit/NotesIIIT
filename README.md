@@ -120,6 +120,24 @@ npm run dev
 ```
 Visit **http://localhost:3000** to see the app in action!
 
+## 🛡️ Admin Setup
+
+Accessing the admin dashboard requires the `ADMIN` role. **By default, all new users are assigned the `USER` role.** You must manually promote the first admin using one of the methods below.
+
+### Option 1: Using Prisma Studio (Recommended)
+1. Run `npx prisma studio`
+2. Open http://localhost:5555
+3. Select the **User** model
+4. Find your user record and change `role` to `ADMIN`
+5. Save changes
+
+### Option 2: Using SQL
+```bash
+docker exec -it notes-postgres psql -U user -d notes_db -c "UPDATE \"User\" SET role = 'ADMIN' WHERE email = 'your-email@example.com';"
+```
+
+Once promoted, you will see the **Admin** shield icon in the navigation bar.
+
 ## 👥 Team hack0d3
 
 We are a team of passionate developers building cool things.
