@@ -52,6 +52,81 @@ export function FileExplorer({ }: FileExplorerProps) {
         }
     });
 
+    // Drag and Drop State
+    const [draggedItem, setDraggedItem] = useState<{ type: 'folder' | 'note', id: string } | null>(null);
+    const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
+
+    // Move Mutations
+    const moveFolderMutation = api.folders.move.useMutation({
+        onSuccess: () => {
+            utils.folders.getAll.invalidate({ parentId: currentFolderId });
+            utils.folders.getBreadcrumbs.invalidate({ folderId: currentFolderId! });
+            setDraggedItem(null);
+            setDragOverTarget(null);
+        },
+        onError: (error) => {
+            alert(error.message);
+            setDraggedItem(null);
+            setDragOverTarget(null);
+        }
+    });
+
+    const moveNoteMutation = api.notes.moveToFolder.useMutation({
+        onSuccess: () => {
+            utils.folders.getAll.invalidate({ parentId: currentFolderId });
+            setDraggedItem(null);
+            setDragOverTarget(null);
+        },
+        onError: (error) => {
+            alert(error.message);
+            setDraggedItem(null);
+            setDragOverTarget(null);
+        }
+    });
+
+    const handleDragStart = (e: React.DragEvent, type: 'folder' | 'note', id: string) => {
+        setDraggedItem({ type, id });
+        e.dataTransfer.setData('type', type);
+        e.dataTransfer.setData('id', id);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent, targetId: string | null) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+
+        // Prevent dropping on itself or if dragging a folder into a note (we don't drop on notes)
+        if (draggedItem?.id === targetId) return;
+
+        setDragOverTarget(targetId);
+    };
+
+    const handleDrop = (e: React.DragEvent, targetFolderId: string | null) => {
+        e.preventDefault();
+
+        if (!draggedItem) return;
+        if (draggedItem.id === targetFolderId) {
+            setDragOverTarget(null);
+            return;
+        }
+
+        if (draggedItem.type === 'note') {
+            moveNoteMutation.mutate({
+                noteId: draggedItem.id,
+                folderId: targetFolderId
+            });
+        } else {
+            // Check if we are moving a folder into itself (basic check, full check on backend)
+            if (draggedItem.id !== targetFolderId) {
+                moveFolderMutation.mutate({
+                    id: draggedItem.id,
+                    parentId: targetFolderId
+                });
+            }
+        }
+        setDragOverTarget(null);
+    };
+
     const handleCreateFolder = (e: React.FormEvent) => {
         e.preventDefault();
         if (!newFolderName.trim()) return;
@@ -123,7 +198,7 @@ export function FileExplorer({ }: FileExplorerProps) {
                     ))}
                 </div>
 
-                {/* Back Button */}
+                {/* Back Button - Drop Zone */}
                 {currentFolderId && (
                     <button
                         onClick={() => {
@@ -134,9 +209,30 @@ export function FileExplorer({ }: FileExplorerProps) {
                                 setCurrentFolderId(null);
                             }
                         }}
-                        className="mb-4 text-sm flex items-center gap-1 px-3 py-1.5 rounded-lg backdrop-blur-sm bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 text-gray-700 dark:text-gray-300 transition-all border border-white/20"
+                        onDragOver={(e) => {
+                            if (breadcrumbs && breadcrumbs.length > 0) {
+                                // If there is a grandparent to go back to
+                                const parent = breadcrumbs[breadcrumbs.length - 2];
+                                handleDragOver(e, parent ? parent.id : null);
+                            } else {
+                                // Going back to root
+                                handleDragOver(e, null);
+                            }
+                        }}
+                        onDrop={(e) => {
+                            if (breadcrumbs && breadcrumbs.length > 0) {
+                                const parent = breadcrumbs[breadcrumbs.length - 2];
+                                handleDrop(e, parent ? parent.id : null);
+                            } else {
+                                handleDrop(e, null);
+                            }
+                        }}
+                        className={`mb-4 text-sm flex items-center gap-1 px-3 py-1.5 rounded-lg backdrop-blur-sm transition-all border border-white/20 ${dragOverTarget === (breadcrumbs && breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2]?.id ?? null : null)
+                            ? 'bg-orange-500/30 border-orange-500 text-orange-100'
+                            : 'bg-white/20 dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 text-gray-700 dark:text-gray-300'
+                            }`}
                     >
-                        <ArrowLeft className="h-4 w-4" /> Back
+                        <ArrowLeft className="h-4 w-4" /> Back (Drop to Move Up)
                     </button>
                 )}
 
@@ -147,7 +243,15 @@ export function FileExplorer({ }: FileExplorerProps) {
                         <div
                             key={folder.id}
                             onClick={() => setCurrentFolderId(folder.id)}
-                            className="group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-500/20 hover:via-pink-500/15 hover:to-orange-500/20 cursor-pointer transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(251,146,60,0.25)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.05] active:scale-[0.98]"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
+                            onDragOver={(e) => handleDragOver(e, folder.id)}
+                            onDrop={(e) => handleDrop(e, folder.id)}
+                            className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border cursor-pointer
+                                ${dragOverTarget === folder.id
+                                    ? 'bg-orange-500/20 border-orange-500 scale-[1.05] shadow-[0_0_20px_0_rgba(249,115,22,0.4)]'
+                                    : 'bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-500/20 hover:via-pink-500/15 hover:to-orange-500/20 border-white/25 hover:border-orange-300/50 hover:scale-[1.05] active:scale-[0.98] hover:shadow-[0_12px_32px_0_rgba(251,146,60,0.25)]'
+                                }`}
                         >
                             {/* Inner glow layer */}
                             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -158,7 +262,7 @@ export function FileExplorer({ }: FileExplorerProps) {
                             >
                                 <Trash2 className="h-3 w-3" />
                             </button>
-                            <Folder className="h-10 w-10 text-yellow-500 mb-2 fill-yellow-500/30 drop-shadow-lg" />
+                            <Folder className={`h-10 w-10 mb-2 drop-shadow-lg transition-colors ${dragOverTarget === folder.id ? 'text-orange-500 fill-orange-500/30' : 'text-yellow-500 fill-yellow-500/30'}`} />
                             <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200">{folder.name}</span>
                         </div>
                     ))}
@@ -168,12 +272,29 @@ export function FileExplorer({ }: FileExplorerProps) {
                         <Link
                             key={note.id}
                             href={`/notes/${note.id}`}
-                            className="group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] hover:from-purple-500/20 hover:via-blue-500/15 hover:to-purple-500/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(147,51,234,0.25)] border border-white/25 hover:border-purple-300/50 hover:scale-[1.05] active:scale-[0.98]"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, 'note', note.id)}
+                            className="group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] hover:from-purple-500/20 hover:via-blue-500/15 hover:to-purple-500/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(147,51,234,0.25)] border border-white/25 hover:border-purple-300/50 hover:scale-[1.05] active:scale-[0.98] cursor-grab active:cursor-grabbing"
                         >
                             {/* Inner glow layer */}
                             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                             <div className="relative">
-                                <FileText className="h-10 w-10 text-gray-600 dark:text-gray-300 group-hover:text-purple-500 mb-2 transition-colors drop-shadow-lg" />
+                                {/* Thumbnail or Icon */}
+                                {note.thumbnailS3Key ? (
+                                    <div className="h-16 w-16 mb-2 rounded-lg shadow-md overflow-hidden bg-white/50">
+                                        {/* Note: In a real app we'd use Next.js Image with a proper loader. 
+                                             Using a raw img tag here for simplicity but it should be optimized.
+                                             We can generate a signed URL on the backend or use a public URL if public.
+                                         */}
+                                        <div
+                                            className="w-full h-full bg-cover bg-center"
+                                            style={{ backgroundImage: `url(https://d36u8i333158ha.cloudfront.net/${note.thumbnailS3Key})` }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <FileText className="h-10 w-10 text-gray-600 dark:text-gray-300 group-hover:text-purple-500 mb-2 transition-colors drop-shadow-lg" />
+                                )}
+
                                 <div className="absolute -bottom-1 -right-1 backdrop-blur-sm bg-white/60 dark:bg-black/40 text-[10px] px-1.5 py-0.5 rounded border border-white/40 text-gray-700 dark:text-gray-300 font-semibold">
                                     PDF
                                 </div>

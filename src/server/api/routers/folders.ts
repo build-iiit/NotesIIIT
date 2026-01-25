@@ -106,6 +106,60 @@ export const foldersRouter = createTRPCRouter({
             return breadcrumbs;
         }),
 
+    move: protectedProcedure
+        .input(z.object({
+            id: z.string(),
+            parentId: z.string().nullable(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const folder = await ctx.prisma.folder.findUnique({
+                where: { id: input.id },
+            });
+
+            if (!folder || folder.userId !== ctx.session.user.id) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Folder not found",
+                });
+            }
+
+            // Prevent moving folder into itself
+            if (input.parentId === input.id) {
+                throw new TRPCError({
+                    code: "BAD_REQUEST",
+                    message: "Cannot move folder into itself",
+                });
+            }
+
+            // Check for circular dependency (moving parent into child)
+            if (input.parentId) {
+                let currentParentId: string | null = input.parentId;
+                while (currentParentId) {
+                    if (currentParentId === input.id) {
+                        throw new TRPCError({
+                            code: "BAD_REQUEST",
+                            message: "Cannot move folder into its own child",
+                        });
+                    }
+
+                    const parent: { parentId: string | null; id: string } | null = await ctx.prisma.folder.findUnique({
+                        where: { id: currentParentId },
+                        select: { parentId: true, id: true }
+                    });
+
+                    if (!parent) break;
+                    currentParentId = parent.parentId;
+                }
+            }
+
+            return ctx.prisma.folder.update({
+                where: { id: input.id },
+                data: {
+                    parentId: input.parentId,
+                },
+            });
+        }),
+
     delete: protectedProcedure
         .input(z.object({ id: z.string() }))
         .mutation(async ({ ctx, input }) => {
