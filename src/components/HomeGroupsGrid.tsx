@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/app/_trpc/client";
 import { Users, ChevronRight } from "lucide-react";
 import Image from "next/image";
+import { ProfileImage } from "./ProfileImage";
 import { GroupDetailsDialog } from "./social/GroupDetailsDialog";
 
 export function HomeGroupsGrid() {
@@ -60,12 +61,11 @@ export function HomeGroupsGrid() {
                                         key={member.id}
                                         className="relative inline-block w-6 h-6 rounded-full ring-2 ring-white dark:ring-zinc-900 overflow-hidden"
                                     >
-                                        <Image
-                                            src={member.user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.id}`}
+                                        <ProfileImage
+                                            src={null}
                                             alt={member.user.name || "Member"}
                                             fill
                                             className="object-cover"
-                                            unoptimized
                                         />
                                     </div>
                                 ))}

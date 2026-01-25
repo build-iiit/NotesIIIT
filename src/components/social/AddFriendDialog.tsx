@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/app/_trpc/client";
 import { X, Search, UserPlus, Check } from "lucide-react";
 import Image from "next/image";
+import { ProfileImage } from "../ProfileImage";
 
 interface AddFriendDialogProps {
     isOpen: boolean;
@@ -67,12 +68,11 @@ export function AddFriendDialog({ isOpen, onClose }: AddFriendDialogProps) {
                                 <div key={user.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-zinc-700">
                                     <div className="flex items-center gap-3">
                                         <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100">
-                                            <Image
-                                                src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                                            <ProfileImage
+                                                src={null}
                                                 alt={user.name || ""}
                                                 fill
                                                 className="object-cover"
-                                                unoptimized
                                             />
                                         </div>
                                         <div>

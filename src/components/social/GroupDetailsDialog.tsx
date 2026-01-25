@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/app/_trpc/client";
 import { X, Search, UserPlus, Users, Trophy, Settings, FileText, Trash2, Edit2, Save } from "lucide-react";
 import Image from "next/image";
+import { ProfileImage } from "../ProfileImage";
 
 
 interface GroupDetailsDialogProps {
@@ -193,12 +194,11 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab = 'MEM
                                         <div key={member.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                             <div className="flex items-center gap-3">
                                                 <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-white/10">
-                                                    <Image
-                                                        src={member.user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.user.id}`}
+                                                    <ProfileImage
+                                                        src={null} // Generic enforced
                                                         alt={member.user.name || "Member"}
                                                         fill
                                                         className="object-cover"
-                                                        unoptimized
                                                     />
                                                 </div>
                                                 <div>
@@ -319,7 +319,7 @@ function MemberSearch({ query, group, onAdd }: { query: string, group: any, onAd
                     <div key={user.id} className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-white/5 rounded-lg transition-colors">
                         <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden relative">
-                                <Image src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} fill alt="" unoptimized />
+                                <ProfileImage src={null} fill alt="" />
                             </div>
                             <span className="text-sm font-medium">{user.name}</span>
                         </div>

@@ -20,41 +20,16 @@ interface EditProfileDialogProps {
 export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
     const router = useRouter();
     const [name, setName] = useState(user.name || "");
-    const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(user.image);
     const [backgroundPreview, setBackgroundPreview] = useState<string | null>(user.backgroundImage);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Refs for file inputs
-    const avatarInputRef = useRef<HTMLInputElement>(null);
     const backgroundInputRef = useRef<HTMLInputElement>(null);
 
     const getUploadUrlMutation = api.auth.getProfileUploadUrl.useMutation();
     const updateProfileMutation = api.auth.updateProfile.useMutation();
-
-    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files?.[0]) {
-            const file = e.target.files[0];
-
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                setError('Please select a valid image file');
-                return;
-            }
-
-            // Validate file size (5MB max for avatars)
-            if (file.size > 5 * 1024 * 1024) {
-                setError('Avatar image must be less than 5MB');
-                return;
-            }
-
-            setError(null);
-            setAvatarFile(file);
-            setAvatarPreview(URL.createObjectURL(file));
-        }
-    };
 
     const handleBackgroundChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.[0]) {
@@ -82,38 +57,9 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
         try {
             setIsSaving(true);
             setError(null);
-            let newAvatarKey = undefined;
             let newBackgroundKey = undefined;
 
-            // 1. Upload Avatar if changed
-            if (avatarFile) {
-                try {
-                    const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
-                        filename: avatarFile.name,
-                        contentType: avatarFile.type,
-                        type: "avatar",
-                    });
-
-                    const uploadResponse = await fetch(url, {
-                        method: "PUT",
-                        body: avatarFile,
-                        headers: { "Content-Type": avatarFile.type },
-                    });
-
-                    if (!uploadResponse.ok) {
-                        const errorText = await uploadResponse.text();
-                        console.error("Avatar upload failed:", uploadResponse.status, errorText);
-                        throw new Error(`Failed to upload avatar: ${uploadResponse.status} ${uploadResponse.statusText}`);
-                    }
-                    newAvatarKey = s3Key;
-                } catch {
-                    setError('Failed to upload profile photo. Please try again.');
-                    setIsSaving(false);
-                    return;
-                }
-            }
-
-            // 2. Upload Background if changed
+            // 1. Upload Background if changed
             if (backgroundFile) {
                 try {
                     const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
@@ -141,11 +87,10 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                 }
             }
 
-            // 3. Update Profile
+            // 2. Update Profile
             try {
                 await updateProfileMutation.mutateAsync({
                     name: name !== user.name ? name : undefined,
-                    image: newAvatarKey,
                     backgroundImage: newBackgroundKey,
                 });
 
@@ -195,34 +140,19 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                     />
                 </div>
 
-                {/* Avatar Section (Overlapping) */}
+                {/* Avatar Section (Read-only) */}
                 <div className="px-6 relative">
                     <div className="absolute -top-12 left-6">
                         <div className="relative group">
                             <div className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-900 overflow-hidden bg-white dark:bg-zinc-800 relative shadow-lg">
                                 <ProfileImage
-                                    src={avatarPreview || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                                    src={null}
                                     alt="Avatar"
                                     fallback={name || "User"}
                                     fill
                                     className="object-cover"
-                                    unoptimized={!!avatarPreview?.startsWith('blob:')}
                                 />
                             </div>
-                            <button
-                                onClick={() => avatarInputRef.current?.click()}
-                                className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white transition-all rounded-full m-1 backdrop-blur-sm cursor-pointer hover:scale-[1.05]"
-                                title="Change Profile Photo"
-                            >
-                                <Camera size={24} />
-                            </button>
-                            <input
-                                type="file"
-                                ref={avatarInputRef}
-                                hidden
-                                accept="image/*"
-                                onChange={handleAvatarChange}
-                            />
                         </div>
                     </div>
 

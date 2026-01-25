@@ -100,7 +100,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                     aria-label="View Profile"
                                 >
                                     <ProfileImage
-                                        src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
+                                        src={null}
                                         alt={user.name || "Profile"}
                                         fallback={user.name || "User"}
                                         fill

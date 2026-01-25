@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/app/_trpc/client";
 import { Plus, Users } from "lucide-react";
 import Image from "next/image";
+import { ProfileImage } from "../ProfileImage";
 import { GroupDetailsDialog } from "./GroupDetailsDialog";
 
 export function GroupsList() {
@@ -104,12 +105,11 @@ export function GroupsList() {
                             <div className="flex -space-x-2 overflow-hidden mb-4 pl-1">
                                 {group.members.map(member => (
                                     <div key={member.id} className="relative inline-block w-8 h-8 rounded-full ring-2 ring-white dark:ring-zinc-900 overflow-hidden">
-                                        <Image
-                                            src={member.user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.id}`}
+                                        <ProfileImage
+                                            src={null}
                                             alt={member.user.name || "Member"}
                                             fill
                                             className="object-cover"
-                                            unoptimized
                                         />
                                     </div>
                                 ))}
