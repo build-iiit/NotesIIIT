@@ -157,14 +157,14 @@ export function FileExplorer({ }: FileExplorerProps) {
             <div className="relative backdrop-blur-3xl bg-gradient-to-br from-white/10 via-white/5 to-white/10 dark:from-white/[0.07] dark:via-white/[0.03] dark:to-white/[0.07] rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/20 p-6">
                 {/* Inner glass layer for depth */}
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
                         <Folder className="h-5 w-5 text-orange-500" />
                         My Files
                     </h3>
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl bg-gradient-to-r from-orange-500/60 to-pink-500/60 text-white rounded-xl hover:from-orange-600/70 hover:to-pink-600/70 transition-all shadow-[0_4px_16px_0_rgba(251,113,133,0.3)] hover:shadow-[0_6px_24px_0_rgba(251,113,133,0.4)] border border-white/30 hover:scale-[1.02] duration-300"
+                        className="relative flex items-center justify-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl bg-gradient-to-r from-orange-500/60 to-pink-500/60 text-white rounded-xl hover:from-orange-600/70 hover:to-pink-600/70 transition-all shadow-[0_4px_16px_0_rgba(251,113,133,0.3)] hover:shadow-[0_6px_24px_0_rgba(251,113,133,0.4)] border border-white/30 hover:scale-[1.02] duration-300 w-full sm:w-auto"
                     >
                         <FolderPlus className="h-4 w-4" />
                         New Folder
@@ -237,7 +237,7 @@ export function FileExplorer({ }: FileExplorerProps) {
                 )}
 
                 {/* Content Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                     {/* Folders */}
                     {data?.folders.map((folder) => (
                         <div
