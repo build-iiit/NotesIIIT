@@ -9,6 +9,10 @@ import { TrendingNotes } from "@/components/TrendingNotes";
 export default async function Home() {
   const session = await auth();
 
+  // Use a simple deterministic quote for server, client can randomize if needed but for now let's keep it simple to fix the error
+  // Or better, just use the first quote as default and don't randomize to avoid hydration issues completely for now
+  const quoteIndex = 0;
+
   // Fetch user's folders if logged in
   const userFolders = session?.user?.id
     ? await db.folder.findMany({
@@ -28,33 +32,25 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8 sm:p-24 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-      <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-
       {session?.user ? (
         <div className="flex flex-col items-center gap-8 w-full z-10">
-          <div className="flex flex-col items-center gap-2 mb-4">
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-bold">Welcome, {session.user.name?.split(" ")[0]}!</h1>
-              <form
-                action={async () => {
-                  "use server";
-                  await signOut();
-                }}
-              >
-                <button className="text-sm text-red-500 hover:underline bg-white/50 dark:bg-black/50 px-3 py-1 rounded-full border border-red-100 dark:border-red-900/30">
-                  Sign Out
-                </button>
-              </form>
-            </div>
-            <div className="flex gap-4">
-              <a href="/leaderboard" className="text-blue-600 hover:underline">View Leaderboard</a>
-              <span className="text-gray-300">|</span>
-              <a href={`/users/${session.user.id}`} className="text-blue-600 hover:underline">Your Profile</a>
-            </div>
-            <p className="text-gray-500 mt-2">Explore the latest notes</p>
+          <div className="flex flex-col items-center gap-4 mb-4 text-center">
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-pink-600 bg-clip-text text-transparent">
+              Welcome, {session.user.name?.split(" ")[0]}!
+            </h1>
+
+            <p className="text-lg text-gray-600 dark:text-gray-300 italic max-w-lg">
+              &quot;{[
+                "Notes so good, you might actually pass.",
+                "Study smarter, not... well, just study.",
+                "Your GPA called, it needs these notes.",
+                "Because re-watching the lecture at 2x speed isn't enough.",
+                "Sharing is caring (and improves your karma).",
+                "The night before the exam is a pathway to many abilities some consider to be unnatural.",
+                "Knowledge is power. Notes are the battery.",
+                "Don't panic. Just read the notes."
+              ][quoteIndex]}&quot;
+            </p>
           </div>
 
           {/* Folder Grid */}
@@ -64,8 +60,7 @@ export default async function Home() {
             </div>
           )}
 
-          {/* Trending Notes */}
-          <TrendingNotes />
+
 
           {/* Notes Feed */}
           <div className="w-full max-w-6xl">

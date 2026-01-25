@@ -1,5 +1,9 @@
 import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
+import { getPresignedDownloadUrl } from "@/lib/s3";
 
+/**
+ * Type definitions for raw SQL results
+ */
 type TopContributorRaw = {
     id: string;
     name: string | null;
@@ -28,18 +32,30 @@ export const leaderboardsRouter = createTRPCRouter({
      * Top notes by total upvotes (vote score).
      */
     topNotes: publicProcedure.query(async ({ ctx }) => {
-        return ctx.prisma.note.findMany({
+        const notes = await ctx.prisma.note.findMany({
             take: 10,
             orderBy: { voteScore: "desc" },
             include: { author: true },
         });
+
+        // Resolve S3 images for authors in top notes
+        return await Promise.all(
+            notes.map(async (note) => {
+                const authorImage = note.author.image && !note.author.image.startsWith("http")
+                    ? await getPresignedDownloadUrl(note.author.image)
+                    : note.author.image;
+                
+                return {
+                    ...note,
+                    author: { ...note.author, image: authorImage }
+                };
+            })
+        );
     }),
 
     /**
-     * Top contributors by note count.
-     */
-    /**
      * Top contributors by total upvotes (Karma).
+     * Combines strict typing (main) with S3 resolution (Feature-additions)
      */
     topContributors: publicProcedure.query(async ({ ctx }) => {
         const users = await ctx.prisma.$queryRaw<TopContributorRaw[]>`
@@ -53,28 +69,26 @@ export const leaderboardsRouter = createTRPCRouter({
             LIMIT 10;
         `;
 
-        // Map to match frontend expectations
-        // Frontend expects: { _count: { notes: number }, ...user }
-        // We'll adapt the frontend to use "totalScore" or map it here.
-        // Let's adapt the frontend component to be smarter.
-        // For now, return a shape that includes both.
-        interface RawUser {
-            id: string;
-            name: string | null;
-            image: string | null;
-            noteCount: bigint;
-            totalScore: number;
-        }
+        // Resolve S3 URLs and map to frontend-expected shape
+        return await Promise.all(
+            users.map(async (u) => {
+                const imageUrl = u.image && !u.image.startsWith("http")
+                    ? await getPresignedDownloadUrl(u.image)
+                    : u.image;
 
-        return (users as unknown as RawUser[]).map(u => ({
-            ...u,
-            _count: { notes: Number(u.noteCount) },
-            totalScore: Number(u.totalScore)
-        }));
+                return {
+                    id: u.id,
+                    name: u.name,
+                    image: imageUrl,
+                    totalScore: Number(u.totalScore),
+                    _count: { notes: Number(u.noteCount) }, // Shape expected by UserStatsCard
+                };
+            })
+        );
     }),
+
     /**
-     * Trending notes based on Hacker News algorithm.
-     * Score = (VoteScore + 1) / Pow((AgeInHours + 2), Gravity)
+     * Trending notes based on Hacker News algorithm logic.
      */
     trending: publicProcedure.query(async ({ ctx }) => {
         // Use raw query for complex sorting logic efficiently
@@ -86,23 +100,21 @@ export const leaderboardsRouter = createTRPCRouter({
             LIMIT 20;
         `;
 
-        interface RawNote {
-            id: string;
-            title: string;
-            voteScore: number;
-            viewCount: number;
-            createdAt: Date;
-            authorName: string | null;
-            authorImage: string | null;
-            // Add other props if needed
-        }
+        // Resolve S3 images for author avatars in trending list
+        return await Promise.all(
+            notes.map(async (n) => {
+                const authorImageUrl = n.authorImage && !n.authorImage.startsWith("http")
+                    ? await getPresignedDownloadUrl(n.authorImage)
+                    : n.authorImage;
 
-        return (notes as RawNote[]).map(n => ({
-            ...n,
-            author: {
-                name: n.authorName,
-                image: n.authorImage,
-            }
-        }));
+                return {
+                    ...n,
+                    author: {
+                        name: n.authorName,
+                        image: authorImageUrl,
+                    }
+                };
+            })
+        );
     }),
 });

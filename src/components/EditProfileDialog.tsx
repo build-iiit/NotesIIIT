@@ -100,7 +100,9 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                     });
 
                     if (!uploadResponse.ok) {
-                        throw new Error('Failed to upload avatar image');
+                        const errorText = await uploadResponse.text();
+                        console.error("Avatar upload failed:", uploadResponse.status, errorText);
+                        throw new Error(`Failed to upload avatar: ${uploadResponse.status} ${uploadResponse.statusText}`);
                     }
                     newAvatarKey = s3Key;
                 } catch {
@@ -126,7 +128,9 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                     });
 
                     if (!uploadResponse.ok) {
-                        throw new Error('Failed to upload background image');
+                        const errorText = await uploadResponse.text();
+                        console.error("Background upload failed:", uploadResponse.status, errorText);
+                        throw new Error(`Failed to upload background: ${uploadResponse.status} ${uploadResponse.statusText}`);
                     }
                     newBackgroundKey = s3Key;
                 } catch {
@@ -146,8 +150,8 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
 
                 router.refresh();
                 onClose();
-            } catch {
-                setError('Failed to save profile changes. Please try again.');
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to save profile changes. Please try again.');
                 setIsSaving(false);
             }
         } catch (error) {
@@ -204,7 +208,8 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                             </div>
                             <button
                                 onClick={() => avatarInputRef.current?.click()}
-                                className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full m-1"
+                                className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/50 text-white transition-all rounded-full m-1 backdrop-blur-sm cursor-pointer hover:scale-[1.05]"
+                                title="Change Profile Photo"
                             >
                                 <Camera size={24} />
                             </button>
@@ -249,7 +254,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                             <button
                                 onClick={handleSave}
                                 disabled={isSaving}
-                                className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isSaving && <Loader2 size={16} className="animate-spin" />}
                                 Save Changes

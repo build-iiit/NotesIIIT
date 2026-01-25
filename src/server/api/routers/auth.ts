@@ -8,8 +8,19 @@ export const authRouter = createTRPCRouter({
      * Get the current user's profile.
      * Auth: Public (returns null if not logged in) or Protected
      */
-    getMe: publicProcedure.query(({ ctx }) => {
-        return ctx.session?.user || null;
+    getMe: publicProcedure.query(async ({ ctx }) => {
+        const user = ctx.session?.user;
+        if (!user) return null;
+
+        // Resolve S3 URL for profile image
+        const imageUrl = user.image && !user.image.startsWith("http")
+            ? await getPresignedDownloadUrl(user.image)
+            : user.image;
+
+        return {
+            ...user,
+            image: imageUrl,
+        };
     }),
 
     /**

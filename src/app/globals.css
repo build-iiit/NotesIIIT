@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @plugin "tailwindcss-animate";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -33,111 +35,115 @@
   --color-ring: var(--ring);
 }
 
-:root {
-  /* Global Radius */
-  --radius: 0.625rem;
+@layer base {
+  :root {
+    /* Global Radius */
+    --radius: 0.75rem;
 
-  /* BLACK + SUNSET PALETTE */
-  /* Background: Orange top -> Black Middle -> Red Bottom */
-  --background-image: linear-gradient(to bottom, #2e1000 0%, #000000 30%, #000000 70%, #2e0202 100%);
-  --background: #000000;
-  --foreground: #ffffff;
+    /* LIGHT MODE SUNSET PALETTE */
+    --background: 30 20% 95%;
+    /* Reduced white (slightly darker/warmer) */
+    --foreground: 20 14.3% 4.1%;
 
-  /* Dark Glass Cards */
-  --card: rgba(20, 20, 20, 0.6);
-  --card-foreground: #ffffff;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
 
-  --popover: rgba(20, 20, 20, 0.8);
-  --popover-foreground: #ffffff;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14.3% 4.1%;
 
-  /* Sunset Orange Primary */
-  --primary: #f97316;
-  /* Orange-500 */
-  --primary-foreground: #ffffff;
+    --primary: 24.6 95% 53.1%;
+    --primary-foreground: 60 9.1% 97.8%;
 
-  --secondary: rgba(255, 255, 255, 0.1);
-  --secondary-foreground: #ffffff;
+    --secondary: 60 4.8% 95.9%;
+    --secondary-foreground: 24 9.8% 10%;
 
-  --muted: rgba(255, 255, 255, 0.1);
-  --muted-foreground: #a1a1aa;
-  /* Zinc-400 */
+    --muted: 60 4.8% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
 
-  --accent: rgba(249, 115, 22, 0.2);
-  /* Orange tint */
-  --accent-foreground: #ffffff;
+    --accent: 20 90% 96%;
+    --accent-foreground: 24 9.8% 10%;
 
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
 
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: #f97316;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 24.6 95% 53.1%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* DARK MODE SUNSET PALETTE */
+    --background: 0 0% 2%;
+    /* Slightly deeper black if possible, or keep pure black but rely on layout for depth */
+    --foreground: 60 9.1% 97.8%;
+
+    --card: 20 14.3% 4.1%;
+    --card-foreground: 60 9.1% 97.8%;
+
+    --popover: 20 14.3% 4.1%;
+    --popover-foreground: 60 9.1% 97.8%;
+
+    --primary: 24.6 95% 53.1%;
+    /* Sunset Orange */
+    --primary-foreground: 60 9.1% 97.8%;
+
+    --secondary: 12 6.5% 15.1%;
+    --secondary-foreground: 60 9.1% 97.8%;
+
+    --muted: 12 6.5% 15.1%;
+    --muted-foreground: 24 5.4% 63.9%;
+
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 60 9.1% 97.8%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 60 9.1% 97.8%;
+
+    --border: 12 6.5% 15.1%;
+    --input: 12 6.5% 15.1%;
+    --ring: 24.6 95% 53.1%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-  }
-
-  html,
-  body {
-    @apply bg-black text-white;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
+    @apply border-border;
   }
 
   body {
-    background: var(--background-image);
-    background-attachment: fixed;
-    background-size: cover;
-    background-repeat: no-repeat;
+    @apply bg-background text-foreground;
   }
 }
 
-/* Glass Utilities */
-.bg-card,
-.bg-popover,
-.bg-sidebar,
-.bg-muted,
-.bg-background\/70 {
-  background-color: var(--card) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-}
+/* Glass & Utilities */
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl border border-white/20 bg-white/30 dark:bg-black/30 dark:border-white/10;
+  }
 
-/* Global Selection (Highlight) Color */
-::selection {
-  background: #f97316;
-  /* Sunset Orange */
-  color: #000;
-}
+  .glass-card {
+    @apply backdrop-blur-2xl bg-white/40 dark:bg-zinc-900/60 border border-white/40 dark:border-white/10 shadow-xl;
+  }
 
-/* Hover Effects - Sunset Glow */
-.bg-card:hover,
-button:not(:disabled):hover,
-a:hover .bg-card {
-  background-color: rgba(30, 30, 30, 0.7) !important;
-  border-color: rgba(249, 115, 22, 0.5);
-  /* Orange border */
-  box-shadow: 0 0 25px rgba(220, 38, 38, 0.4);
-  /* Red/Orange Glow */
-  transform: translateY(-2px);
-  transition: all 0.3s ease;
-}
-
-/* Gradient Text Utility */
-.text-gradient-sunset {
-  background: linear-gradient(to right, #f97316, #ef4444);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* Apply gradient on hover for generic links */
-a:hover {
-  color: #f97316;
-  transition: color 0.2s ease;
+  .text-gradient-sunset {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600;
+  }
 }

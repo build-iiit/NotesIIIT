@@ -13,9 +13,12 @@ const s3Client = new S3Client({
 });
 
 export const getPresignedUrl = async (key: string, contentType: string) => {
+    // Remove leading slash if present to avoid double slash in S3 paths
+    const cleanKey = key.startsWith('/') ? key.slice(1) : key;
+
     const command = new PutObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME || "notes-bucket",
-        Key: key,
+        Key: cleanKey,
         ContentType: contentType,
     });
 
@@ -23,9 +26,18 @@ export const getPresignedUrl = async (key: string, contentType: string) => {
 };
 
 export const getPresignedDownloadUrl = async (key: string) => {
+    // Remove leading slash if present to avoid double slash in S3 paths
+    const cleanKey = key.startsWith('/') ? key.slice(1) : key;
+
+    // Check if this is a local file (stored in public/uploads/)
+    // If so, return the local URL instead of generating a MinIO presigned URL
+    if (cleanKey.startsWith('uploads/')) {
+        return `/${cleanKey}`;
+    }
+
     const command = new GetObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME || "notes-bucket",
-        Key: key,
+        Key: cleanKey,
     });
 
     return getSignedUrl(s3Client, command, { expiresIn: 3600 });

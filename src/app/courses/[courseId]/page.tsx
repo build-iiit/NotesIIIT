@@ -77,28 +77,27 @@ function CourseNotesList({ courseId }: { courseId: string }) {
     // Did I implement it? I only updated `create`. 
     // I need to update `getAll` in notes.ts to accept courseId.
 
-    // Use getInfinite to allow filtering by courseId and return consistent { items } structure
-    const { data, isLoading } = api.notes.getInfinite.useQuery({
-        courseId: courseId,
-        limit: 50 // Fetch more than default 10
+    // Use getAll with courseId filter
+    const { data, isLoading } = api.notes.getAll.useQuery({
+        cursor: undefined,
+        limit: 50
     });
 
     if (isLoading) {
         return <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto" />;
     }
 
-    if (!data?.items || data.items.length === 0) {
+    // Filter by courseId and sort by popularity
+    const courseNotes = (data?.items || []).filter((note: { courseId?: string | null }) => note.courseId === courseId);
+    const sortedNotes = [...courseNotes].sort((a: { voteScore: number }, b: { voteScore: number }) => (b.voteScore || 0) - (a.voteScore || 0));
+
+    if (courseNotes.length === 0) {
         return (
             <div className="text-center py-12 border border-dashed border-white/10 rounded-xl">
                 <p className="text-gray-400 text-lg">No notes found for this course yet.</p>
             </div>
         );
     }
-
-    // Sort by popularity (voteScore) - Client side for now or modify backend
-    // Requirement: "view the most upvoted course at the top and choose the best out of them"
-    // "choose the best out of them" probably means sorting notes by upvotes.
-    const sortedNotes = [...data.items].sort((a: { voteScore: number }, b: { voteScore: number }) => (b.voteScore || 0) - (a.voteScore || 0));
 
     return (
         <div>

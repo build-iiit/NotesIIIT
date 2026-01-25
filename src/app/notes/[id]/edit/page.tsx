@@ -4,6 +4,7 @@ import { use, useState, useRef, useEffect } from "react";
 import { api } from "@/app/_trpc/client";
 import { useRouter } from "next/navigation";
 import DeleteNoteButton from "@/components/DeleteNoteButton";
+import { Folder } from "lucide-react";
 import { Search, X, ChevronDown, CheckCircle } from "lucide-react";
 
 export default function EditNotePage({ params }: { params: Promise<{ id: string }> }) {
@@ -11,6 +12,9 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     const router = useRouter();
     const [note] = api.notes.getById.useSuspenseQuery({ id });
     const [currentUser] = api.auth.getMe.useSuspenseQuery();
+    const { data: folders } = api.folders.getAllFlat.useQuery(undefined, {
+        enabled: !!currentUser,
+    });
     const updateNote = api.notes.update.useMutation();
     const addVersion = api.versions.addVersion.useMutation();
 
@@ -22,10 +26,23 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     // Course & Semester State
     const [selectedCourseId, setSelectedCourseId] = useState<string>(note?.courseId || "");
     const [selectedSemester, setSelectedSemester] = useState<string>(note?.semester || "");
-    const [courseSearch, setCourseSearch] = useState(note?.course ? `${note.course.code} - ${note.course.name}` : "");
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(note?.folderId || null);
+
+    // Visibility State
+    const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "GROUP">(
+        (note?.visibility as "PUBLIC" | "PRIVATE" | "GROUP") || "PUBLIC"
+    );
+    const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>(
+        note?.sharedGroups?.map((g: { id: string }) => g.id) || []
+    );
+
+    const [courseSearch, setCourseSearch] = useState(note?.course ? `${note.course.code} - ${note.course.name}` : note?.courseId ? `Course ${note.courseId}` : "");
     const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
     const [isSemesterDropdownOpen, setIsSemesterDropdownOpen] = useState(false);
     const [uploading, setUploading] = useState(false);
+
+    // Fetch User Groups
+    const { data: userGroups } = api.social.getGroups.useQuery();
 
     // Refs
     const courseDropdownRef = useRef<HTMLDivElement>(null);
@@ -93,7 +110,10 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
                 title,
                 description,
                 courseId: selectedCourseId || undefined,
-                semester: selectedSemester || undefined
+                semester: selectedSemester || undefined,
+                folderId: selectedFolderId,
+                visibility,
+                groupIds: visibility === "GROUP" ? selectedGroupIds : undefined,
             });
             router.push(`/notes/${id}`);
         } catch (error) {
@@ -190,19 +210,19 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     };
 
     return (
-        <div className="min-h-screen p-8 max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-8">Edit Note</h1>
+        <div className="min-h-screen p-8 max-w-2xl mx-auto pt-24">
+            <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Edit Note</h1>
 
             <section className="mb-12">
-                <h2 className="text-xl font-semibold mb-4">Metadata</h2>
-                <form onSubmit={handleUpdateMetadata} className="space-y-6">
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Metadata</h2>
+                <form onSubmit={handleUpdateMetadata} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Title</label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full p-2 border rounded-lg bg-white dark:bg-zinc-800 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 text-gray-900 dark:text-white"
                         />
                     </div>
 
@@ -312,21 +332,109 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full p-2 border rounded-lg bg-white dark:bg-zinc-800 dark:border-zinc-700 h-32 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 h-32 text-gray-900 dark:text-white"
                         />
                     </div>
+
+                    {/* Folder Selection */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <Folder className="h-4 w-4 text-orange-500" />
+                            Folder
+                        </label>
+                        <select
+                            value={selectedFolderId || ""}
+                            onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                            className="w-full p-2 border rounded dark:bg-zinc-800 dark:border-zinc-700 text-gray-900 dark:text-white"
+                        >
+                            <option value="">📁 Root (No Folder)</option>
+                            {folders?.map((folder) => (
+                                <option key={folder.id} value={folder.id}>
+                                    📂 {folder.name}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Move this note to a different folder
+                        </p>
+                    </div>
+
+                    {/* Visibility Selection */}
+                    <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
+                        <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Visibility</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {(["PUBLIC", "PRIVATE", "GROUP"] as const).map((type) => (
+                                <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() => setVisibility(type)}
+                                    className={`p-4 rounded-xl border text-left transition-all ${visibility === type
+                                        ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 ring-2 ring-purple-500/20"
+                                        : "border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                                        }`}
+                                >
+                                    <div className="font-bold text-sm mb-1">{type}</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {type === "PUBLIC" && "Visible to everyone"}
+                                        {type === "PRIVATE" && "Only you"}
+                                        {type === "GROUP" && "Specific groups"}
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Group Selection (Only if GROUP visibility) */}
+                    {visibility === "GROUP" && (
+                        <div className="animate-in slide-in-from-top-2 fade-in">
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Select Groups</label>
+                            {userGroups?.length === 0 ? (
+                                <div className="text-sm text-gray-500 italic p-4 border rounded bg-gray-50 dark:bg-zinc-800">
+                                    You haven't joined any groups yet.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+                                    {userGroups?.map(group => (
+                                        <div
+                                            key={group.id}
+                                            onClick={() => {
+                                                if (selectedGroupIds.includes(group.id)) {
+                                                    setSelectedGroupIds(prev => prev.filter(id => id !== group.id));
+                                                } else {
+                                                    setSelectedGroupIds(prev => [...prev, group.id]);
+                                                }
+                                            }}
+                                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${selectedGroupIds.includes(group.id)
+                                                ? "bg-purple-50 dark:bg-purple-900/20 border-purple-500"
+                                                : "hover:bg-gray-50 dark:hover:bg-zinc-800 border-gray-200 dark:border-zinc-700"
+                                                }`}
+                                        >
+                                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${selectedGroupIds.includes(group.id)
+                                                ? "bg-purple-500 border-purple-500 text-white"
+                                                : "border-gray-400"
+                                                }`}>
+                                                {selectedGroupIds.includes(group.id) && <CheckCircle className="w-3 h-3" />}
+                                            </div>
+                                            <span className="text-sm font-medium">{group.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <button
                         type="submit"
                         disabled={updateNote.isPending}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 font-medium"
+                        className="bg-gradient-to-r from-orange-500 to-pink-500 text-white px-4 py-2 rounded-lg disabled:opacity-50 hover:from-orange-600 hover:to-pink-600 transition-all font-medium"
                     >
                         {updateNote.isPending ? "Saving..." : "Save Changes"}
                     </button>
                 </form>
             </section>
 
-            <section className="border-t pt-8">
-                <h2 className="text-xl font-semibold mb-4">Upload New Version</h2>
+            <section className="border-t border-gray-200 dark:border-zinc-700 pt-8">
+                <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Upload New Version</h2>
                 <p className="text-gray-500 mb-4 text-sm">
                     Upload a new PDF to replace the current version. History will be preserved.
                 </p>

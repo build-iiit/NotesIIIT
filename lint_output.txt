@@ -1,0 +1,31 @@
+
+> notes-platform@0.1.0 lint
+> eslint
+
+
+/home/ViniVici/Downloads/NotesIIIT/scripts/create-bucket.ts
+  13:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/ViniVici/Downloads/NotesIIIT/src/app/upload/page.tsx
+  28:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  41:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/ViniVici/Downloads/NotesIIIT/src/app/users/[id]/UserProfileClient.tsx
+  18:32  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  27:11  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  33:57  warning  'currentUserId' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/ViniVici/Downloads/NotesIIIT/src/components/EditProfileDialog.tsx
+  108:26  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  136:26  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/ViniVici/Downloads/NotesIIIT/src/components/FileExplorer.tsx
+  14:32  warning  'userId' is defined but never used           @typescript-eslint/no-unused-vars
+  19:11  warning  'router' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/ViniVici/Downloads/NotesIIIT/src/server/api/routers/folders.ts
+  94:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 12 problems (7 errors, 5 warnings)
+

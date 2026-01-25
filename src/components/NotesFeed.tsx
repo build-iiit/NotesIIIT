@@ -4,37 +4,43 @@ import { api } from "@/app/_trpc/client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
+import { TrendingUp } from "lucide-react";
 
 export function NotesFeed() {
     const [sort, setSort] = useState<"newest" | "popular">("popular");
+    const [displayCount, setDisplayCount] = useState(10);
 
-    // Infinite query for pagination
-    const {
-        data,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading
-    } = api.notes.getInfinite.useInfiniteQuery(
-        { limit: 10, sortBy: sort },
-        { getNextPageParam: (lastPage) => lastPage.nextCursor }
-    );
+    // Regular query instead of infinite query
+    const { data, isLoading } = api.notes.getAll.useQuery({
+        cursor: undefined,
+        limit: 100 // Load more at once
+    });
 
     const { ref, inView } = useInView();
 
     useEffect(() => {
-        if (inView && hasNextPage) {
-            fetchNextPage();
+        if (inView && data?.items && displayCount < data.items.length) {
+            setDisplayCount(prev => prev + 10);
         }
-    }, [inView, hasNextPage, fetchNextPage]);
+    }, [inView, data?.items, displayCount]);
+
+    // Client-side sorting
+    const sortedNotes = (data?.items || []).sort((a: { voteScore?: number; createdAt: Date | string }, b: { voteScore?: number; createdAt: Date | string }) => {
+        if (sort === "popular") {
+            return (b.voteScore || 0) - (a.voteScore || 0);
+        } else {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+    });
+
+    // Display subset
+    const allNotes = sortedNotes.slice(0, displayCount);
 
     if (isLoading) {
         return <div className="text-center py-10">Loading notes...</div>;
     }
 
-    const allNotes = data?.pages.flatMap((page) => page.items) ?? [];
-
-    if (allNotes.length === 0 && !isLoading) {
+    if (sortedNotes.length === 0 && !isLoading) {
         return (
             <div className="text-center py-20 border-2 border-dashed rounded-xl">
                 <p className="text-gray-500 mb-4">No notes shared yet.</p>
@@ -47,21 +53,29 @@ export function NotesFeed() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-muted/50 p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-bold">
-                        {sort === "popular" ? "Trending Notes" : "Recent Uploads"}
-                    </h2>
-                    <div className="flex bg-black/20 p-1.5 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        {sort === "popular" && (
+                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg animate-in zoom-in spin-in-180 duration-500">
+                                <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                            </div>
+                        )}
+                        <h2 className="text-3xl font-black bg-gradient-to-r from-orange-600 via-pink-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
+                            {sort === "popular" ? "Trending Uploads" : "Recent Uploads"}
+                        </h2>
+                    </div>
+
+                    <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl border border-black/5 dark:border-white/5 backdrop-blur-md">
                         <button
                             onClick={() => setSort("popular")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${sort === "popular" ? "bg-primary text-white shadow" : "text-gray-400 hover:text-white"}`}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${sort === "popular" ? "bg-white dark:bg-zinc-800 text-orange-600 shadow-sm scale-105" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"}`}
                         >
                             Trending
                         </button>
                         <button
                             onClick={() => setSort("newest")}
-                            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${sort === "newest" ? "bg-primary text-white shadow" : "text-gray-400 hover:text-white"}`}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${sort === "newest" ? "bg-white dark:bg-zinc-800 text-purple-600 shadow-sm scale-105" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"}`}
                         >
                             Recent
                         </button>
@@ -69,9 +83,11 @@ export function NotesFeed() {
                 </div>
                 <Link
                     href="/upload"
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    className="hidden sm:flex px-6 py-2.5 rounded-xl text-sm font-bold text-gray-800 dark:text-white relative backdrop-blur-3xl bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-white/5 hover:from-orange-500/20 hover:to-pink-500/20 transition-all duration-300 shadow-lg border border-white/20 hover:scale-105 active:scale-95 group"
                 >
-                    Upload Note
+                    <span className="flex items-center gap-2">
+                        Upload Note
+                    </span>
                 </Link>
             </div>
 
@@ -80,41 +96,52 @@ export function NotesFeed() {
                     <Link
                         key={note.id}
                         href={`/notes/${note.id}`}
-                        className="group block bg-card border border-border rounded-xl overflow-hidden hover:shadow-md transition-all hover:border-blue-500/50"
+                        className="group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 hover:border-orange-300/30 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)] transition-all duration-300 hover:-translate-y-1 flex flex-col"
                     >
-                        <div className="relative h-48 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800 overflow-hidden">
+                        {/* RESOLVED CONFLICT: 
+                          1. Using design classes from 'main' (h-40, transitions, hover effects).
+                          2. Using data logic from 'NEW-FEATURES' (note.versions[0]?.thumbnailKey).
+                        */}
+                        <div className="h-40 w-full relative overflow-hidden bg-white/5 border-b border-white/10 group-hover:opacity-90 transition-opacity">
                             {note.versions[0]?.thumbnailKey ? (
                                 <img
                                     src={note.versions[0].thumbnailKey}
                                     alt={`Thumbnail for ${note.title}`}
-                                    className="w-full h-full object-cover object-top"
+                                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                                     loading="lazy"
                                 />
                             ) : (
-                                <div className="flex items-center justify-center h-full text-gray-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
+                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-500/5 to-pink-500/5">
+                                    <div className="p-4 rounded-full bg-white/10 backdrop-blur-sm border border-white/10">
+                                        <TrendingUp className="h-8 w-8 text-orange-400/50" />
+                                    </div>
                                 </div>
                             )}
+
+                            {/* Overlay Badge from 'main' */}
+                            <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-black/40 backdrop-blur-md text-[10px] font-bold text-white border border-white/10 uppercase tracking-wider">
+                                PDF
+                            </div>
                         </div>
-                        <div className="p-5 flex flex-col flex-1">
-                            <h3 className="font-bold text-lg mb-2 group-hover:text-blue-600 transition-colors line-clamp-1">
+
+                        <div className="p-5 flex-1 flex flex-col">
+                            {/* Title Styling from 'main' (Orange hover) */}
+                            <h3 className="font-bold text-lg mb-2 group-hover:text-orange-500 transition-colors line-clamp-1">
                                 {note.title}
                             </h3>
                             <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
-                                <span>By {note.author.name || "Unknown"}</span>
+                                <span>By {(note as { author?: { name?: string } }).author?.name || "Unknown"}</span>
                                 <span>•</span>
                                 <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                             </p>
                             {note.description && (
-                                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-4 flex-1">
+                                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-1">
                                     {note.description}
                                 </p>
                             )}
                             <div className="mt-auto flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-gray-100 dark:border-zinc-800">
-                                <span className="flex items-center gap-1">
-                                    View details &rarr;
+                                <span className="flex items-center gap-1 group-hover:text-orange-500 transition-colors">
+                                    Read Note &rarr;
                                 </span>
                             </div>
                         </div>
@@ -122,7 +149,7 @@ export function NotesFeed() {
                 ))}
             </div>
 
-            {isFetchingNextPage && (
+            {displayCount < sortedNotes.length && (
                 <div className="text-center py-4 text-gray-500">Loading more...</div>
             )}
 

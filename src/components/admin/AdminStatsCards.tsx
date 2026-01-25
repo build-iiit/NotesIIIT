@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "@/app/_trpc/client";
-import { Users, FileText, Eye, ThumbsUp, TrendingUp, UserPlus } from "lucide-react";
+import { Users, FileText, Eye, ThumbsUp, TrendingUp, BookOpen } from "lucide-react";
 
 export function AdminStatsCards() {
     const { data: stats, isLoading } = api.admin.getStats.useQuery();
@@ -58,11 +58,11 @@ export function AdminStatsCards() {
             trend: "Net score",
         },
         {
-            title: "New Users",
-            value: stats.recentActivity.users.toLocaleString(),
-            icon: UserPlus,
+            title: "Total Courses",
+            value: stats.totalCourses.toLocaleString(),
+            icon: BookOpen,
             color: "indigo",
-            trend: "Last 7 days",
+            trend: "All courses",
         },
     ];
 

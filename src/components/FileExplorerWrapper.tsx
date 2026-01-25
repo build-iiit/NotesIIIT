@@ -9,5 +9,5 @@ export async function FileExplorerWrapper({ userId }: { userId: string }) {
         return null;
     }
 
-    return <FileExplorer />;
+    return <FileExplorer userId={userId} />;
 }
