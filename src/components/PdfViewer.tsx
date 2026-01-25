@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-import { Star, Bookmark, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Bookmark, X, ChevronDown, ChevronUp } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import { TextNoteOverlay } from "./annotations/TextNoteOverlay";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
@@ -332,11 +332,11 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId }: Pdf
                             onClick={handleToggleBookmark}
                             disabled={toggleBookmarkMutation.isPending}
                             className={`p-3 rounded-2xl backdrop-blur-xl border transition-all ${isCurrentPageBookmarked
-                                ? "bg-yellow-400/20 border-yellow-400/50"
+                                ? "bg-orange-500/20 border-orange-500/50"
                                 : "bg-white/40 dark:bg-white/10 border-white/40 dark:border-white/10"
                                 }`}
                         >
-                            <Star className={`w-5 h-5 ${isCurrentPageBookmarked ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} />
+                            <Bookmark className={`w-5 h-5 ${isCurrentPageBookmarked ? "fill-orange-500 text-orange-500" : "text-gray-400"}`} />
                         </button>
                     )}
                 </div>
