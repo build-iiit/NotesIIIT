@@ -17,7 +17,6 @@ interface PdfViewerProps {
     onDoubleClick?: () => void;
     noteId?: string;
     versionId?: string;
-    onDoubleClick?: () => void;
     onMaximize?: () => void;
 }
 
@@ -255,7 +254,6 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
         <div
             ref={containerRef}
             className="flex flex-col items-center gap-6 w-full max-w-4xl mx-auto"
-            onDoubleClick={onDoubleClick}
         >
             {loading && <div className="animate-pulse text-gray-500">Loading document...</div>}
 
