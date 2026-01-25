@@ -3,7 +3,7 @@
 import { api } from "@/app/_trpc/client";
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Trash2, Eye, EyeOff, ExternalLink, Filter, CheckSquare, Square, Lock, Globe, Users } from "lucide-react";
+import { Search, Trash2, Eye, EyeOff, ExternalLink, CheckSquare, Square, Lock, Globe, Users } from "lucide-react";
 
 export function AdminNotesTable() {
     const [search, setSearch] = useState("");
@@ -135,8 +135,8 @@ export function AdminNotesTable() {
                                     key={t}
                                     onClick={() => setFilter(t)}
                                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${filter === t
-                                            ? "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm"
-                                            : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                                        ? "bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                                         }`}
                                 >
                                     {t.charAt(0).toUpperCase() + t.slice(1)}
