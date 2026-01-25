@@ -179,7 +179,8 @@ model NoteVersion {
   
   // File Storage
   s3Key       String   // The PDF file path in storage
-  
+  thumbnailKey String? // The thumbnail image path in storage
+
   // Relations
   noteId      String
   note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)

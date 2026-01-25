@@ -151,6 +151,7 @@ export function FullPageNoteViewer({
                 }
             });
 
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setAnnotations(strokesData);
             setTextNotes(textNotesData);
             setUnsavedChanges(false);
@@ -224,6 +225,7 @@ export function FullPageNoteViewer({
     }, [pdfDoc, pageNum, zoomMode]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (zoomMode !== "custom") void updateScale();
     }, [updateScale, zoomMode]);
 

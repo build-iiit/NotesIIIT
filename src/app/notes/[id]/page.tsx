@@ -8,8 +8,11 @@ import { FullPageNoteViewer } from "@/components/FullPageNoteViewer";
 import Link from "next/link";
 import { Maximize2, Eye } from "lucide-react";
 
+import { useRouter } from "next/navigation";
+
 export default function NotePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const router = useRouter();
     const [note] = api.notes.getById.useSuspenseQuery({ id });
     const { data: currentUser } = api.auth.getMe.useQuery();
     const [pageNum, setPageNum] = useState(1);
@@ -38,7 +41,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                 <div className="w-full max-w-7xl">
                     <div className="mb-6 flex justify-between items-start">
                         <div>
-                            <Link href="/" className="text-blue-500 hover:underline mb-4 inline-block">&larr; Back to Home</Link>
+                            <button onClick={() => router.back()} className="text-blue-500 hover:underline mb-4 inline-block">&larr; Back</button>
                             <h1 className="text-3xl font-bold">{note.title}</h1>
                             <p className="text-gray-500 flex items-center gap-2">
                                 <span>By {note.author.name} • Version {currentVersion?.version}</span>

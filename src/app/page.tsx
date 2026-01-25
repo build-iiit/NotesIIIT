@@ -9,6 +9,10 @@ import { TrendingNotes } from "@/components/TrendingNotes";
 export default async function Home() {
   const session = await auth();
 
+  // Use a simple deterministic quote for server, client can randomize if needed but for now let's keep it simple to fix the error
+  // Or better, just use the first quote as default and don't randomize to avoid hydration issues completely for now
+  const quoteIndex = 0;
+
   // Fetch user's folders if logged in
   const userFolders = session?.user?.id
     ? await db.folder.findMany({
@@ -45,7 +49,7 @@ export default async function Home() {
                 "The night before the exam is a pathway to many abilities some consider to be unnatural.",
                 "Knowledge is power. Notes are the battery.",
                 "Don't panic. Just read the notes."
-              ][Math.floor(Math.random() * 8)]}&quot;
+              ][quoteIndex]}&quot;
             </p>
           </div>
 

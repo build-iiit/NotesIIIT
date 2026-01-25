@@ -88,8 +88,9 @@ function CourseNotesList({ courseId }: { courseId: string }) {
     }
 
     // Filter by courseId and sort by popularity
-    const courseNotes = (data?.items || []).filter((note: { courseId?: string | null }) => note.courseId === courseId);
-    const sortedNotes = [...courseNotes].sort((a: { voteScore: number }, b: { voteScore: number }) => (b.voteScore || 0) - (a.voteScore || 0));
+    // Filter by courseId and sort by popularity
+    const courseNotes = (data?.items || []).filter((note) => note.courseId === courseId);
+    const sortedNotes = [...courseNotes].sort((a: any, b: any) => (b.voteScore || 0) - (a.voteScore || 0));
 
     if (courseNotes.length === 0) {
         return (
@@ -105,7 +106,7 @@ function CourseNotesList({ courseId }: { courseId: string }) {
                 <h2 className="text-2xl font-bold text-white">Top Notes</h2>
                 {/* Could add sort toggle here */}
             </div>
-            <UserNotesGrid notes={sortedNotes} />
+            <UserNotesGrid notes={sortedNotes as any} />
         </div>
     );
 }

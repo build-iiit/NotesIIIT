@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { api } from "@/app/_trpc/client";
-import { Plus, Users, Search } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import Image from "next/image";
 import { GroupDetailsDialog } from "./GroupDetailsDialog";
 
@@ -78,7 +78,7 @@ export function GroupsList() {
             ) : groups?.length === 0 ? (
                 <div className="text-center py-16 bg-white/20 dark:bg-black/20 rounded-3xl border border-dashed border-gray-300 dark:border-gray-700">
                     <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg">You haven't joined any groups yet.</p>
+                    <p className="text-gray-500 text-lg">You haven&apos;t joined any groups yet.</p>
                     <p className="text-gray-400 text-sm">Create one to start collaborating!</p>
                 </div>
             ) : (

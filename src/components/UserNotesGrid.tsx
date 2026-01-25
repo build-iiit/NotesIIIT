@@ -13,6 +13,10 @@ export interface Note {
         name: string | null;
         image: string | null;
     };
+    versions: {
+        thumbnailKey: string | null;
+    }[];
+    thumbnailUrl?: string; // Add this field
 }
 
 interface UserNotesGridProps {
@@ -47,21 +51,34 @@ export function UserNotesGrid({ notes, userName }: UserNotesGridProps) {
                 >
                     <div className="h-full rounded-2xl bg-card border border-border overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                         {/* Header with gradient */}
-                        <div className="h-32 bg-gradient-to-br from-orange-900/40 via-red-900/40 to-black relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
+                        <div className="h-32 relative overflow-hidden bg-gray-100 dark:bg-zinc-800">
+                            {note.thumbnailUrl || note.versions?.[0]?.thumbnailKey ? (
+                                <>
+                                    <img
+                                        src={note.thumbnailUrl || note.versions[0].thumbnailKey!}
+                                        alt={note.title}
+                                        className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-300" />
+                                </>
+                            ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-orange-900/40 via-red-900/40 to-black relative">
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
 
-                            {/* PDF icon overlay */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <FileText className="h-16 w-16 text-white/20 group-hover:text-primary/40 group-hover:scale-110 transition-transform duration-300" />
-                            </div>
+                                    {/* PDF icon overlay */}
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <FileText className="h-16 w-16 text-white/20 group-hover:text-primary/40 group-hover:scale-110 transition-transform duration-300" />
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Stats overlay */}
-                            <div className="absolute bottom-3 right-3 flex gap-2">
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/30">
+                            <div className="absolute bottom-3 right-3 flex gap-2 z-10">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/20">
                                     <Eye className="h-3 w-3 text-white" />
                                     <span className="text-xs font-medium text-white">{note.viewCount}</span>
                                 </div>
-                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/30">
+                                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm border border-white/20">
                                     <ThumbsUp className="h-3 w-3 text-white" />
                                     <span className="text-xs font-medium text-white">{note.voteScore}</span>
                                 </div>

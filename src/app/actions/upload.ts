@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma"; // We need to ensure lib/prisma exists
 import { revalidatePath } from "next/cache";
 
-export async function createNoteRecord(title: string, s3Key: string) {
+export async function createNoteRecord(title: string, s3Key: string, thumbnailKey?: string | null) {
     // const session = await auth();
     // if (!session?.user?.id) throw new Error("Unauthorized");
     const session = { user: { id: "debug-user-id" } };
@@ -16,6 +16,7 @@ export async function createNoteRecord(title: string, s3Key: string) {
                 versions: {
                     create: {
                         s3Key,
+                        thumbnailKey,
                         version: 1,
                     },
                 },
