@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
+import { getPresignedDownloadUrl } from "@/lib/s3";
 
 export const commentsRouter = createTRPCRouter({
     /**
@@ -22,7 +23,27 @@ export const commentsRouter = createTRPCRouter({
                     },
                 },
             });
-            return page?.comments || [];
+
+            if (!page?.comments) return [];
+
+            // Resolve images
+            return await Promise.all(page.comments.map(async (comment) => {
+                if (comment.user.image && !comment.user.image.startsWith("http")) {
+                    comment.user.image = await getPresignedDownloadUrl(comment.user.image);
+                }
+
+                // Resolve children images
+                if (comment.children) {
+                    comment.children = await Promise.all(comment.children.map(async (child) => {
+                        if (child.user.image && !child.user.image.startsWith("http")) {
+                            child.user.image = await getPresignedDownloadUrl(child.user.image);
+                        }
+                        return child;
+                    }));
+                }
+
+                return comment;
+            }));
         }),
 
     /**

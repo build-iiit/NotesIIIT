@@ -17,7 +17,6 @@ interface PdfViewerProps {
     onDoubleClick?: () => void;
     noteId?: string;
     versionId?: string;
-    onDoubleClick?: () => void;
     onMaximize?: () => void;
 }
 

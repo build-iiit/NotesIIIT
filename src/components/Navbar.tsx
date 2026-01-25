@@ -9,7 +9,7 @@ import {
     Bookmark, Folder, Users
 } from "lucide-react";
 import { useState } from "react";
-import Image from "next/image";
+import { ProfileImage } from "./ProfileImage";
 
 interface NavbarProps {
     user?: {
@@ -99,14 +99,14 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                     className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-white/30 hover:ring-orange-400/50 transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg"
                                     aria-label="View Profile"
                                 >
-                                    <Image
+                                    <ProfileImage
                                         src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                                         alt={user.name || "Profile"}
+                                        fallback={user.name || "User"}
                                         fill
-                                        className="object-cover"
-                                        unoptimized
+                                        className="rounded-full"
                                     />
-                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900" />
+                                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-zinc-900 z-10" />
                                 </Link>
 
                                 {onSignOut && (

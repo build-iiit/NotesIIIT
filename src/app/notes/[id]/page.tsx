@@ -2,11 +2,20 @@
 
 import { use, useState, useEffect } from "react";
 import { api } from "@/app/_trpc/client";
-import { PdfViewer } from "@/components/PdfViewer";
 import { InteractionsPanel } from "@/components/InteractionsPanel";
-import { FullPageNoteViewer } from "@/components/FullPageNoteViewer";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Maximize2, Eye } from "lucide-react";
+
+// Dynamically import PDF components with SSR disabled to avoid "DOMMatrix is not defined" error
+const PdfViewer = dynamic(() => import("@/components/PdfViewer").then(mod => mod.PdfViewer), {
+    ssr: false,
+    loading: () => <div className="animate-pulse h-[600px] bg-gray-100 dark:bg-zinc-800 rounded-xl" />
+});
+
+const FullPageNoteViewer = dynamic(() => import("@/components/FullPageNoteViewer").then(mod => mod.FullPageNoteViewer), {
+    ssr: false
+});
 
 import { useRouter } from "next/navigation";
 
@@ -85,7 +94,6 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     onDoubleClick={() => setIsFullPageOpen(true)}
                                     noteId={note?.id}
                                     versionId={currentVersion?.id}
-                                    onDoubleClick={() => setIsFullPageOpen(true)}
                                 />
                             ) : (
                                 <div className="p-8 border text-center text-red-500">

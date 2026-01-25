@@ -1,4 +1,27 @@
 import { PDFDocument } from 'pdf-lib';
+
+// Polyfill for DOMMatrix in Node.js environment for pdfjs-dist
+if (typeof Promise.withResolvers === 'undefined') {
+    // @ts-expect-error This is a polyfill
+    Promise.withResolvers = function () {
+        let resolve, reject;
+        const promise = new Promise((res, rej) => {
+            resolve = res;
+            reject = rej;
+        });
+        return { promise, resolve, reject };
+    };
+}
+
+if (typeof DOMMatrix === 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (global as any).DOMMatrix = class DOMMatrix {
+        constructor() {
+            // Minimal implementation needed for pdfjs-dist to load
+        }
+    };
+}
+
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { createCanvas } from 'canvas';
 

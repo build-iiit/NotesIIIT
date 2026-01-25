@@ -2,7 +2,7 @@
 
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
-import Image from "next/image";
+import { ProfileImage } from "./ProfileImage";
 
 type UserWithScore = {
     id: string;
@@ -62,13 +62,13 @@ export function LeaderboardTable() {
                             href={`/users/${user.id}`}
                             className="flex items-center gap-4 p-3 rounded-xl bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-white/5 transition-all group border border-transparent hover:border-orange-400/30"
                         >
-                            <Image
+                            <ProfileImage
                                 src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`}
                                 alt={user.name || "User avatar"}
+                                fallback={user.name || "User"}
                                 width={40}
                                 height={40}
-                                className="w-10 h-10 rounded-full bg-white/20 object-cover ring-2 ring-white/20"
-                                unoptimized
+                                className="w-10 h-10 rounded-full bg-white/20 ring-2 ring-white/20"
                             />
                             <div className="flex-1">
                                 <h3 className="font-semibold group-hover:text-orange-500 transition-colors">

@@ -94,6 +94,25 @@ export const authRouter = createTRPCRouter({
                 ? await getPresignedDownloadUrl(user.backgroundImage)
                 : user.backgroundImage;
 
+            // Resolve thumbnails for notes
+            const notesWithThumbnails = await Promise.all(user.notes.map(async (note) => {
+                let thumbnailUrl = null;
+                const key = (note as any).thumbnailS3Key || note.versions[0]?.thumbnailKey;
+
+                if (key) {
+                    try {
+                        thumbnailUrl = await getPresignedDownloadUrl(key);
+                    } catch (e) {
+                        console.error("Failed to generate presigned URL for note", note.id, e);
+                    }
+                }
+
+                return {
+                    ...note,
+                    thumbnailUrl
+                };
+            }));
+
             return {
                 ...user,
                 _count: user._count,
@@ -102,6 +121,7 @@ export const authRouter = createTRPCRouter({
                 totalViews: stats._sum.viewCount || 0,
                 totalKarma: stats._sum.voteScore || 0,
                 rank,
+                notes: notesWithThumbnails,
             };
         }),
 
