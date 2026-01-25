@@ -10,13 +10,14 @@ interface GroupDetailsDialogProps {
     isOpen: boolean;
     onClose: () => void;
     groupId: string;
+    defaultTab?: Tab;
 }
 
 type Tab = 'MEMBERS' | 'FILES' | 'SETTINGS';
 
-export function GroupDetailsDialog({ isOpen, onClose, groupId }: GroupDetailsDialogProps) {
+export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab = 'MEMBERS' }: GroupDetailsDialogProps) {
     const { data: user } = api.auth.getMe.useQuery();
-    const [activeTab, setActiveTab] = useState<Tab>('MEMBERS');
+    const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
     const [isAdding, setIsAdding] = useState(false);
     const [query, setQuery] = useState("");
 
