@@ -79,6 +79,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     url={s3Url}
                                     pageNum={pageNum}
                                     onPageChange={setPageNum}
+                                    onDoubleClick={() => setIsFullPageOpen(true)}
                                     noteId={note?.id}
                                     versionId={currentVersion?.id}
                                 />

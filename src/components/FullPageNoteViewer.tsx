@@ -5,7 +5,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { v4 as uuidv4 } from "uuid";
 import {
     X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info,
-    Pen, Eraser, RotateCcw, Highlighter, Type, ChevronDown, ChevronUp, Plus
+    Pen, Eraser, RotateCcw, Highlighter, Type, ChevronDown, ChevronUp, Plus, Save
 } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
@@ -513,9 +513,24 @@ export function FullPageNoteViewer({
     const handleToggleCollapse = (id: string) => {
         setTextNotes(prev => ({
             ...prev,
-            [pageNum]: (prev[pageNum] || []).map(note =>
-                note.id === id ? { ...note, collapsed: !note.collapsed } : note
-            )
+            [pageNum]: (prev[pageNum] || []).map(note => {
+                if (note.id !== id) return note;
+
+                // Cycle: open -> collapsed-line -> collapsed-icon -> open
+                const currentMode = note.displayMode || (note.collapsed ? 'collapsed-icon' : 'open');
+                let nextMode: "open" | "collapsed-line" | "collapsed-icon" = "open";
+
+                if (currentMode === 'open') nextMode = 'collapsed-line';
+                else if (currentMode === 'collapsed-line') nextMode = 'collapsed-icon';
+                else nextMode = 'open';
+
+                return {
+                    ...note,
+                    displayMode: nextMode,
+                    collapsed: nextMode === 'collapsed-icon', // For compatibility
+                    updatedAt: Date.now()
+                };
+            })
         }));
         setUnsavedChanges(true);
     };
@@ -561,6 +576,7 @@ export function FullPageNoteViewer({
             underline: textUnderline,
             width: 0.3, // 30% of page width default
             fontSize: textFontSize,
+            displayMode: "open",
             collapsed: false,
             createdAt: Date.now(),
             updatedAt: Date.now()
@@ -583,6 +599,36 @@ export function FullPageNoteViewer({
             setShowSavePrompt(true);
         } else {
             onClose();
+        }
+    };
+
+    const handleSaveOnly = async () => {
+        if (!versionId) return;
+
+        // Get all unique page numbers from both annotations and textNotes
+        const allPages = new Set([
+            ...Object.keys(annotations),
+            ...Object.keys(textNotes)
+        ]);
+
+        const promises = Array.from(allPages).map(pNum => {
+            const pNumber = parseInt(pNum);
+            return saveMutation.mutateAsync({
+                versionId,
+                pageNumber: pNumber,
+                content: {
+                    strokes: annotations[pNumber] || [],
+                    textNotes: textNotes[pNumber] || []
+                }
+            });
+        });
+
+        try {
+            await Promise.all(promises);
+            setUnsavedChanges(false);
+            utils.notes.getAnnotations.invalidate({ versionId });
+        } catch (error) {
+            console.error("Failed to save annotations:", error);
         }
     };
 
@@ -686,18 +732,47 @@ export function FullPageNoteViewer({
                 if (e.target === e.currentTarget && !showSavePrompt) handleCloseRequest();
             }}
         >
-            {/* --- SAVE PROMPT --- */}
+            {/* --- SAVE PROMPT (Home Page Theme Alignment) --- */}
             {showSavePrompt && (
-                <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-zinc-800 p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-white/10 animate-in fade-in zoom-in-95">
-                        <h3 className="text-xl font-bold mb-2 dark:text-white">Save annotations?</h3>
-                        <p className="text-gray-500 mb-6">You have unsaved changes. Do you want to save before leaving?</p>
-                        <div className="flex justify-end gap-3">
-                            <button onClick={() => setShowSavePrompt(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancel</button>
-                            <button onClick={handleDiscardExit} className="px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg">Discard & Exit</button>
-                            <button onClick={handleSaveExit} className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-lg">
-                                {saveMutation.isPending ? "Saving..." : "Save & Exit"}
-                            </button>
+                <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md">
+                    <div className="relative group overflow-hidden backdrop-blur-3xl bg-white/80 dark:bg-zinc-900/60 p-10 rounded-[3rem] shadow-[0_32px_80px_rgba(0,0,0,0.5)] max-w-md w-full border border-white/40 dark:border-white/10 animate-in fade-in zoom-in-95 duration-500">
+                        {/* Subtle Home Page Themed Gradients */}
+                        <div className="absolute -top-32 -left-32 w-80 h-80 bg-orange-400/10 rounded-full blur-[100px] pointer-events-none" />
+                        <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+                        <div className="relative z-10 text-center">
+                            <div className="w-24 h-24 mx-auto mb-8 rounded-[2rem] bg-gradient-to-br from-white/20 via-white/5 to-white/10 dark:from-white/10 dark:via-transparent dark:to-white/5 flex items-center justify-center shadow-xl border border-white/40 dark:border-white/10">
+                                <Save className="w-12 h-12 text-gray-800 dark:text-gray-100 drop-shadow-sm" />
+                            </div>
+
+                            <h3 className="text-3xl font-black mb-4 text-gray-900 dark:text-white tracking-tight">Preserve your work?</h3>
+                            <p className="text-gray-600 dark:text-gray-300 mb-10 text-lg font-medium leading-relaxed px-4">
+                                Ready to save your annotations and sync them with the cloud?
+                            </p>
+
+                            <div className="flex flex-col gap-4">
+                                <button
+                                    onClick={handleSaveExit}
+                                    className="w-full py-5 rounded-2xl font-black text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.03] active:scale-95 uppercase tracking-[0.2em] text-xs"
+                                >
+                                    {saveMutation.isPending ? "Syncing..." : "Save & Exit"}
+                                </button>
+
+                                <div className="flex gap-4 px-2">
+                                    <button
+                                        onClick={handleDiscardExit}
+                                        className="flex-1 py-4 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 font-bold rounded-2xl border border-red-500/10 hover:border-red-500/20 transition-all active:scale-95 text-sm"
+                                    >
+                                        Discard
+                                    </button>
+                                    <button
+                                        onClick={() => setShowSavePrompt(false)}
+                                        className="flex-1 py-4 bg-gray-500/5 hover:bg-gray-500/10 text-gray-600 dark:text-gray-400 font-bold rounded-2xl border border-gray-500/10 hover:border-gray-500/20 transition-all active:scale-95 text-sm"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -708,10 +783,29 @@ export function FullPageNoteViewer({
                 {noteTitle && <h2 className="text-white text-xl font-bold">{noteTitle}</h2>}
             </div>
 
-            {/* --- CLOSE --- */}
-            <button onClick={handleCloseRequest} className="absolute top-4 right-4 z-50 p-3 bg-white/10 backdrop-blur-md rounded-full hover:bg-white/20 text-white">
-                <X className="w-6 h-6" />
-            </button>
+            {/* --- TOP RIGHT BUTTONS --- */}
+            <div className="absolute top-6 right-6 z-50 flex gap-3">
+                <button
+                    onClick={handleSaveOnly}
+                    disabled={!unsavedChanges || saveMutation.isPending}
+                    className={`p-3.5 backdrop-blur-3xl rounded-[1.25rem] transition-all flex items-center gap-3 group border shadow-2xl ${unsavedChanges
+                        ? "bg-gradient-to-r from-orange-500/20 via-orange-600/10 to-purple-700/20 border-orange-500/40 text-orange-400 hover:scale-[1.05] hover:shadow-orange-500/20"
+                        : "bg-white/5 border-white/10 text-white/30 cursor-not-allowed"
+                        }`}
+                    title="Save Annotations"
+                >
+                    <Save className={`w-6 h-6 ${saveMutation.isPending ? "animate-spin-slow" : "group-hover:drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]"}`} />
+                    <span className="max-w-0 overflow-hidden group-hover:max-w-[120px] transition-all duration-500 text-xs font-black uppercase tracking-widest whitespace-nowrap">
+                        {saveMutation.isPending ? "Syncing..." : "Save Now"}
+                    </span>
+                </button>
+                <button
+                    onClick={handleCloseRequest}
+                    className="p-3.5 bg-white/5 backdrop-blur-3xl rounded-[1.25rem] hover:bg-red-500/20 text-white/80 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-all shadow-2xl active:scale-90"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+            </div>
 
 
             {/* --- MAIN CANVAS AREA --- */}
@@ -752,7 +846,7 @@ export function FullPageNoteViewer({
 
             {/* --- BOTTOM TOOLBAR --- */}
             <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-200 ${showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
-                <div className="bg-white/30 dark:bg-black/40 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/30 dark:border-white/10 shadow-2xl flex items-center gap-4">
+                <div className="bg-white/10 dark:bg-black/40 backdrop-blur-3xl rounded-full px-4 py-2 border border-white/20 dark:border-white/10 shadow-2xl flex items-center gap-4">
 
                     {/* Navigation */}
                     <div className="flex items-center gap-1 px-2 border-r border-white/20">
