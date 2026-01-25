@@ -220,29 +220,32 @@ export default function UploadPage() {
             const pdf = await loadingTask.promise;
             const page = await pdf.getPage(1);
 
-            // Render at a reasonable scale
-            const viewport = page.getViewport({ scale: 1.0 }); // Original size
+            // Get the original viewport to determine dimensions
+            const originalViewport = page.getViewport({ scale: 1.0 });
+
+            // Scale to a reasonable thumbnail size (max 400px width)
+            const maxWidth = 400;
+            const scale = maxWidth / originalViewport.width;
+            const scaledViewport = page.getViewport({ scale });
 
             const canvas = document.createElement("canvas");
             const context = canvas.getContext("2d");
             if (!context) return null;
 
-            // Set dimensions to capture top part (e.g. top 50% or fixed height aspect ratio)
-            // Let's aim for a 16:9 or similar preview ratio, but based on width
-            // Clip to top 40% of the page
-            canvas.width = viewport.width;
-            canvas.height = viewport.height * 0.4;
+            // Set canvas to render the FULL first page at scaled size
+            canvas.width = scaledViewport.width;
+            canvas.height = scaledViewport.height;
 
             await page.render({
                 canvasContext: context,
-                viewport: viewport
+                viewport: scaledViewport
             }).promise;
 
             return new Promise((resolve) => {
                 canvas.toBlob((blob) => {
                     if (!blob) resolve(null);
                     else resolve(new File([blob], "thumbnail.jpg", { type: "image/jpeg" }));
-                }, "image/jpeg", 0.7);
+                }, "image/jpeg", 0.8);
             });
         } catch (error) {
             console.error("Thumbnail generation failed:", error);
