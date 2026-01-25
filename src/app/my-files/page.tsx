@@ -270,9 +270,7 @@ function MyFilesContent() {
                                     >
                                         <Trash2 className="h-3 w-3" />
                                     </button>
-                                    <div className="relative w-full aspect-square mb-2 flex items-center justify-center">
-                                        <Folder className="h-20 w-20 text-yellow-500 fill-yellow-500/30 drop-shadow-lg" />
-                                    </div>
+                                    <Folder className="h-10 w-10 text-yellow-500 mb-2 fill-yellow-500/30 drop-shadow-lg" />
                                     <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200">{folder.name}</span>
                                 </div>
                             ))}
