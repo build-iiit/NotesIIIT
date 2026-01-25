@@ -5,7 +5,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { v4 as uuidv4 } from "uuid";
 import {
     X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info,
-    Pen, Eraser, RotateCcw, Highlighter, Type, ChevronDown, ChevronUp, Plus, Save
+    Pen, Eraser, RotateCcw, Highlighter, StickyNote, ChevronDown, ChevronUp, Plus, Save
 } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
@@ -118,6 +118,8 @@ export function FullPageNoteViewer({
     const [textFontSize, setTextFontSize] = useState(14);
     const [showTextColorPicker, setShowTextColorPicker] = useState(false);
     const textColorPickerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [pageInputValue, setPageInputValue] = useState("");
+    const [isPageInputFocused, setIsPageInputFocused] = useState(false);
 
     // API Hooks
     const utils = api.useUtils();
@@ -180,11 +182,18 @@ export function FullPageNoteViewer({
     // Animation entry
     useEffect(() => {
         if (isOpen) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsAnimatingIn(true);
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
         } else {
             setIsAnimatingIn(false);
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
         }
+        return () => {
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+        };
     }, [isOpen]);
 
     // -------------------------------------------------------------------------
@@ -233,6 +242,13 @@ export function FullPageNoteViewer({
             if (!pdfDoc || !canvasRef.current || scale === 0) return;
             if (renderTaskRef.current) renderTaskRef.current.cancel();
 
+            // Save scroll position BEFORE render
+            const container = containerRef.current;
+            const scrollRatio = container ? {
+                x: container.scrollWidth > 0 ? container.scrollLeft / container.scrollWidth : 0,
+                y: container.scrollHeight > 0 ? container.scrollTop / container.scrollHeight : 0
+            } : null;
+
             try {
                 const page = await pdfDoc.getPage(pageNum);
                 const viewport = page.getViewport({ scale });
@@ -259,6 +275,14 @@ export function FullPageNoteViewer({
                 const renderTask = page.render(renderContext);
                 renderTaskRef.current = renderTask;
                 await renderTask.promise;
+
+                // Restore scroll position AFTER render
+                if (container && scrollRatio && zoomMode === "custom") {
+                    requestAnimationFrame(() => {
+                        container.scrollLeft = scrollRatio.x * container.scrollWidth;
+                        container.scrollTop = scrollRatio.y * container.scrollHeight;
+                    });
+                }
             } catch (err: unknown) {
                 if (err instanceof Error && err.name !== "RenderingCancelledException") {
                     console.error("Render error:", err);
@@ -266,7 +290,7 @@ export function FullPageNoteViewer({
             }
         };
         renderPage();
-    }, [pdfDoc, pageNum, scale]);
+    }, [pdfDoc, pageNum, scale, zoomMode]);
 
     // -------------------------------------------------------------------------
     // ANNOTATION LOGIC (Refined)
@@ -693,8 +717,11 @@ export function FullPageNoteViewer({
     const resetControls = useCallback(() => {
         setShowControls(true);
         if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current);
-        hideControlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
-    }, []);
+        // Don't hide if page input is focused
+        if (!isPageInputFocused) {
+            hideControlsTimeoutRef.current = setTimeout(() => setShowControls(false), 3000);
+        }
+    }, [isPageInputFocused]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -711,6 +738,8 @@ export function FullPageNoteViewer({
     useEffect(() => {
         if (!isOpen) return;
         const kd = (e: KeyboardEvent) => {
+            if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+
             if (e.key === "Escape") handleCloseRequest();
             if (e.key === "ArrowLeft") changePage(-1);
             if (e.key === "ArrowRight") changePage(1);
@@ -728,7 +757,7 @@ export function FullPageNoteViewer({
 
     return (
         <div
-            className={`fixed inset-0 z-50 bg-black/95 flex items-center justify-center transition-opacity duration-300 ${isAnimatingIn ? "opacity-100" : "opacity-0"}`}
+            className={`fixed inset-0 z-50 bg-black/95 transition-opacity duration-300 ${isAnimatingIn ? "opacity-100" : "opacity-0"}`}
             onMouseDown={(e) => {
                 // Only close if clicking backdrop specifically (and not drawing)
                 if (e.target === e.currentTarget && !showSavePrompt) handleCloseRequest();
@@ -755,7 +784,7 @@ export function FullPageNoteViewer({
                             <div className="flex flex-col gap-4">
                                 <button
                                     onClick={handleSaveExit}
-                                    className="w-full py-5 backdrop-blur-3xl rounded-2xl transition-all border shadow-2xl bg-orange-500/10 dark:bg-orange-500/5 border-orange-500/40 text-orange-400 font-black hover:bg-orange-500/20 hover:scale-[1.03] hover:shadow-orange-500/20 active:scale-95 uppercase tracking-[0.2em] text-xs"
+                                    className="w-full py-5 backdrop-blur-3xl rounded-2xl transition-all border shadow-2xl bg-orange-500/10 dark:bg-orange-500/5 border-orange-500/40 text-orange-400 font-black hover:bg-gradient-to-r hover:from-orange-400/20 hover:via-pink-400/20 hover:to-purple-500/20 hover:border-pink-400/50 hover:text-pink-300 hover:scale-[1.03] hover:shadow-[0_8px_32px_0_rgba(251,146,60,0.3)] active:scale-95 uppercase tracking-[0.2em] text-xs"
                                 >
                                     {saveMutation.isPending ? "Syncing..." : "Save & Exit"}
                                 </button>
@@ -811,12 +840,12 @@ export function FullPageNoteViewer({
 
 
             {/* --- MAIN CANVAS AREA --- */}
-            <div ref={containerRef} className="w-full h-full flex items-center justify-center p-8 overflow-auto relative touch-none">
-                {loading && <div className="text-white text-xl">Loading PDF...</div>}
-                {error && <div className="text-red-400 text-xl">{error}</div>}
+            <div ref={containerRef} className="w-full h-full flex p-8 overflow-auto relative">
+                {loading && <div className="text-white text-xl m-auto">Loading PDF...</div>}
+                {error && <div className="text-red-400 text-xl m-auto">{error}</div>}
 
                 {!loading && !error && (
-                    <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair">
+                    <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair m-auto">
                         <canvas ref={canvasRef} className="block" />
                         <canvas
                             ref={annotationCanvasRef}
@@ -853,7 +882,69 @@ export function FullPageNoteViewer({
                     {/* Navigation */}
                     <div className="flex items-center gap-1 px-2 border-r border-white/20">
                         <button onClick={() => changePage(-1)} disabled={pageNum <= 1} className="p-2 text-gray-800 dark:text-gray-100 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
-                        <span className="text-gray-800 dark:text-gray-100 font-bold font-mono min-w-[3rem] text-center text-sm">{pageNum}/{pdfDoc?.numPages || "-"}</span>
+                        <div className="flex items-center gap-1">
+                            <input
+                                type="text"
+                                value={pageInputValue}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '' || /^\d+$/.test(val)) {
+                                        setPageInputValue(val);
+                                    }
+                                }}
+                                onFocus={() => {
+                                    setIsPageInputFocused(true);
+                                    setPageInputValue(pageNum.toString());
+                                    setShowControls(true);
+                                    if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current);
+                                }}
+                                onBlur={() => {
+                                    setIsPageInputFocused(false);
+                                    setPageInputValue("");
+                                }}
+                                onKeyDown={(e) => {
+                                    e.stopPropagation(); // Stop event from reaching global listeners
+                                    if (e.key === 'Enter' && pageInputValue) {
+                                        const targetPage = parseInt(pageInputValue);
+                                        if (pdfDoc && targetPage >= 1 && targetPage <= pdfDoc.numPages) {
+                                            setPageNum(targetPage);
+                                            setPageInputValue("");
+                                            setIsPageInputFocused(false);
+                                            (e.target as HTMLInputElement).blur();
+                                        } else {
+                                            // Invalid page: keep current page, reset input
+                                            setPageInputValue(pageNum.toString());
+                                        }
+                                    } else if (e.key === 'Escape') {
+                                        setPageInputValue("");
+                                        setIsPageInputFocused(false);
+                                        (e.target as HTMLInputElement).blur();
+                                    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                                        e.stopPropagation(); // Allow cursor movement
+                                    }
+                                }}
+                                className="w-12 text-gray-800 dark:text-gray-100 font-bold font-mono text-sm text-center bg-white/10 dark:bg-black/20 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-orange-400/50 border border-transparent hover:border-white/20"
+                                placeholder={pageNum.toString()}
+                            />
+                            <button
+                                onMouseDown={(e) => {
+                                    e.preventDefault(); // Prevent input from losing focus immediately
+                                    if (pageInputValue) {
+                                        const targetPage = parseInt(pageInputValue);
+                                        if (pdfDoc && targetPage >= 1 && targetPage <= pdfDoc.numPages) {
+                                            setPageNum(targetPage);
+                                            setPageInputValue("");
+                                            setIsPageInputFocused(false);
+                                        }
+                                    }
+                                }}
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 border border-orange-500/30 transition-all ${isPageInputFocused ? "opacity-100 w-auto ml-1" : "opacity-0 w-0 ml-0 pointer-events-none overflow-hidden border-0 p-0"}`}
+                            >
+                                GO
+                            </button>
+                            <span className="text-gray-800 dark:text-gray-100 font-bold font-mono text-sm">/</span>
+                            <span className="text-gray-800 dark:text-gray-100 font-bold font-mono text-sm">{pdfDoc?.numPages || "-"}</span>
+                        </div>
                         <button onClick={() => changePage(1)} disabled={!pdfDoc || pageNum >= pdfDoc.numPages} className="p-2 text-gray-800 dark:text-gray-100 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors"><ChevronRight className="w-5 h-5" /></button>
                     </div>
 
@@ -990,9 +1081,9 @@ export function FullPageNoteViewer({
                                 ? "bg-gradient-to-tr from-emerald-500 to-green-600 text-white shadow-lg shadow-green-500/30 scale-110"
                                 : "text-gray-600 dark:text-gray-300 hover:bg-white/20"
                                 }`}
-                            title="Text Note Tool"
+                            title="Sticky Note Tool"
                         >
-                            <Type className="w-5 h-5" />
+                            <StickyNote className="w-5 h-5" />
                         </button>
 
                         {/* Eraser */}

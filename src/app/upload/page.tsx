@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/app/_trpc/client";
-import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown } from "lucide-react";
+import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Plus } from "lucide-react";
 
 type UploadStep = "idle" | "uploading" | "creating-record" | "complete";
 
-export default function UploadPage() {
+function UploadContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialFolderId = searchParams.get("folderId");
+
     const [file, setFile] = useState<File | null>(null);
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [folderId, setFolderId] = useState<string | null>(null);
+    const [folderId, setFolderId] = useState<string | null>(initialFolderId);
     const [uploading, setUploading] = useState(false);
     const [uploadStep, setUploadStep] = useState<UploadStep>("idle");
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -103,9 +106,9 @@ export default function UploadPage() {
             await page.render({
                 canvasContext: context,
                 viewport: scaledViewport,
-                // Cast to any to satisfy type definition if needed, though strictly it should be HTMLCanvasElement
-                canvas: canvas as any
-            }).promise;
+                // Some versions of pdfjs types might require the canvas element explicitly
+                canvas: canvas
+            } as any).promise;
 
             console.log("Thumbnail rendered to canvas");
 
@@ -464,8 +467,11 @@ export default function UploadPage() {
                                     {userGroups?.length === 0 ? (
                                         <div className="text-center py-4 text-xs text-gray-500">You are not in any groups.</div>
                                     ) : (
-                                        userGroups?.map((group) => (
-                                            <label key={group.id} className="flex items-center gap-3 p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-lg cursor-pointer">
+                                        userGroups?.map((group: any) => (
+                                            <label
+                                                key={group.id}
+                                                className="flex items-center gap-3 p-2 hover:bg-white/50 dark:hover:bg-white/10 rounded-lg cursor-pointer transition-colors"
+                                            >
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedGroupIds.includes(group.id)}
@@ -503,5 +509,17 @@ export default function UploadPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function UploadPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
+            </div>
+        }>
+            <UploadContent />
+        </Suspense>
     );
 }
