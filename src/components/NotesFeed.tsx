@@ -98,13 +98,17 @@ export function NotesFeed() {
                         href={`/notes/${note.id}`}
                         className="group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 hover:border-orange-300/30 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)] transition-all duration-300 hover:-translate-y-1 flex flex-col"
                     >
-                        {/* Thumbnail */}
+                        {/* RESOLVED CONFLICT: 
+                          1. Using design classes from 'main' (h-40, transitions, hover effects).
+                          2. Using data logic from 'NEW-FEATURES' (note.versions[0]?.thumbnailKey).
+                        */}
                         <div className="h-40 w-full relative overflow-hidden bg-white/5 border-b border-white/10 group-hover:opacity-90 transition-opacity">
-                            {(note as any).thumbnailUrl ? (
+                            {note.versions[0]?.thumbnailKey ? (
                                 <img
-                                    src={(note as any).thumbnailUrl}
-                                    alt=""
+                                    src={note.versions[0].thumbnailKey}
+                                    alt={`Thumbnail for ${note.title}`}
                                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                                    loading="lazy"
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-500/5 to-pink-500/5">
@@ -114,13 +118,14 @@ export function NotesFeed() {
                                 </div>
                             )}
 
-                            {/* Overlay Badge for Type (e.g. PDF) */}
+                            {/* Overlay Badge from 'main' */}
                             <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-black/40 backdrop-blur-md text-[10px] font-bold text-white border border-white/10 uppercase tracking-wider">
                                 PDF
                             </div>
                         </div>
 
                         <div className="p-5 flex-1 flex flex-col">
+                            {/* Title Styling from 'main' (Orange hover) */}
                             <h3 className="font-bold text-lg mb-2 group-hover:text-orange-500 transition-colors line-clamp-1">
                                 {note.title}
                             </h3>

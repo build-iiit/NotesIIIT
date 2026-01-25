@@ -11,6 +11,7 @@ export const versionsRouter = createTRPCRouter({
             z.object({
                 noteId: z.string(),
                 s3Key: z.string(),
+                thumbnailKey: z.string().nullish(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -34,6 +35,7 @@ export const versionsRouter = createTRPCRouter({
                         noteId: input.noteId,
                         version: nextVer,
                         s3Key: input.s3Key,
+                        thumbnailKey: input.thumbnailKey,
                     },
                 });
 
