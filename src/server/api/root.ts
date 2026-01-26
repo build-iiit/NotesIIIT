@@ -11,6 +11,7 @@ import { adminRouter } from "@/server/api/routers/admin";
 import { bookmarksRouter } from "@/server/api/routers/bookmarks";
 import { socialRouter } from "@/server/api/routers/social";
 import { notificationsRouter } from "@/server/api/routers/notifications";
+import { requestsRouter } from "@/server/api/routers/requests";
 
 /**
  * This is the primary router for your server.
@@ -30,6 +31,7 @@ export const appRouter = createTRPCRouter({
     bookmarks: bookmarksRouter,
     social: socialRouter,
     notifications: notificationsRouter,
+    requests: requestsRouter,
 });
 
 

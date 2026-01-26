@@ -43,6 +43,7 @@ export function ProfileImage({
                     fill={fill}
                     priority={priority}
                     className="object-cover"
+                    unoptimized
                     {...props}
                 />
             ) : (
