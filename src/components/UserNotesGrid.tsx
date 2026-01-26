@@ -16,7 +16,7 @@ export interface Note {
     versions: {
         thumbnailKey: string | null;
     }[];
-    thumbnailUrl?: string; // Add this field
+    thumbnailUrl?: string | null; // Add this field
 }
 
 interface UserNotesGridProps {

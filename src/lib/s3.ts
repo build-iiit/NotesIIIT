@@ -32,7 +32,7 @@ export const getPresignedDownloadUrl = async (key: string) => {
     // Check if this is a local file (stored in public/uploads/)
     // If so, return the local URL instead of generating a MinIO presigned URL
     if (cleanKey.startsWith('uploads/')) {
-        return `/${cleanKey}`;
+        return `/api/${cleanKey}`;
     }
 
     const command = new GetObjectCommand({

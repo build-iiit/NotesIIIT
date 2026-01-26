@@ -8,7 +8,7 @@ import { TextNoteOverlay } from "./annotations/TextNoteOverlay";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
 
 // Set worker URL to the CDN matching the installed version
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface PdfViewerProps {
     url: string;
