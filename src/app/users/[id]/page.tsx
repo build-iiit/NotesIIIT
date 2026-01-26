@@ -1,7 +1,7 @@
 import { api } from "@/app/_trpc/server";
 import { UserProfileClient } from "./UserProfileClient";
 import { auth } from "@/auth";
-import { Trophy } from "lucide-react";
+import { Trophy, Sparkles, Award, Medal, TrendingUp, Drama, Diamond } from "lucide-react";
 
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -29,6 +29,8 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
     if (user._count.notes >= 10) achievements.push({ iconName: "Trophy", label: "10 Notes", color: "yellow" });
     if (user.rank <= 10) achievements.push({ iconName: "Medal", label: "Top 10", color: "gold" });
     if (user.totalKarma >= 50) achievements.push({ iconName: "TrendingUp", label: "50 Karma", color: "green" });
+    if (user.totalKarma <= -10) achievements.push({ iconName: "Drama", label: "Ganda Banda", color: "red" }); 
+    if (user.totalKarma >= 100) achievements.push({ iconName: "Diamond", label: "100 Karma", color: "green" });
 
     const session = await auth();
     const isOwnProfile = session?.user?.id === id;

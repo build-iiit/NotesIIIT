@@ -5,6 +5,7 @@ import { api } from "@/app/_trpc/client";
 import { UserPlus, Check, X, Search, MoreHorizontal } from "lucide-react";
 import { AddFriendDialog } from "./AddFriendDialog";
 import { ProfileImage } from "@/components/ProfileImage";
+import Link from "next/link";
 
 export function FriendsList() {
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -57,22 +58,24 @@ export function FriendsList() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {friends?.map((friend) => (
-                                <div key={friend.id} className="flex items-center gap-4 p-4 bg-white/50 dark:bg-black/50 backdrop-blur-xl rounded-2xl border border-white/40 dark:border-white/10 shadow-sm hover:shadow-md transition-all group">
-                                    <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white dark:border-zinc-800">
-                                        <ProfileImage
-                                            src={friend.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend.id}`}
-                                            alt={friend.name || "User"}
-                                            fallback={friend.name || "User"}
-                                            width={45}
-                                            height={45}
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-gray-900 dark:text-gray-100 truncate">{friend.name}</h4>
-                                        <p className="text-xs text-gray-500 truncate">Online recently</p>
-                                    </div>
-                                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <div key={friend.id} className="flex items-center gap-4 p-4 bg-white/50 dark:bg-black/50 backdrop-blur-xl rounded-2xl border border-white/40 dark:border-white/10 shadow-sm hover:shadow-md transition-all group relative">
+                                    <Link href={`/users/${friend.id}`} className="flex-1 flex items-center gap-4 min-w-0">
+                                        <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white dark:border-zinc-800 shrink-0">
+                                            <ProfileImage
+                                                src={friend.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend.id}`}
+                                                alt={friend.name || "User"}
+                                                fallback={friend.name || "User"}
+                                                width={45}
+                                                height={45}
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <h4 className="font-bold text-gray-900 dark:text-gray-100 truncate hover:text-blue-500 transition-colors">{friend.name}</h4>
+                                            <p className="text-xs text-gray-500 truncate">Online recently</p>
+                                        </div>
+                                    </Link>
+                                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 z-10 bg-transparent">
                                         <MoreHorizontal className="w-5 h-5" />
                                     </button>
                                 </div>

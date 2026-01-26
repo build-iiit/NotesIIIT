@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import { TrendingUp } from "lucide-react";
+import { networkInterfaces } from "os";
+import { Draggable } from "@/components/dnd/Draggable";
 
 export function NotesFeed() {
     const [sort, setSort] = useState<"newest" | "popular">("popular");
@@ -93,59 +95,62 @@ export function NotesFeed() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {allNotes.map((note) => (
-                    <Link
-                        key={note.id}
-                        href={`/notes/${note.id}`}
-                        className="group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 hover:border-orange-300/30 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)] transition-all duration-300 hover:-translate-y-1 flex flex-col"
-                    >
-                        {/* RESOLVED CONFLICT: 
-                          1. Using design classes from 'main' (h-40, transitions, hover effects).
-                          2. Using data logic from 'NEW-FEATURES' (note.versions[0]?.thumbnailKey).
-                        */}
-                        <div className="h-40 w-full relative overflow-hidden bg-white/5 border-b border-white/10 group-hover:opacity-90 transition-opacity">
-                            {(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey ? (
-                                <img
-                                    src={(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey}
-                                    alt={`Thumbnail for ${note.title}`}
-                                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
-                                    loading="lazy"
-                                />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-500/5 to-pink-500/5">
-                                    <div className="p-4 rounded-full bg-white/10 backdrop-blur-sm border border-white/10">
-                                        <TrendingUp className="h-8 w-8 text-orange-400/50" />
+                    <Draggable key={note.id} id={note.id} data={{ type: "NOTE", note }}>
+                        <Link
+                            href={`/notes/${note.id}`}
+                            className="group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 hover:border-orange-300/30 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)] transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
+                        >
+                            {/* RESOLVED CONFLICT: 
+                              1. Using design classes from 'main' (h-40, transitions, hover effects).
+                              2. Using data logic from 'NEW-FEATURES' (note.versions[0]?.thumbnailKey).
+                            */}
+                            <div className="h-40 w-full relative overflow-hidden bg-white/5 border-b border-white/10 group-hover:opacity-90 transition-opacity">
+                                {(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey ? (
+                                    <img
+                                        src={(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey}
+                                        alt={`Thumbnail for ${note.title}`}
+                                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                                        loading="lazy"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-500/5 to-pink-500/5">
+                                        <div className="p-4 rounded-full bg-white/10 backdrop-blur-sm border border-white/10">
+                                            <TrendingUp className="h-8 w-8 text-orange-400/50" />
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
-                            {/* Overlay Badge from 'main' */}
-                            <div className="absolute top-3 right-3 px-2 py-1 rounded-md bg-black/40 backdrop-blur-md text-[10px] font-bold text-white border border-white/10 uppercase tracking-wider">
-                                PDF
+                                {/* Overlay Badge from 'main' */}
+                                {note.course && (
+                                    <span className="absolute top-2 right-2 text-xs font-mono text-white bg-black/60 px-2 py-1 rounded backdrop-blur-md border border-white/10">
+                                        {note.course.code}
+                                    </span>
+                                )}
                             </div>
-                        </div>
 
-                        <div className="p-5 flex-1 flex flex-col">
-                            {/* Title Styling from 'main' (Orange hover) */}
-                            <h3 className="font-bold text-lg mb-2 group-hover:text-orange-500 transition-colors line-clamp-1">
-                                {note.title}
-                            </h3>
-                            <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
-                                <span>By {(note as { author?: { name?: string } }).author?.name || "Unknown"}</span>
-                                <span>•</span>
-                                <span>{new Date(note.createdAt).toLocaleDateString()}</span>
-                            </p>
-                            {note.description && (
-                                <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-1">
-                                    {note.description}
+                            <div className="p-5 flex-1 flex flex-col">
+                                {/* Title Styling from 'main' (Orange hover) */}
+                                <h3 className="font-bold text-lg mb-2 group-hover:text-orange-500 transition-colors line-clamp-1">
+                                    {note.title}
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
+                                    <span>By {(note as { author?: { name?: string } }).author?.name || "Unknown"}</span>
+                                    <span>•</span>
+                                    <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                                 </p>
-                            )}
-                            <div className="mt-auto flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-gray-100 dark:border-zinc-800">
-                                <span className="flex items-center gap-1 group-hover:text-orange-500 transition-colors">
-                                    Read Note &rarr;
-                                </span>
+                                {note.description && (
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 mb-4 flex-1">
+                                        {note.description}
+                                    </p>
+                                )}
+                                <div className="mt-auto flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-gray-100 dark:border-zinc-800">
+                                    <span className="flex items-center gap-1 group-hover:text-orange-500 transition-colors">
+                                        Read Note &rarr;
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    </Link>
+                        </Link>
+                    </Draggable>
                 ))}
             </div>
 

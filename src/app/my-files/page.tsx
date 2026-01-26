@@ -16,6 +16,7 @@ function MyFilesContent() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [newFolderName, setNewFolderName] = useState("");
     const [draggedNoteId, setDraggedNoteId] = useState<string | null>(null);
+    const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
     const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
 
     const utils = api.useUtils();
@@ -65,9 +66,18 @@ function MyFilesContent() {
         }
     });
 
-    const moveToFolderMutation = api.notes.moveToFolder.useMutation({
+    const moveNoteMutation = api.notes.moveToFolder.useMutation({
         onSuccess: () => {
-            utils.folders.getAll.invalidate();
+            utils.folders.getAll.invalidate({ parentId: currentFolderId });
+        },
+        onError: (error) => {
+            alert(error.message);
+        }
+    });
+
+    const moveFolderMutation = api.folders.move.useMutation({
+        onSuccess: () => {
+            utils.folders.getAll.invalidate({ parentId: currentFolderId });
         },
         onError: (error) => {
             alert(error.message);
@@ -92,19 +102,32 @@ function MyFilesContent() {
     };
 
     // Drag and Drop handlers
-    const handleDragStart = (e: React.DragEvent, noteId: string) => {
-        setDraggedNoteId(noteId);
+    const handleDragStart = (e: React.DragEvent, id: string, type: 'note' | 'folder') => {
+        if (type === 'note') {
+            setDraggedNoteId(id);
+        } else {
+            setDraggedFolderId(id);
+        }
         e.dataTransfer.effectAllowed = "move";
+        // e.dataTransfer.setData("text/plain", id); // Optional: can use state instead
     };
 
     const handleDragEnd = () => {
         setDraggedNoteId(null);
+        setDraggedFolderId(null);
         setDragOverFolderId(null);
     };
 
     const handleDragOver = (e: React.DragEvent, folderId: string | null) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
+
+        // Prevent dropping folder onto itself
+        if (draggedFolderId && draggedFolderId === folderId) {
+            e.dataTransfer.dropEffect = "none";
+            return;
+        }
+
         setDragOverFolderId(folderId);
     };
 
@@ -114,13 +137,21 @@ function MyFilesContent() {
 
     const handleDrop = (e: React.DragEvent, targetFolderId: string | null) => {
         e.preventDefault();
+
         if (draggedNoteId && targetFolderId !== currentFolderId) {
-            moveToFolderMutation.mutate({
+            moveNoteMutation.mutate({
                 noteId: draggedNoteId,
                 folderId: targetFolderId,
             });
+        } else if (draggedFolderId && targetFolderId !== currentFolderId && draggedFolderId !== targetFolderId) {
+            moveFolderMutation.mutate({
+                id: draggedFolderId,
+                parentId: targetFolderId,
+            });
         }
+
         setDraggedNoteId(null);
+        setDraggedFolderId(null);
         setDragOverFolderId(null);
     };
 
@@ -161,7 +192,7 @@ function MyFilesContent() {
                         My Files
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-2">
-                        Manage your notes and folders. Drag files to move them between folders.
+                        Manage your notes and folders. Drag files or folders to move them.
                     </p>
                 </div>
 
@@ -208,7 +239,7 @@ function MyFilesContent() {
                                 className={`px-3 py-1 rounded-lg backdrop-blur-sm transition-all flex items-center gap-1 ${!currentFolderId
                                     ? 'bg-gradient-to-r from-orange-500/50 to-pink-500/50 text-white font-bold border border-white/30'
                                     : 'hover:bg-white/20 dark:hover:bg-white/10'
-                                    } ${dragOverFolderId === null && draggedNoteId ? 'ring-2 ring-orange-500 bg-orange-500/20' : ''}`}
+                                    } ${dragOverFolderId === null && (draggedNoteId || draggedFolderId) ? 'ring-2 ring-orange-500 bg-orange-500/20' : ''}`}
                             >
                                 <Home className="h-3 w-3" />
                                 Root
@@ -224,7 +255,7 @@ function MyFilesContent() {
                                         className={`px-3 py-1 rounded-lg backdrop-blur-sm transition-all ${currentFolderId === crumb.id
                                             ? 'bg-gradient-to-r from-orange-500/50 to-pink-500/50 text-white font-bold border border-white/30'
                                             : 'hover:bg-white/20 dark:hover:bg-white/10'
-                                            } ${dragOverFolderId === crumb.id && draggedNoteId ? 'ring-2 ring-orange-500 bg-orange-500/20' : ''}`}
+                                            } ${dragOverFolderId === crumb.id && (draggedNoteId || draggedFolderId) ? 'ring-2 ring-orange-500 bg-orange-500/20' : ''}`}
                                     >
                                         {crumb.name}
                                     </button>
@@ -255,12 +286,15 @@ function MyFilesContent() {
                             {data?.folders.map((folder) => (
                                 <div
                                     key={folder.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, folder.id, 'folder')}
+                                    onDragEnd={handleDragEnd}
                                     onClick={() => setCurrentFolderId(folder.id)}
                                     onDragOver={(e) => handleDragOver(e, folder.id)}
                                     onDragLeave={handleDragLeave}
                                     onDrop={(e) => handleDrop(e, folder.id)}
-                                    className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-500/20 hover:via-pink-500/15 hover:to-orange-500/20 cursor-pointer transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(251,146,60,0.25)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.05] active:scale-[0.98] ${dragOverFolderId === folder.id && draggedNoteId ? 'ring-2 ring-orange-500 bg-orange-500/20 scale-105' : ''
-                                        }`}
+                                    className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-500/20 hover:via-pink-500/15 hover:to-orange-500/20 cursor-pointer transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(251,146,60,0.25)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.05] active:scale-[0.98] ${dragOverFolderId === folder.id && (draggedNoteId || draggedFolderId) && draggedFolderId !== folder.id ? 'ring-2 ring-orange-500 bg-orange-500/20 scale-105' : ''
+                                        } ${draggedFolderId === folder.id ? 'opacity-50 scale-95' : ''}`}
                                 >
                                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                                     <button
@@ -280,7 +314,7 @@ function MyFilesContent() {
                                 <div
                                     key={note.id}
                                     draggable
-                                    onDragStart={(e) => handleDragStart(e, note.id)}
+                                    onDragStart={(e) => handleDragStart(e, note.id, 'note')}
                                     onDragEnd={handleDragEnd}
                                     className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] hover:from-purple-500/20 hover:via-blue-500/15 hover:to-purple-500/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(147,51,234,0.25)] border border-white/25 hover:border-purple-300/50 hover:scale-[1.05] active:scale-[0.98] cursor-grab active:cursor-grabbing ${draggedNoteId === note.id ? 'opacity-50 scale-95' : ''
                                         }`}
@@ -330,6 +364,7 @@ function MyFilesContent() {
                                 </div>
                             )}
                         </div>
+
 
                         {/* Create Folder Modal */}
                         {isCreateModalOpen && (

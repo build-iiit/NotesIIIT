@@ -219,17 +219,19 @@ export const notesRouter = createTRPCRouter({
             let hasAccess = isAuthor || note.visibility === "PUBLIC";
 
             if (!hasAccess && ctx.session?.user?.id) {
-                // Check group access
-                if (note.visibility === "GROUP") {
-                    const noteWithGroups = await ctx.prisma.note.findUnique({
-                        where: { id: input.id },
-                        include: { sharedGroups: { include: { members: { where: { userId: ctx.session.user.id } } } } }
-                    });
-                    if (noteWithGroups?.sharedGroups.some(g => g.members.length > 0)) {
-                        hasAccess = true;
-                    }
+                // Check group access - Removed strict "GROUP" visibility check
+                // because notes might be shared with groups but have different visibility flags (e.g. PRIVATE but shared)
+                const noteWithGroups = await ctx.prisma.note.findUnique({
+                    where: { id: input.id },
+                    include: { sharedGroups: { include: { members: { where: { userId: ctx.session.user.id } } } } }
+                });
+
+                if (noteWithGroups?.sharedGroups.some(g => g.members.length > 0)) {
+                    hasAccess = true;
                 }
             }
+
+            if (!hasAccess) return null;
 
             if (!hasAccess) return null;
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { api } from "@/app/_trpc/client";
 import { X, Search, UserPlus, Users, Trophy, Settings, FileText, Trash2, Edit2, Save } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { ProfileImage } from "../ProfileImage";
 
 
@@ -238,12 +239,12 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab = 'MEM
                                                 </p>
                                             </div>
                                         </div>
-                                        <a
-                                            href={`/note/${file.id}`}
+                                        <Link
+                                            href={`/notes/${file.id}`}
                                             className="px-4 py-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors"
                                         >
                                             View
-                                        </a>
+                                        </Link>
                                     </div>
                                 ))
                             )}

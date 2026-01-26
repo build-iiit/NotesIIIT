@@ -6,6 +6,7 @@ import { prisma as db } from "@/lib/prisma";
 import { HomeFolderGrid } from "@/components/HomeFolderGrid";
 import { HomeGroupsGrid } from "@/components/HomeGroupsGrid";
 import { TrendingNotes } from "@/components/TrendingNotes";
+import { DashboardDndWrapper } from "@/components/dnd/DashboardDndWrapper";
 
 export default async function Home() {
   const session = await auth();
