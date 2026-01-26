@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ProfileImage } from "./ProfileImage";
+import { NotificationBell } from "./NotificationBell";
 
 interface NavbarProps {
     user?: {
@@ -94,6 +95,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         <ThemeToggle />
                         {user ? (
                             <div className="flex items-center gap-3">
+                                <NotificationBell />
                                 <Link
                                     href={`/users/${user.id}`}
                                     className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-white/30 hover:ring-orange-400/50 transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg"
@@ -216,6 +218,6 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                     </div>
                 )}
             </div>
-        </nav>
+        </nav >
     );
 }

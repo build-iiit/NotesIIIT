@@ -41,6 +41,10 @@ model User {
   
   groups            GroupMember[]
   createdGroups     Group[]         @relation("GroupCreator")
+
+  // Notification Relations
+  notifications        Notification[] @relation("NotificationRecipient")
+  actedNotifications   Notification[] @relation("NotificationActor")
 }
 
 enum Role {
@@ -408,4 +412,44 @@ enum NoteVisibility {
   PUBLIC
   PRIVATE
   GROUP
+}
+
+// ---------------------------------------------------------
+// 5. Notifications
+// ---------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(cuid())
+  
+  // Target user who receives the notification
+  userId    String
+  user      User     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Actor who triggered the event (nullable for system notifications)
+  actorId   String?
+  actor     User?    @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  // Notification type
+  type      NotificationType
+
+  // Optional data payload (e.g., noteId, commentId, groupId)
+  data      Json?
+  
+  // Read state
+  isRead    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
+}
+
+enum NotificationType {
+  FRIEND_REQUEST_RECEIVED
+  FRIEND_REQUEST_ACCEPTED
+  COMMENT_ON_NOTE
+  REPLY_TO_COMMENT
+  VOTES_ON_NOTE
+  GROUP_INVITE
+  NOTE_SHARED_TO_GROUP
 }

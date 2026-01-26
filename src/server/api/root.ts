@@ -10,6 +10,7 @@ import { foldersRouter } from "@/server/api/routers/folders";
 import { adminRouter } from "@/server/api/routers/admin";
 import { bookmarksRouter } from "@/server/api/routers/bookmarks";
 import { socialRouter } from "@/server/api/routers/social";
+import { notificationsRouter } from "@/server/api/routers/notifications";
 
 /**
  * This is the primary router for your server.
@@ -28,7 +29,9 @@ export const appRouter = createTRPCRouter({
     admin: adminRouter,
     bookmarks: bookmarksRouter,
     social: socialRouter,
+    notifications: notificationsRouter,
 });
+
 
 // export type definition of API
 export type AppRouter = typeof appRouter;
