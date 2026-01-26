@@ -134,12 +134,7 @@ function MyFilesContent() {
                 type: 'shared-root',
                 isVirtual: true
             });
-            displayFolders.unshift({
-                id: PUBLIC_ROOT_ID,
-                name: "Public Files",
-                type: 'public-root',
-                isVirtual: true
-            });
+            // Removed Public Files folder - saved notes appear directly in user's folders
         }
     }
 
@@ -448,13 +443,16 @@ function MyFilesContent() {
                                         </button>
                                     )}
 
-                                    {folder.type === 'shared-root' || folder.type === 'group' ? (
-                                        <Users className="h-10 w-10 text-blue-500 mb-2 fill-blue-500/30 drop-shadow-lg" />
-                                    ) : folder.type === 'public-root' ? (
-                                        <Globe className="h-10 w-10 text-green-500 mb-2 fill-green-500/30 drop-shadow-lg" />
-                                    ) : (
-                                        <Folder className="h-10 w-10 text-yellow-500 mb-2 fill-yellow-500/30 drop-shadow-lg" />
-                                    )}
+                                    <div className="relative w-full aspect-square mb-2 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-inner">
+                                        <div className="absolute inset-0 bg-white/5 opacity-50" />
+                                        {folder.type === 'shared-root' || folder.type === 'group' ? (
+                                            <Users className="h-16 w-16 text-blue-500 fill-blue-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                        ) : folder.type === 'public-root' ? (
+                                            <Globe className="h-16 w-16 text-green-500 fill-green-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                        ) : (
+                                            <Folder className="h-16 w-16 text-yellow-500 fill-yellow-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                        )}
+                                    </div>
 
                                     <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200">{folder.name}</span>
                                 </div>

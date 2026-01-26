@@ -19,9 +19,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 // Resolve S3 URL for profile image if it's a key
                 if (session.user.image && !session.user.image.startsWith("http")) {
-                    console.log("Resolving session image for:", session.user.id, session.user.image);
-                    session.user.image = await getPresignedDownloadUrl(session.user.image);
-                    console.log("Resolved session image to:", session.user.image);
+                    try {
+                        console.log("Resolving session image for:", session.user.id, session.user.image);
+                        session.user.image = await getPresignedDownloadUrl(session.user.image);
+                        console.log("Resolved session image to:", session.user.image);
+                    } catch (error) {
+                        console.error("Failed to resolve session image:", error);
+                        // Fallback: keep the original image string or set to null if preferred
+                    }
                 } else {
                     console.log("Session image already URL or null:", session.user.image);
                 }

@@ -40,6 +40,7 @@ function UploadContent() {
     const { data: courses } = api.course.getAll.useQuery();
     const { data: userGroups } = api.social.getGroups.useQuery();
     const createNoteMutation = api.notes.create.useMutation();
+    const getUploadUrlMutation = api.notes.getUploadUrl.useMutation();
 
     const semesters = ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2", "5-1", "5-2"];
 
@@ -162,7 +163,10 @@ function UploadContent() {
         }
     };
 
-    // Refined Google Drive Logic with proper nesting
+    // Google Drive with browser-based download + progress indicators
+    const [driveUploadProgress, setDriveUploadProgress] = useState<string>("");
+    const [driveProgressPercent, setDriveProgressPercent] = useState<number>(0);
+
     const triggerGoogleDrive = () => {
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
         const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -177,7 +181,6 @@ function UploadContent() {
             scope: 'https://www.googleapis.com/auth/drive.readonly',
             callback: (tokenResponse: any) => {
                 if (tokenResponse && tokenResponse.access_token) {
-                    const gapi = (window as any).gapi;
                     const picker = new (window as any).google.picker.PickerBuilder()
                         .addView((window as any).google.picker.ViewId.PDFS)
                         .setOAuthToken(tokenResponse.access_token)
@@ -187,18 +190,28 @@ function UploadContent() {
                                 const doc = data.docs[0];
                                 const fileId = doc.id;
                                 const fileName = doc.name;
+                                const fileSize = doc.sizeBytes || 0;
 
-                                // Download
                                 try {
-                                    setUploading(true); // Temporary loading indication
+                                    setUploading(true);
+                                    setDriveUploadProgress("Downloading from Google Drive...");
+                                    setDriveProgressPercent(10);
+
+                                    // Download from Google Drive (browser-based)
                                     const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
                                         headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
                                     });
 
                                     if (!res.ok) throw new Error("Failed to download from Google Drive");
 
+                                    setDriveProgressPercent(40);
+                                    setDriveUploadProgress("Processing file...");
+
                                     const blob = await res.blob();
                                     const file = new File([blob], fileName, { type: "application/pdf" });
+
+                                    setDriveProgressPercent(60);
+                                    setDriveUploadProgress("Generating thumbnail...");
 
                                     setFile(file);
                                     if (!title.trim()) setTitle(fileName.replace(/\.[^/.]+$/, ""));
@@ -206,8 +219,19 @@ function UploadContent() {
                                     const thumb = await generateThumbnail(file);
                                     if (thumb) setThumbnailFile(thumb);
 
+                                    setDriveProgressPercent(100);
+                                    setDriveUploadProgress("Ready to upload!");
+
+                                    // Clear progress after a short delay
+                                    setTimeout(() => {
+                                        setDriveUploadProgress("");
+                                        setDriveProgressPercent(0);
+                                    }, 1500);
+
                                 } catch (err: any) {
                                     alert("Error importing file: " + err.message);
+                                    setDriveUploadProgress("");
+                                    setDriveProgressPercent(0);
                                 } finally {
                                     setUploading(false);
                                 }
@@ -382,32 +406,45 @@ function UploadContent() {
             setUploadStep("uploading");
             setUploadProgress(10);
 
+            // 1. Get Presigned URL for PDF
+            const { url: pdfUploadUrl, s3Key: pdfS3Key } = await getUploadUrlMutation.mutateAsync({
+                filename: file.name,
+                contentType: file.type || "application/pdf"
+            });
+
+            // 2. Upload PDF directly to S3
+            await fetch(pdfUploadUrl, {
+                method: "PUT",
+                body: file,
+                headers: { "Content-Type": file.type || "application/pdf" }
+            });
+
+            setUploadProgress(50);
+
+            // 3. Upload Thumbnail (if exists)
             let thumbnailKey: string | undefined;
-
-            // 1. Upload PDF to S3 via API
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
-            if (!uploadResponse.ok) throw new Error("PDF upload failed");
-            const { key: pdfS3Key } = await uploadResponse.json();
-
-            setUploadProgress(40);
-
-            // 2. Upload Thumbnail to S3
             if (thumbnailFile) {
-                const thumbFormData = new FormData();
-                thumbFormData.append("file", thumbnailFile);
-                const thumbResponse = await fetch("/api/upload", { method: "POST", body: thumbFormData });
-                if (thumbResponse.ok) {
-                    const { key } = await thumbResponse.json();
-                    thumbnailKey = key;
+                try {
+                    const { url: thumbUploadUrl, s3Key: thumbS3Key } = await getUploadUrlMutation.mutateAsync({
+                        filename: `thumb_${file.name}.jpg`,
+                        contentType: "image/jpeg"
+                    });
+
+                    await fetch(thumbUploadUrl, {
+                        method: "PUT",
+                        body: thumbnailFile,
+                        headers: { "Content-Type": "image/jpeg" }
+                    });
+
+                    thumbnailKey = thumbS3Key;
+                } catch (e) {
+                    console.error("Failed to upload thumbnail", e);
                 }
             }
 
             setUploadProgress(70);
 
-            // 3. Create Database Record
+            // 4. Create Database Record
             setUploadStep("creating-record");
             await createNoteMutation.mutateAsync({
                 title,
@@ -583,12 +620,29 @@ function UploadContent() {
                                         <button
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); triggerGoogleDrive(); }}
-                                            className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm flex items-center gap-2 transition-all z-10 relative"
+                                            disabled={uploading}
+                                            className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm flex items-center gap-2 transition-all z-10 relative disabled:opacity-50"
                                         >
                                             <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive" />
                                             Import from Drive
                                         </button>
                                     </div>
+
+                                    {/* Drive Upload Progress */}
+                                    {driveUploadProgress && (
+                                        <div className="mt-4 space-y-2">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-gray-600 dark:text-gray-400 font-medium">{driveUploadProgress}</span>
+                                                <span className="text-orange-500 font-bold">{driveProgressPercent}%</span>
+                                            </div>
+                                            <div className="h-2 bg-white/20 dark:bg-black/30 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-300 ease-out rounded-full"
+                                                    style={{ width: `${driveProgressPercent}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4">
