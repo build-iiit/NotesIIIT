@@ -76,19 +76,22 @@ export const foldersRouter = createTRPCRouter({
             });
 
             // Resolve thumbnails
-            const notesWithThumbnails = await Promise.all(notes.map(async (note) => {
-                let thumbnailUrl = "";
-                const key = note.thumbnailS3Key || note.versions[0]?.thumbnailKey;
+            // const notesWithThumbnails = await Promise.all(notes.map(async (note) => {
+            //     let thumbnailUrl = "";
+            //     const key = note.thumbnailS3Key || note.versions[0]?.thumbnailKey;
 
-                if (key) {
-                    try {
-                        thumbnailUrl = await getPresignedDownloadUrl(key);
-                    } catch (e) {
-                        console.error("Failed to generate presigned URL for note", note.id, e);
-                    }
-                }
-                return { ...note, thumbnailUrl };
-            }));
+            //     if (key) {
+            //         try {
+            //             thumbnailUrl = await getPresignedDownloadUrl(key);
+            //         } catch (e) {
+            //             console.error("Failed to generate presigned URL for note", note.id, e);
+            //         }
+            //     }
+            //     return { ...note, thumbnailUrl };
+            // }));
+
+            // Temporary debug: Return notes without resolving S3 URLs to see if this fixes the timeout
+            const notesWithThumbnails = notes.map(note => ({ ...note, thumbnailUrl: "" }));
 
             return {
                 folders,
