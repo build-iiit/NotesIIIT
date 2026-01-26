@@ -110,7 +110,7 @@ export function FriendsList() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{req.sender.name}</p>
-                                            <p className="text-xs text-gray-500">wants to qualify</p>
+                                            <p className="text-xs text-gray-500">wants to connect</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-2">

@@ -2,11 +2,7 @@
 
 **Team hack0d3** presents a modern, full-featured notes sharing platform built with the T3 Stack.
 
-> 🚧 **Hackathon Development Note**:
-> We created a very basic authentication system 5 days before the hackathon started.
-> **The entire rest of the application (PDF engine, Social features, Admin dashboard, UI/UX, etc.) was built during the hackathon.**
->
-> 🤖 **Built with help from Antigravity**
+
 
 ---
 
@@ -146,6 +142,11 @@ We are a team of passionate developers building cool things.
 2. **Arjun Tikoo**
 3. **Parth Nyati**
 4. **Swayam Hadape**
-
+---
+> 🚧 **Hackathon Development Note**:
+> We created a very basic authentication system 5 days before the hackathon started.
+> **The entire rest of the application (PDF engine, Social features, Admin dashboard, UI/UX, etc.) was built during the hackathon.**
+>
+> 🤖 **Built with help from Antigravity**
 ---
 Built with ❤️ during the hackathon.
