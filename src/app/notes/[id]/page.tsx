@@ -28,17 +28,29 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     const [isFullPageOpen, setIsFullPageOpen] = useState(false);
     const trackViewMutation = api.notes.trackView.useMutation();
 
+    // Redirect markdown notes to proper route
+    useEffect(() => {
+        if (note?.noteType === "MARKDOWN") {
+            router.replace(`/markdown/${id}`);
+        }
+    }, [note?.noteType, id, router]);
+
     // Track view when the note is loaded
     useEffect(() => {
-        if (note?.id) {
+        if (note?.id && note?.noteType !== "MARKDOWN") {
             // Track view in background without updating the UI immediately
             // The updated count will show on next page load
             trackViewMutation.mutate({ noteId: note.id });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [note?.id]); // Only track on initial load
+    }, [note?.id, note?.noteType]); // Only track on initial load
 
     if (!note) return <div>Note not found</div>;
+
+    // Show loading while redirecting markdown notes
+    if (note.noteType === "MARKDOWN") {
+        return <div className="min-h-screen flex items-center justify-center">Redirecting to editor...</div>;
+    }
 
     // Find current version
     const currentVersion = note.versions.find(v => v.id === note.currentVersionId) || note.versions[0];

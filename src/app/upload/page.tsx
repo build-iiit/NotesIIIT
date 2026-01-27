@@ -467,7 +467,11 @@ function UploadContent() {
             }, 800);
         } catch (error) {
             console.error("Upload failed:", error);
-            alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+            let errorMessage = error instanceof Error ? error.message : "Unknown error";
+            if (errorMessage.toLowerCase().includes("failed to fetch")) {
+                errorMessage += " (Check if MinIO/S3 database is running)";
+            }
+            alert(`Upload failed: ${errorMessage}`);
             setUploadStep("idle");
             setUploadProgress(0);
         } finally {

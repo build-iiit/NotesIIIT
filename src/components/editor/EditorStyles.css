@@ -1,0 +1,470 @@
+/* Notion-style Editor Styles */
+
+/* ============================================
+   Editor Container
+   ============================================ */
+
+.notion-editor {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.notion-editor .ProseMirror {
+  outline: none;
+  min-height: 60vh;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--foreground, #1a1a1a);
+}
+
+.notion-editor .ProseMirror:focus {
+  outline: none;
+}
+
+/* ============================================
+   Block Spacing (Notion-style)
+   ============================================ */
+
+.notion-editor .ProseMirror > * + * {
+  margin-top: 0.75em;
+}
+
+.notion-editor .ProseMirror p {
+  margin: 0;
+  padding: 3px 2px;
+  border-radius: 4px;
+  transition: background-color 0.1s ease;
+}
+
+.notion-editor .ProseMirror p:hover {
+  background-color: rgba(55, 53, 47, 0.04);
+}
+
+.dark .notion-editor .ProseMirror p:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* ============================================
+   Headings
+   ============================================ */
+
+.notion-editor h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  padding: 3px 2px;
+  color: var(--foreground, #1a1a1a);
+}
+
+.notion-editor h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  padding: 3px 2px;
+  color: var(--foreground, #1a1a1a);
+}
+
+.notion-editor h3 {
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.5rem;
+  margin-bottom: 0.25rem;
+  padding: 3px 2px;
+  color: var(--foreground, #1a1a1a);
+}
+
+/* ============================================
+   Lists
+   ============================================ */
+
+.notion-editor ul,
+.notion-editor ol {
+  padding-left: 1.5rem;
+  margin: 0;
+}
+
+.notion-editor ul {
+  list-style-type: disc;
+}
+
+.notion-editor ol {
+  list-style-type: decimal;
+}
+
+.notion-editor li {
+  padding: 3px 0;
+}
+
+.notion-editor li p {
+  margin: 0;
+}
+
+.notion-editor li::marker {
+  color: rgba(55, 53, 47, 0.45);
+}
+
+.dark .notion-editor li::marker {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ============================================
+   Blockquote
+   ============================================ */
+
+.notion-editor blockquote {
+  margin: 0;
+  padding: 0.5rem 0 0.5rem 1rem;
+  border-left: 3px solid rgba(55, 53, 47, 0.2);
+  color: rgba(55, 53, 47, 0.65);
+}
+
+.dark .notion-editor blockquote {
+  border-left-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ============================================
+   Code Block
+   ============================================ */
+
+.notion-editor pre {
+  background-color: rgba(55, 53, 47, 0.08);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', Menlo, Monaco, 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0.5rem 0;
+}
+
+.dark .notion-editor pre {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.notion-editor pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+/* Inline code */
+.notion-editor code {
+  background-color: rgba(255, 142, 60, 0.15);
+  border-radius: 4px;
+  padding: 0.2em 0.4em;
+  font-family: 'SFMono-Regular', Menlo, Monaco, 'Courier New', monospace;
+  font-size: 0.875em;
+  color: #eb5757;
+}
+
+.dark .notion-editor code {
+  background-color: rgba(255, 142, 60, 0.25);
+  color: #ff8e3c;
+}
+
+/* ============================================
+   Horizontal Rule
+   ============================================ */
+
+.notion-editor hr {
+  border: none;
+  border-top: 1px solid rgba(55, 53, 47, 0.12);
+  margin: 1.5rem 0;
+}
+
+.dark .notion-editor hr {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ============================================
+   Math Blocks
+   ============================================ */
+
+.math-inline-wrapper {
+  display: inline;
+}
+
+.math-inline {
+  display: inline;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: background-color 0.1s ease;
+}
+
+.math-inline:hover {
+  background-color: rgba(55, 53, 47, 0.08);
+}
+
+.dark .math-inline:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.math-inline.math-selected {
+  background-color: rgba(35, 131, 226, 0.14);
+}
+
+.math-inline-input {
+  font-family: 'SFMono-Regular', Menlo, Monaco, 'Courier New', monospace;
+  font-size: 0.875em;
+  padding: 2px 6px;
+  border: 1px solid rgba(55, 53, 47, 0.16);
+  border-radius: 4px;
+  background-color: rgba(55, 53, 47, 0.04);
+  outline: none;
+  min-width: 100px;
+}
+
+.math-inline-input:focus {
+  border-color: #2383e2;
+  box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.14);
+}
+
+.dark .math-inline-input {
+  border-color: rgba(255, 255, 255, 0.16);
+  background-color: rgba(255, 255, 255, 0.04);
+  color: white;
+}
+
+.math-block-wrapper {
+  margin: 1rem 0;
+}
+
+.math-block {
+  display: block;
+  background-color: rgba(55, 53, 47, 0.03);
+  border-radius: 6px;
+  padding: 1.5rem;
+  margin: 0.5rem 0;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+.math-block:hover {
+  background-color: rgba(55, 53, 47, 0.08);
+}
+
+.dark .math-block {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.dark .math-block:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.math-block.math-selected {
+  background-color: rgba(35, 131, 226, 0.14);
+}
+
+.math-block-content {
+  font-size: 1.25rem;
+}
+
+.math-block-editing {
+  background-color: rgba(55, 53, 47, 0.06);
+}
+
+.dark .math-block-editing {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.math-block-input {
+  width: 100%;
+  font-family: 'SFMono-Regular', Menlo, Monaco, 'Courier New', monospace;
+  font-size: 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(55, 53, 47, 0.16);
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.8);
+  outline: none;
+  resize: vertical;
+}
+
+.math-block-input:focus {
+  border-color: #2383e2;
+  box-shadow: 0 0 0 2px rgba(35, 131, 226, 0.14);
+}
+
+.dark .math-block-input {
+  border-color: rgba(255, 255, 255, 0.16);
+  background-color: rgba(30, 30, 30, 0.8);
+  color: white;
+}
+
+.math-block-hint {
+  font-size: 0.75rem;
+  color: rgba(55, 53, 47, 0.5);
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.dark .math-block-hint {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.math-error {
+  color: #eb5757;
+  font-family: monospace;
+}
+
+/* ============================================
+   Placeholder
+   ============================================ */
+
+.notion-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: rgba(55, 53, 47, 0.4);
+  pointer-events: none;
+  height: 0;
+}
+
+.dark .notion-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ============================================
+   Slash Command Menu
+   ============================================ */
+
+.slash-command-menu {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(55, 53, 47, 0.08),
+              0 3px 8px rgba(55, 53, 47, 0.16),
+              0 12px 24px rgba(55, 53, 47, 0.08);
+  padding: 8px;
+  min-width: 280px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.dark .slash-command-menu {
+  background-color: #252526;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08),
+              0 3px 8px rgba(0, 0, 0, 0.24),
+              0 12px 24px rgba(0, 0, 0, 0.16);
+}
+
+.slash-command-empty {
+  padding: 12px 16px;
+  color: rgba(55, 53, 47, 0.5);
+  font-size: 0.875rem;
+}
+
+.dark .slash-command-empty {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.slash-command-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+  transition: background-color 0.1s ease;
+}
+
+.slash-command-item:hover,
+.slash-command-item-selected {
+  background-color: rgba(55, 53, 47, 0.08);
+}
+
+.dark .slash-command-item:hover,
+.dark .slash-command-item-selected {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.slash-command-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: rgba(55, 53, 47, 0.08);
+  color: rgba(55, 53, 47, 0.65);
+  flex-shrink: 0;
+}
+
+.dark .slash-command-icon {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.slash-command-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.slash-command-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.9);
+}
+
+.dark .slash-command-title {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.slash-command-description {
+  font-size: 0.75rem;
+  color: rgba(55, 53, 47, 0.5);
+  margin-top: 2px;
+}
+
+.dark .slash-command-description {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   Links
+   ============================================ */
+
+.notion-editor a {
+  color: #2383e2;
+  text-decoration: none;
+}
+
+.notion-editor a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   Selection
+   ============================================ */
+
+.notion-editor .ProseMirror ::selection {
+  background-color: rgba(35, 131, 226, 0.28);
+}
+
+/* ============================================
+   Bold/Italic/Strike
+   ============================================ */
+
+.notion-editor strong {
+  font-weight: 600;
+}
+
+.notion-editor em {
+  font-style: italic;
+}
+
+.notion-editor s {
+  text-decoration: line-through;
+}

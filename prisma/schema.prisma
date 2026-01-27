@@ -88,10 +88,16 @@ model VerificationToken {
 // 2. Core Content
 // ---------------------------------------------------------
 
+enum NoteType {
+  PDF
+  MARKDOWN
+}
+
 model Note {
   id          String   @id @default(cuid())
   title       String
   description String?
+  noteType    NoteType @default(PDF)
   // Authorship
   authorId    String
   author      User     @relation("AuthoredNotes", fields: [authorId], references: [id], onDelete: Cascade)
@@ -100,11 +106,15 @@ model Note {
   originalAuthorId String?
   originalAuthor   User?  @relation("OriginalNotes", fields: [originalAuthorId], references: [id], onDelete: SetNull)
 
-  // Versioning
+  // Versioning (PDF notes)
   versions         NoteVersion[]
   currentVersionId String?       @map("current_version_id")
   // Note: We don't strictly relation currentVersion to NoteVersion here to avoid circular dependency issues during creation, 
   // but logically it points to a NoteVersion.id
+  
+  // Versioning (Markdown notes)
+  markdownVersions     MarkdownVersion[]
+  currentMarkdownVersionId String?       @map("current_markdown_version_id")
 
   // Stats (Denormalized for performance, updated via transactions/events)
   viewCount   Int      @default(0)
@@ -191,6 +201,23 @@ model NoteVersion {
   note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
   
   pages       Page[]
+
+  createdAt   DateTime @default(now())
+
+  @@unique([noteId, version]) // Ensure version numbers are unique per note
+  @@index([noteId])
+}
+
+model MarkdownVersion {
+  id          String   @id @default(cuid())
+  version     Int      // Incremental version number (1, 2, 3...)
+  
+  // Content Storage - TipTap document JSON
+  content     Json     // The structured editor content
+  
+  // Relations
+  noteId      String
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
 

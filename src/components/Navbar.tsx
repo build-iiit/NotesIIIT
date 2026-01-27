@@ -28,9 +28,10 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
 
     const navLinks = [
         { href: "/", label: "Home", icon: Home },
+        { href: "/markdown/new", label: "New Note", icon: Upload, authRequired: true },
         { href: "/search", label: "Search", icon: Search },
         { href: "/courses", label: "Courses", icon: BookOpen },
-        { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
+        { href: "/upload", label: "Upload PDF", icon: Upload, authRequired: true },
         { href: "/my-files", label: "My Files", icon: Folder, authRequired: true },
         { href: "/bookmarks", label: "Bookmarks", icon: Bookmark, authRequired: true },
         { href: "/social", label: "Social", icon: Users },
