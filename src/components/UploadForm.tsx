@@ -339,7 +339,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
     return (
         <div className={isFulfillmentMode ? "" : "max-w-2xl mx-auto backdrop-blur-3xl bg-white/30 dark:bg-black/30 rounded-3xl shadow-xl border border-white/50 dark:border-white/10 p-8"}>
             {!isFulfillmentMode && (
-                <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent">
+                <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-[var(--brand-from)] via-[var(--brand-via)] to-[var(--brand-to)] bg-clip-text text-transparent">
                     Upload Note
                 </h1>
             )}
@@ -442,8 +442,8 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                         <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PDF File</label>
                         {!file && (
                             <div className="flex bg-white/50 dark:bg-black/50 rounded-lg p-1 border border-white/20">
-                                <button type="button" onClick={() => setUploadMode("local")} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "local" ? "bg-white dark:bg-zinc-800 shadow text-orange-600" : "text-gray-500 hover:text-gray-700"}`}>Local</button>
-                                <button type="button" onClick={() => setUploadMode("github")} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "github" ? "bg-white dark:bg-zinc-800 shadow text-orange-600" : "text-gray-500 hover:text-gray-700"}`}>GitHub</button>
+                                <button type="button" onClick={() => setUploadMode("local")} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "local" ? "bg-white dark:bg-zinc-800 shadow text-primary" : "text-gray-500 hover:text-gray-700"}`}>Local</button>
+                                <button type="button" onClick={() => setUploadMode("github")} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "github" ? "bg-white dark:bg-zinc-800 shadow text-primary" : "text-gray-500 hover:text-gray-700"}`}>GitHub</button>
                             </div>
                         )}
                     </div>
@@ -451,7 +451,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                         uploadMode === "local" ? (
                             <div
                                 onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
-                                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-orange-500 bg-orange-500/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-orange-400/50 hover:bg-orange-500/5"}`}
+                                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-primary bg-primary/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-primary/50 hover:bg-primary/5"}`}
                             >
                                 <input type="file" accept=".pdf" onChange={handleFileChange} required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                                 <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
@@ -472,7 +472,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                                             <span className="text-orange-500 font-bold">{driveProgressPercent}%</span>
                                         </div>
                                         <div className="h-2 bg-white/20 dark:bg-black/30 rounded-full overflow-hidden">
-                                            <div className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-300 ease-out rounded-full" style={{ width: `${driveProgressPercent}%` }} />
+                                            <div className="h-full bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] transition-all duration-300 ease-out rounded-full" style={{ width: `${driveProgressPercent}%` }} />
                                         </div>
                                     </div>
                                 )}
@@ -524,7 +524,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                             <span>{uploadProgress}%</span>
                         </div>
                         <div className="h-1.5 bg-white/20 dark:bg-black/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                            <div className="h-full bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
                         </div>
                     </div>
                 )}
@@ -534,7 +534,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                     <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Visibility</label>
                     <div className="flex gap-2 p-1 bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 rounded-xl">
                         {(["PUBLIC", "PRIVATE", "GROUP"] as const).map((v) => (
-                            <button key={v} type="button" onClick={() => setVisibility(v)} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${visibility === v ? "bg-orange-500 text-white shadow-md" : "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5"}`}>
+                            <button key={v} type="button" onClick={() => setVisibility(v)} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${visibility === v ? "bg-white dark:bg-zinc-800 text-black dark:text-white shadow-md border-2 border-primary" : "text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 border-2 border-transparent"}`}>
                                 {v}
                             </button>
                         ))}
@@ -564,7 +564,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                 <button
                     type="submit"
                     disabled={uploading || !file || !title || (visibility === "GROUP" && selectedGroupIds.length === 0)}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white font-bold shadow-lg hover:scale-[1.01] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[var(--button-gradient-from)] via-[var(--button-gradient-via)] to-[var(--button-gradient-to)] text-white font-bold shadow-lg hover:scale-[1.01] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                     {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     <span>{uploading ? "Uploading..." : "Upload Note"}</span>

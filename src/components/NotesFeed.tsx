@@ -4,14 +4,17 @@ import { api } from "@/app/_trpc/client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, FileText } from "lucide-react";
 import { networkInterfaces } from "os";
 import { Draggable } from "@/components/dnd/Draggable";
 import { SaveToFiles } from "./SaveToFiles";
 import { useSession } from "next-auth/react";
 
+import { useThemeStyle } from "./ThemeStyleProvider";
+
 export function NotesFeed() {
     const { data: session } = useSession();
+    const { themeStyle } = useThemeStyle();
     const [sort, setSort] = useState<"newest" | "popular">("popular");
     const [displayCount, setDisplayCount] = useState(10);
 
@@ -61,11 +64,11 @@ export function NotesFeed() {
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                        {sort === "popular" && (
-                            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg animate-in zoom-in spin-in-180 duration-500">
-                                <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                            </div>
-                        )}
+                        {/* {sort === "popular" && (
+                            // <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg animate-in zoom-in spin-in-180 duration-500">
+                            //     <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                            // </div>
+                        )} */}
                         <h2 className="text-3xl font-black bg-gradient-to-r from-orange-600 via-pink-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
                             {sort === "popular" ? "Trending Uploads" : "Recent Uploads"}
                         </h2>
@@ -88,7 +91,7 @@ export function NotesFeed() {
                 </div>
                 <Link
                     href="/upload"
-                    className="hidden sm:flex px-6 py-2.5 rounded-xl text-sm font-bold text-gray-800 dark:text-white relative backdrop-blur-3xl bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-white/5 hover:from-orange-500/20 hover:to-pink-500/20 transition-all duration-300 shadow-lg border border-white/20 hover:scale-105 active:scale-95 group"
+                    className={`hidden sm:flex px-6 py-2.5 rounded-xl text-sm font-bold text-gray-800 dark:text-white relative backdrop-blur-3xl bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-white/5 transition-all duration-300 shadow-lg border border-white/20 hover:scale-105 active:scale-95 group ${themeStyle === "monochrome" ? "hover:bg-primary/10" : "hover:from-orange-500/20 hover:to-pink-500/20"}`}
                 >
                     <span className="flex items-center gap-2">
                         Upload Note
@@ -101,7 +104,10 @@ export function NotesFeed() {
                     <Draggable key={note.id} id={note.id} data={{ type: "NOTE", note }}>
                         <Link
                             href={`/notes/${note.id}`}
-                            className="group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 hover:border-orange-300/30 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)] transition-all duration-300 hover:-translate-y-1 flex flex-col h-full"
+                            className={`group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 flex flex-col h-full ${themeStyle === "monochrome"
+                                ? "hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5"
+                                : "hover:border-orange-300/30 hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)]"
+                                }`}
                         >
                             {/* RESOLVED CONFLICT: 
                               1. Using design classes from 'main' (h-40, transitions, hover effects).
@@ -118,7 +124,9 @@ export function NotesFeed() {
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-500/5 to-pink-500/5">
                                         <div className="p-4 rounded-full bg-white/10 backdrop-blur-sm border border-white/10">
-                                            <TrendingUp className="h-8 w-8 text-orange-400/50" />
+                                            {/* <TrendingUp className="h-8 w-8 text-orange-400/50" /> */}
+                                            {/* <FileText className="h-8 w-8 text-blue-500" /> */}
+                                            <FileText className="h-12 w-12" />
                                         </div>
                                     </div>
                                 )}
@@ -132,8 +140,8 @@ export function NotesFeed() {
                             </div>
 
                             <div className="p-5 flex-1 flex flex-col">
-                                {/* Title Styling from 'main' (Orange hover) */}
-                                <h3 className="font-bold text-lg mb-2 group-hover:text-orange-500 transition-colors line-clamp-1">
+                                {/* Title Styling */}
+                                <h3 className={`font-bold text-lg mb-2 transition-colors line-clamp-1 ${themeStyle === "monochrome" ? "group-hover:text-primary" : "group-hover:text-orange-500"}`}>
                                     {note.title}
                                 </h3>
                                 <p className="text-sm text-gray-500 mb-4 flex items-center gap-2">
@@ -147,7 +155,7 @@ export function NotesFeed() {
                                     </p>
                                 )}
                                 <div className="mt-auto flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-gray-100 dark:border-zinc-800">
-                                    <span className="flex items-center gap-1 group-hover:text-orange-500 transition-colors">
+                                    <span className={`flex items-center gap-1 transition-colors ${themeStyle === "monochrome" ? "group-hover:text-primary" : "group-hover:text-orange-500"}`}>
                                         Read Note &rarr;
                                     </span>
                                     {/* Save to Files Button */}

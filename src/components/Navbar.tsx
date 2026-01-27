@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { ProfileImage } from "./ProfileImage";
 import { NotificationBell } from "./NotificationBell";
+import { useThemeStyle } from "./ThemeStyleProvider";
 
 interface NavbarProps {
     user?: {
@@ -26,6 +27,7 @@ interface NavbarProps {
 export function Navbar({ user, onSignOut }: NavbarProps) {
     const pathname = usePathname();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { themeStyle } = useThemeStyle();
 
     const navLinks = [
         { href: "/", label: "Home", icon: Home },
@@ -51,10 +53,10 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group shrink-0">
                         <div className="relative">
-                            <BookOpen className="h-8 w-8 text-orange-500 transition-transform group-hover:rotate-12 duration-300" />
-                            <div className="absolute inset-0 bg-orange-500/20 blur-xl group-hover:bg-orange-500/40 transition-all duration-300 rounded-full" />
+                            <BookOpen className={`h-8 w-8 transition-transform group-hover:rotate-12 duration-300 ${themeStyle === "monochrome" ? "text-primary" : "text-orange-500"}`} />
+                            <div className={`absolute inset-0 blur-xl transition-all duration-300 rounded-full ${themeStyle === "monochrome" ? "bg-primary/20 group-hover:bg-primary/40" : "bg-orange-500/20 group-hover:bg-orange-500/40"}`} />
                         </div>
-                        <span className="text-xl font-bold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent drop-shadow hidden sm:block">
+                        <span className={`text-xl font-bold bg-clip-text text-transparent drop-shadow hidden sm:block ${themeStyle === "monochrome" ? "bg-gradient-to-r from-gray-700 to-black dark:from-white dark:to-gray-300" : "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500"}`}>
                             NotesIIIT
                         </span>
                     </Link>
@@ -75,17 +77,17 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         relative px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300
                         flex items-center gap-2 group backdrop-blur-2xl
                         ${active
-                                                ? "text-orange-600 dark:text-orange-400 font-bold bg-white/40 dark:bg-white/10"
-                                                : "text-gray-900 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-white/30 dark:hover:bg-white/5"
+                                                ? "text-primary dark:text-primary font-bold bg-white/40 dark:bg-white/10"
+                                                : "text-gray-900 dark:text-gray-300 hover:text-primary dark:hover:text-primary hover:bg-white/30 dark:hover:bg-white/5"
                                             }
                       `}
                                     >
-                                        <Icon className={`h-4 w-4 ${active ? "text-orange-600 dark:text-orange-400" : "text-gray-700 dark:text-gray-400 group-hover:text-orange-600"}`} />
+                                        <Icon className={`h-4 w-4 ${active ? "text-primary dark:text-primary" : "text-gray-700 dark:text-gray-400 group-hover:text-primary"}`} />
                                         {link.label}
 
                                         {/* Active indicator */}
                                         {active && (
-                                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/3 h-0.5 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full" />
+                                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/3 h-0.5 bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] rounded-full" />
                                         )}
                                     </Link>
                                 );

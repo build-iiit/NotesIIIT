@@ -7,6 +7,7 @@ import { HomeFolderGrid } from "@/components/HomeFolderGrid";
 import { HomeGroupsGrid } from "@/components/HomeGroupsGrid";
 import { TrendingNotes } from "@/components/TrendingNotes";
 import { DashboardDndWrapper } from "@/components/dnd/DashboardDndWrapper";
+import { RandomQuote } from "@/components/RandomQuote";
 
 export default async function Home() {
   const session = await auth();
@@ -70,22 +71,11 @@ export default async function Home() {
       {session?.user ? (
         <div className="flex flex-col items-center gap-8 w-full z-10">
           <div className="flex flex-col items-center gap-4 mb-4 text-center">
-            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-pink-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-via)] bg-clip-text text-transparent">
               Welcome, {session.user.name?.split(" ")[0]}!
             </h1>
 
-            <p className="text-lg text-gray-600 dark:text-gray-300 italic max-w-lg">
-              &quot;{[
-                "Notes so good, you might actually pass.",
-                "Study smarter, not... well, just study.",
-                "Your GPA called, it needs these notes.",
-                "Because re-watching the lecture at 2x speed isn't enough.",
-                "Sharing is caring (and improves your karma).",
-                "The night before the exam is a pathway to many abilities some consider to be unnatural.",
-                "Knowledge is power. Notes are the battery.",
-                "Don't panic. Just read the notes."
-              ][quoteIndex]}&quot;
-            </p>
+            <RandomQuote />
           </div>
 
           {/* Folder Grid */}
