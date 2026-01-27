@@ -29,14 +29,15 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
 
     const navLinks = [
         { href: "/", label: "Home", icon: Home },
-        { href: "/search", label: "Search", icon: Search },
-        { href: "/courses", label: "Courses", icon: BookOpen },
         { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
         { href: "/my-files", label: "My Files", icon: Folder, authRequired: true },
+Minor-Bug-fixes
         { href: "/bookmarks", label: "Bookmarks", icon: Bookmark, authRequired: true },
         { href: "/requests", label: "Requests", icon: Hand },
+main
         { href: "/social", label: "Social", icon: Users },
         ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: Shield, adminOnly: true }] : []),
+        { href: "/search", label: "Search", icon: Search }, // Moved to rightmost
     ];
 
     const isActive = (path: string) => {
@@ -59,40 +60,54 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         </span>
                     </Link>
 
-                    {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center gap-1">
-                        {navLinks.map((link) => {
-                            if (link.authRequired && !user) return null;
-                            const Icon = link.icon;
-                            const active = isActive(link.href);
+                    {/* Desktop Navigation - Only show for logged-in users */}
+                    {user && (
+                        <div className="hidden md:flex items-center gap-1">
+                            {navLinks.map((link) => {
+                                if (link.authRequired && !user) return null;
+                                const Icon = link.icon;
+                                const active = isActive(link.href);
 
-                            return (
-                                <Link
-                                    key={link.href}
-                                    href={link.href}
-                                    className={`
-                    relative px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300
-                    flex items-center gap-2 group backdrop-blur-2xl
-                    ${active
-                                            ? "text-orange-600 dark:text-orange-400 font-bold bg-white/40 dark:bg-white/10"
-                                            : "text-gray-900 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-white/30 dark:hover:bg-white/5"
-                                        }
-                  `}
-                                >
-                                    <Icon className={`h-4 w-4 ${active ? "text-orange-600 dark:text-orange-400" : "text-gray-700 dark:text-gray-400 group-hover:text-orange-600"}`} />
-                                    {link.label}
+                                return (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        className={`
+                        relative px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300
+                        flex items-center gap-2 group backdrop-blur-2xl
+                        ${active
+                                                ? "text-orange-600 dark:text-orange-400 font-bold bg-white/40 dark:bg-white/10"
+                                                : "text-gray-900 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-white/30 dark:hover:bg-white/5"
+                                            }
+                      `}
+                                    >
+                                        <Icon className={`h-4 w-4 ${active ? "text-orange-600 dark:text-orange-400" : "text-gray-700 dark:text-gray-400 group-hover:text-orange-600"}`} />
+                                        {link.label}
 
-                                    {/* Active indicator */}
-                                    {active && (
-                                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/3 h-0.5 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full" />
-                                    )}
-                                </Link>
-                            );
-                        })}
-                    </div>
+                                        {/* Active indicator */}
+                                        {active && (
+                                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/3 h-0.5 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full" />
+                                        )}
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    )}
 
                     {/* Right side: Auth & Theme */}
                     <div className="hidden md:flex items-center gap-3">
+                        {user && (
+                            <Link
+                                href="/bookmarks"
+                                className={`p-2 rounded-full transition-all duration-500 backdrop-blur-3xl border ${isActive("/bookmarks")
+                                    ? "bg-orange-500/20 border-orange-400/50 text-orange-600 dark:text-orange-400 shadow-[0_8px_24px_0_rgba(251,146,60,0.4)]"
+                                    : "bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border-white/25 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 hover:text-orange-500 hover:border-orange-300/50 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] hover:scale-[1.08] active:scale-[0.95]"
+                                    }`}
+                                aria-label="Bookmarks"
+                            >
+                                <Bookmark className="h-5 w-5" />
+                            </Link>
+                        )}
                         <ThemeToggle />
                         {user ? (
                             <div className="flex items-center gap-3">
@@ -133,14 +148,16 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         )}
                     </div>
 
-                    {/* Mobile menu button */}
-                    <button
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="md:hidden p-2 rounded-lg backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 border border-white/25 ml-auto"
-                        aria-label="Toggle menu"
-                    >
-                        {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                    </button>
+                    {/* Mobile menu button - Only show for logged-in users */}
+                    {user && (
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="md:hidden p-2 rounded-lg backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 border border-white/25 ml-auto"
+                            aria-label="Toggle menu"
+                        >
+                            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
+                    )}
                 </div>
 
                 {/* Mobile Navigation Menu */}
@@ -177,6 +194,20 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                 <span className="text-sm font-medium">Theme</span>
                                 <ThemeToggle />
                             </div>
+
+                            {user && (
+                                <Link
+                                    href="/bookmarks"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-sm transition-all duration-200 backdrop-blur-sm ${isActive("/bookmarks")
+                                        ? "bg-gradient-to-r from-orange-500/30 to-pink-500/30 text-white border border-white/30"
+                                        : "text-gray-800 dark:text-gray-200 hover:bg-white/20 border border-transparent"
+                                        }`}
+                                >
+                                    <Bookmark className="h-5 w-5" />
+                                    Bookmarks
+                                </Link>
+                            )}
 
                             {user ? (
                                 <div className="px-4 py-3 space-y-2">

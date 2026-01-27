@@ -332,6 +332,30 @@ export const socialRouter = createTRPCRouter({
                 },
                 orderBy: { createdAt: "desc" }
             });
+        }),
+
+    /**
+     * Remove a friend by deleting the accepted friend request between the users.
+     * Auth: Protected
+     */
+    removeFriend: protectedProcedure
+        .input(z.object({ friendId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const result = await ctx.prisma.friendRequest.deleteMany({
+                where: {
+                    status: "ACCEPTED",
+                    OR: [
+                        { senderId: ctx.session.user.id, receiverId: input.friendId },
+                        { senderId: input.friendId, receiverId: ctx.session.user.id }
+                    ]
+                }
+            });
+
+            if (result.count === 0) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Friendship not found" });
+            }
+
+            return { success: true };
         })
 
 });

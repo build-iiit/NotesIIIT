@@ -1,29 +1,110 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { getPresignedDownloadUrl } from "@/lib/s3";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
-
 export const aiRouter = createTRPCRouter({
-    askDocument: protectedProcedure
+    /**
+     * Get available Gemini models using the user's API key.
+     */
+    getAvailableModels: protectedProcedure
+        .query(async ({ ctx }) => {
+            // Get user's personal API key from database
+            const user = await ctx.prisma.user.findUnique({
+                where: { id: ctx.session.user.id },
+                select: { geminiApiKey: true }
+            });
+
+            if (!user?.geminiApiKey) {
+                // Return default list if no key set
+                return [
+                    { id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash (Fast)" },
+                    { id: "gemini-1.5-pro", displayName: "Gemini 1.5 Pro (Brain)" },
+                    { id: "gemini-1.5-flash", displayName: "Gemini 1.5 Flash" }
+                ];
+            }
+
+            try {
+                // Initialize Gemini with user's personal API key
+                // Note: We're using the raw API to list models as SDK support might vary
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${user.geminiApiKey}`);
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch models");
+                }
+
+                const data = await response.json();
+
+                // Filter for generateContent supported models
+                const models = (data.models || [])
+                    .filter((m: any) =>
+                        m.supportedGenerationMethods?.includes("generateContent") &&
+                        (m.name.includes("gemini") || m.name.includes("flash"))
+                    )
+                    .map((m: any) => {
+                        const id = m.name.replace("models/", "");
+                        return {
+                            id,
+                            displayName: id
+                        };
+                    });
+
+                // Prioritize 2.0/2.5 models if found
+                models.sort((a: any, b: any) => {
+                    if (a.id.includes("2.5")) return -1;
+                    if (b.id.includes("2.5")) return 1;
+                    if (a.id.includes("2.0")) return -1;
+                    if (b.id.includes("2.0")) return 1;
+                    return 0;
+                });
+
+                return models.length > 0 ? models : [
+                    { id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash (Default)" },
+                    { id: "gemini-1.5-pro", displayName: "Gemini 1.5 Pro" }
+                ];
+
+            } catch (error) {
+                console.error("Error fetching models:", error);
+                // Fallback to defaults
+                return [
+                    { id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash (Default)" },
+                    { id: "gemini-1.5-pro", displayName: "Gemini 1.5 Pro" },
+                    { id: "gemini-1.5-flash", displayName: "Gemini 1.5 Flash" }
+                ];
+            }
+        }),
+
+    /**
+     * Ask a question about a document using an image of the current page.
+     * This approach sends the rendered page image to Gemini for vision-based understanding.
+     */
+    askDocumentWithImage: protectedProcedure
         .input(z.object({
             versionId: z.string(),
             question: z.string().min(1),
-            pageNumber: z.number().optional(),
-            searchFullDocument: z.boolean().optional().default(false)
+            pageNumber: z.number(),
+            imageBase64: z.string().min(1),
+            model: z.string().optional().default("gemini-2.0-flash"), // Allow any string now
         }))
         .mutation(async ({ ctx, input }) => {
-            if (!process.env.GOOGLE_GEMINI_API_KEY) {
+            // Get user's personal API key from database
+            const user = await ctx.prisma.user.findUnique({
+                where: { id: ctx.session.user.id },
+                select: { geminiApiKey: true }
+            });
+
+            // Require user to have their own API key for privacy
+            if (!user?.geminiApiKey) {
                 throw new TRPCError({
-                    code: "INTERNAL_SERVER_ERROR",
-                    message: "Gemini API key not configured"
+                    code: "FORBIDDEN",
+                    message: "API_KEY_REQUIRED"
                 });
             }
 
-            // 1. Get the S3 Key for the version
+            // Initialize Gemini with user's personal API key
+            const genAI = new GoogleGenerativeAI(user.geminiApiKey);
+
+            // Verify the version exists and user has access
             const version = await ctx.prisma.noteVersion.findUnique({
                 where: { id: input.versionId },
                 include: { note: true }
@@ -52,98 +133,50 @@ export const aiRouter = createTRPCRouter({
                 throw new TRPCError({ code: "UNAUTHORIZED", message: "You do not have access to this document" });
             }
 
-            if (!version.s3Key) {
-                throw new TRPCError({ code: "BAD_REQUEST", message: "Document has no file associated" });
-            }
-
             try {
-                // 2. Download the PDF
-                let url = await getPresignedDownloadUrl(version.s3Key);
-
-                // Fix for local file uploads which return relative paths
-                if (url.startsWith("/")) {
-                    const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-                    url = `${baseUrl}${url}`;
-                }
-
-                console.log("Fetching PDF from:", url);
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch document from storage: ${response.status} ${response.statusText}`);
-                }
-
-                const arrayBuffer = await response.arrayBuffer();
-                console.log("PDF downloaded, size:", arrayBuffer.byteLength, "bytes");
-
-                // 3. Extract text from PDF using pdfjs-dist
-                const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-                const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
-                const pdfDoc = await loadingTask.promise;
-
-                const totalPages = pdfDoc.numPages;
-                const currentPage = input.pageNumber || 1;
-
-                // Determine page range based on search mode
-                let startPage: number;
-                let endPage: number;
-
-                if (input.searchFullDocument) {
-                    // Search full document
-                    startPage = 1;
-                    endPage = totalPages;
-                } else {
-                    // Focused search: current page ± 2 pages (5 pages total)
-                    startPage = Math.max(1, currentPage - 2);
-                    endPage = Math.min(totalPages, currentPage + 2);
-                }
-
-                let extractedText = "";
-                for (let i = startPage; i <= endPage; i++) {
-                    const page = await pdfDoc.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items
-                        .map((item: any) => item.str || "")
-                        .join(" ");
-                    extractedText += `Page ${i}:\n${pageText}\n\n`;
-                }
-
-                const pagesSearched = endPage - startPage + 1;
-                console.log(`Extracted text from pages ${startPage}-${endPage} (${pagesSearched} pages), length: ${extractedText?.length || 0} chars`);
-
-                // 4. Send text to Gemini
-                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-                const searchContext = input.searchFullDocument
-                    ? `You are searching the full document (${totalPages} pages).`
-                    : `You are searching pages ${startPage}-${endPage} (around page ${currentPage}). Total document has ${totalPages} pages.`;
+                // Use selected model, default to 2.0-flash
+                const modelName = input.model || "gemini-2.0-flash";
+                const model = genAI.getGenerativeModel({ model: modelName });
 
                 const prompt = `You are an intelligent assistant helping a student understand a document.
-${searchContext}
-
-Here is the content from the searched pages:
-
-${extractedText.substring(0, 30000)}
+You are looking at page ${input.pageNumber} of a PDF document.
 
 User Question: ${input.question}
 
-Please answer the question based on the document content. Be concise and helpful.`;
+Please answer the question based on what you can see in the image. Be concise and helpful. If the answer isn't visible on this page, let the user know they may need to check other pages.`;
 
-                const result = await model.generateContent(prompt);
+                const result = await model.generateContent([
+                    prompt,
+                    {
+                        inlineData: {
+                            mimeType: "image/png",
+                            data: input.imageBase64
+                        }
+                    }
+                ]);
+
                 const responseText = result.response.text();
 
                 return {
                     answer: responseText,
-                    pagesSearched: pagesSearched,
-                    searchRange: `${startPage}-${endPage}`,
-                    totalPages: totalPages
+                    pageViewed: input.pageNumber
                 };
 
             } catch (error) {
                 console.error("AI Error:", error);
+
+                // Check for rate limit error (429)
+                const err = error as { status?: number; message?: string };
+                if (err.status === 429 || (err.message && err.message.includes('429'))) {
+                    throw new TRPCError({
+                        code: "TOO_MANY_REQUESTS",
+                        message: "RATE_LIMIT_EXCEEDED: Gemini API rate limit reached. Please wait about 30 seconds and try again, or consider upgrading to a paid plan for higher limits.",
+                    });
+                }
+
                 throw new TRPCError({
                     code: "INTERNAL_SERVER_ERROR",
-                    message: "Failed to process document with AI",
+                    message: "Failed to process document with AI. Please try again.",
                     cause: error
                 });
             }
