@@ -112,6 +112,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
         if (e.target.files && e.target.files[0]) {
             const selectedFile = e.target.files[0];
             setFile(selectedFile);
+            setTitle(selectedFile.name.replace(/\.[^/.]+$/, ""));
             const thumb = await generateThumbnail(selectedFile);
             if (thumb) setThumbnailFile(thumb);
         }
@@ -130,6 +131,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
             const droppedFile = e.dataTransfer.files[0];
             if (droppedFile.type === "application/pdf") {
                 setFile(droppedFile);
+                setTitle(droppedFile.name.replace(/\.[^/.]+$/, ""));
                 const thumb = await generateThumbnail(droppedFile);
                 if (thumb) setThumbnailFile(thumb);
             } else alert("Please upload a PDF file");
