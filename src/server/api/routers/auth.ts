@@ -113,6 +113,7 @@ export const authRouter = createTRPCRouter({
             // Resolve thumbnails for notes
             const notesWithThumbnails = await Promise.all(user.notes.map(async (note) => {
                 let thumbnailUrl = null;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const key = (note as any).thumbnailS3Key || note.versions[0]?.thumbnailKey;
 
                 if (key) {

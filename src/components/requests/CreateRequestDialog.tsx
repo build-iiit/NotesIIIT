@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState, KeyboardEvent } from "react";
 import { api } from "@/app/_trpc/client";
-import { Loader2, Plus, X, Tag as TagIcon } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const createRequestSchema = z.object({

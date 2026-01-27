@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
-import { getPresignedUrl, getPresignedDownloadUrl } from "@/lib/s3";
-import { v4 as uuidv4 } from "uuid";
+import { getPresignedDownloadUrl } from "@/lib/s3";
 
 /**
  * Markdown Notes Router
@@ -240,6 +239,7 @@ export const markdownNotesRouter = createTRPCRouter({
                 throw new TRPCError({ code: "UNAUTHORIZED", message: "You can only edit your own notes" });
             }
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const updateData: any = {};
 
             if (input.title !== undefined) updateData.title = input.title;
@@ -393,6 +393,7 @@ export const markdownNotesRouter = createTRPCRouter({
             const limit = input.limit ?? 20;
             const cursor = input.cursor;
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const whereClause: any = {
                 noteType: "MARKDOWN",
                 visibility: "PUBLIC",

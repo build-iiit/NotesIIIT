@@ -30,13 +30,10 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
     const navLinks = [
         { href: "/", label: "Home", icon: Home },
         { href: "/markdown/new", label: "Note", icon: Upload, authRequired: true },
-        { href: "/search", label: "Search", icon: Search },
-        { href: "/upload", label: "Upload PDF", icon: Upload, authRequired: true },
-        { href: "/my-files", label: "My Files", icon: Folder, authRequired: true },
-Minor-Bug-fixes
-        { href: "/bookmarks", label: "Bookmarks", icon: Bookmark, authRequired: true },
+        // { href: "/search", label: "Search", icon: Search },
+        { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
+        { href: "/my-files", label: "Folders", icon: Folder, authRequired: true },
         { href: "/requests", label: "Requests", icon: Hand },
-main
         { href: "/social", label: "Social", icon: Users },
         ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: Shield, adminOnly: true }] : []),
         { href: "/search", label: "Search", icon: Search }, // Moved to rightmost

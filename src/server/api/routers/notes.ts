@@ -94,6 +94,7 @@ export const notesRouter = createTRPCRouter({
             const limit = input.limit ?? 20;
             const cursor = input.cursor;
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const whereClause: any = {
                 // Search implies public notes usually, but we can respect visibility too
                 isPublic: true,
@@ -440,6 +441,7 @@ export const notesRouter = createTRPCRouter({
             if (!note) throw new Error("Note not found");
             if (note.authorId !== ctx.session.user.id) throw new Error("UNAUTHORIZED");
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const updateData: any = {
                 title: input.title,
                 description: input.description,
@@ -513,7 +515,7 @@ export const notesRouter = createTRPCRouter({
                 include: { page: true }
             });
 
-            const result: Record<number, any> = {};
+            const result: Record<number, unknown> = {};
             annotations.forEach(a => {
                 result[a.page.number] = a.content;
             });

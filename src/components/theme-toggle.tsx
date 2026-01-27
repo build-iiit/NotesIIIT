@@ -21,11 +21,6 @@ export function ThemeToggle({ className }: { className?: string }) {
         )
     }
 
-    const cycleTheme = () => {
-        if (theme === 'light') setTheme('dark')
-        else if (theme === 'dark') setTheme('glass')
-        else setTheme('light')
-    }
 
     return (
         <button

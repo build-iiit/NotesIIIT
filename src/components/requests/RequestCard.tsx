@@ -1,8 +1,7 @@
 "use client";
 
 import { BoardRequestStatus } from "@prisma/client";
-import { ArrowBigUp, MessageSquare, CheckCircle2, User as UserIcon } from "lucide-react";
-import Link from "next/link";
+import { ArrowBigUp, MessageSquare, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfileImage } from "../ProfileImage";
 import { api } from "@/app/_trpc/client";

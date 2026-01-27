@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { api } from "@/app/_trpc/client";
 import { X, Search, UserPlus, Check } from "lucide-react";
-import Image from "next/image";
 import { ProfileImage } from "../ProfileImage";
 
 interface AddFriendDialogProps {
@@ -12,8 +11,6 @@ interface AddFriendDialogProps {
 }
 
 export function AddFriendDialog({ isOpen, onClose }: AddFriendDialogProps) {
-    if (!isOpen) return null;
-
     const [query, setQuery] = useState("");
     const { data: results, isLoading } = api.social.searchUsers.useQuery(
         { query },
@@ -21,6 +18,8 @@ export function AddFriendDialog({ isOpen, onClose }: AddFriendDialogProps) {
     );
 
     const sendRequestMutation = api.social.sendFriendRequest.useMutation();
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">

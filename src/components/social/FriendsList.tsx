@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { api } from "@/app/_trpc/client";
-import { UserPlus, Check, X, Search, MoreHorizontal, User, UserMinus, ExternalLink } from "lucide-react";
+import { UserPlus, Search, MoreHorizontal, UserMinus, ExternalLink } from "lucide-react";
 import { AddFriendDialog } from "./AddFriendDialog";
 import { ProfileImage } from "@/components/ProfileImage";
 import Link from "next/link";
@@ -130,8 +130,8 @@ export function FriendsList() {
                                                     onClick={() => handleRemoveFriend(friend.id)}
                                                     disabled={removeFriendMutation.isPending}
                                                     className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${confirmRemove === friend.id
-                                                            ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20"
-                                                            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-white/5"
+                                                        ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20"
+                                                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-white/5"
                                                         }`}
                                                 >
                                                     <UserMinus className="w-4 h-4" />

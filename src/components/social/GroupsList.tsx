@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { api } from "@/app/_trpc/client";
 import { Plus, Users } from "lucide-react";
-import Image from "next/image";
 import { ProfileImage } from "../ProfileImage";
 import { GroupDetailsDialog } from "./GroupDetailsDialog";
 

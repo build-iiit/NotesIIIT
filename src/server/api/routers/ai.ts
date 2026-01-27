@@ -37,10 +37,12 @@ export const aiRouter = createTRPCRouter({
 
                 // Filter for generateContent supported models
                 const models = (data.models || [])
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .filter((m: any) =>
                         m.supportedGenerationMethods?.includes("generateContent") &&
                         (m.name.includes("gemini") || m.name.includes("flash"))
                     )
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .map((m: any) => {
                         const id = m.name.replace("models/", "");
                         return {
@@ -50,6 +52,7 @@ export const aiRouter = createTRPCRouter({
                     });
 
                 // Prioritize 2.0/2.5 models if found
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 models.sort((a: any, b: any) => {
                     if (a.id.includes("2.5")) return -1;
                     if (b.id.includes("2.5")) return 1;

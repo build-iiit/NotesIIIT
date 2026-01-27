@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
-import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown } from "lucide-react";
+import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Github } from "lucide-react";
 
 type UploadStep = "idle" | "uploading" | "creating-record" | "complete";
 
@@ -81,6 +81,13 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
     const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "GROUP">("PUBLIC");
     const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
+    // Upload Mode State (local, github, drive)
+    const [uploadMode, setUploadMode] = useState<"local" | "github">("local");
+    const [githubUrl, setGithubUrl] = useState("");
+    const [isFetchingGithub, setIsFetchingGithub] = useState(false);
+    const [driveUploadProgress, setDriveUploadProgress] = useState("");
+    const [driveProgressPercent, setDriveProgressPercent] = useState(0);
+
     const courseDropdownRef = useRef<HTMLDivElement>(null);
     const semesterDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -128,6 +135,104 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
             } else alert("Please upload a PDF file");
         }
     }, []);
+
+    // GitHub Import Handler
+    const handleGithubImport = async () => {
+        if (!githubUrl) return;
+        try {
+            setIsFetchingGithub(true);
+            let rawUrl = githubUrl;
+            if (githubUrl.includes("github.com") && githubUrl.includes("/blob/")) {
+                rawUrl = githubUrl.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+            }
+            const response = await fetch(rawUrl);
+            if (!response.ok) throw new Error("Failed to fetch file from GitHub");
+            const blob = await response.blob();
+            const filename = githubUrl.split("/").pop() || "github-import.pdf";
+            if (!filename.toLowerCase().endsWith(".pdf") && blob.type !== "application/pdf") {
+                throw new Error("The fetched file does not appear to be a PDF");
+            }
+            const importedFile = new File([blob], filename, { type: "application/pdf" });
+            setFile(importedFile);
+            setTitle(filename.replace(/\.[^/.]+$/, ""));
+            setUploadMode("local");
+            const thumb = await generateThumbnail(importedFile);
+            if (thumb) setThumbnailFile(thumb);
+        } catch (error) {
+            console.error("GitHub import failed:", error);
+            alert(`GitHub import failed: ${error instanceof Error ? error.message : "Check the URL and try again"}`);
+        } finally {
+            setIsFetchingGithub(false);
+        }
+    };
+
+    // Google Drive Import Handler
+    const triggerGoogleDrive = () => {
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+        if (!apiKey || !clientId) {
+            alert("Google Drive integration is not configured. Please add NEXT_PUBLIC_GOOGLE_API_KEY and NEXT_PUBLIC_GOOGLE_CLIENT_ID to your .env file.");
+            return;
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const client = (window as any).google?.accounts?.oauth2?.initTokenClient({
+            client_id: clientId,
+            scope: 'https://www.googleapis.com/auth/drive.readonly',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            callback: async (tokenResponse: any) => {
+                if (tokenResponse && tokenResponse.access_token) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const picker = new (window as any).google.picker.PickerBuilder()
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        .addView((window as any).google.picker.ViewId.PDFS)
+                        .setOAuthToken(tokenResponse.access_token)
+                        .setDeveloperKey(apiKey)
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        .setCallback(async (data: any) => {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            if (data.action === (window as any).google.picker.Action.PICKED) {
+                                const doc = data.docs[0];
+                                const fileId = doc.id;
+                                const fileName = doc.name;
+                                try {
+                                    setUploading(true);
+                                    setDriveUploadProgress("Downloading from Google Drive...");
+                                    setDriveProgressPercent(10);
+                                    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+                                        headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                                    });
+                                    if (!res.ok) throw new Error("Failed to download from Google Drive");
+                                    setDriveProgressPercent(50);
+                                    const blob = await res.blob();
+                                    const file = new File([blob], fileName, { type: "application/pdf" });
+                                    setDriveProgressPercent(80);
+                                    setFile(file);
+                                    setTitle(fileName.replace(/\.[^/.]+$/, ""));
+                                    const thumb = await generateThumbnail(file);
+                                    if (thumb) setThumbnailFile(thumb);
+                                    setDriveProgressPercent(100);
+                                    setDriveUploadProgress("Ready!");
+                                    setTimeout(() => { setDriveUploadProgress(""); setDriveProgressPercent(0); }, 1500);
+                                } catch (err) {
+                                    alert("Error importing file: " + (err instanceof Error ? err.message : "Unknown error"));
+                                    setDriveUploadProgress("");
+                                    setDriveProgressPercent(0);
+                                } finally {
+                                    setUploading(false);
+                                }
+                            }
+                        })
+                        .build();
+                    picker.setVisible(true);
+                }
+            },
+        });
+        if (client) {
+            client.requestAccessToken();
+        } else {
+            alert("Google API not loaded. Please refresh the page and try again.");
+        }
+    };
 
     const getFolderOptions = () => {
         if (!allFoldersData) return [];
@@ -331,16 +436,68 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
 
                 {/* File Upload Zone */}
                 <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">PDF File</label>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PDF File</label>
+                        {!file && (
+                            <div className="flex bg-white/50 dark:bg-black/50 rounded-lg p-1 border border-white/20">
+                                <button type="button" onClick={() => setUploadMode("local")} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "local" ? "bg-white dark:bg-zinc-800 shadow text-orange-600" : "text-gray-500 hover:text-gray-700"}`}>Local</button>
+                                <button type="button" onClick={() => setUploadMode("github")} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "github" ? "bg-white dark:bg-zinc-800 shadow text-orange-600" : "text-gray-500 hover:text-gray-700"}`}>GitHub</button>
+                            </div>
+                        )}
+                    </div>
                     {!file ? (
-                        <div
-                            onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
-                            className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-orange-500 bg-orange-500/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-orange-400/50 hover:bg-orange-500/5"}`}
-                        >
-                            <input type="file" accept=".pdf" onChange={handleFileChange} required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                            <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-                            <p className="text-gray-700 dark:text-gray-300 font-medium text-sm">Drop PDF here</p>
-                        </div>
+                        uploadMode === "local" ? (
+                            <div
+                                onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
+                                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-orange-500 bg-orange-500/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-orange-400/50 hover:bg-orange-500/5"}`}
+                            >
+                                <input type="file" accept=".pdf" onChange={handleFileChange} required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                                <p className="text-gray-700 dark:text-gray-300 font-medium text-sm mb-4">Drop PDF here or click to browse</p>
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); triggerGoogleDrive(); }}
+                                    disabled={uploading}
+                                    className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm flex items-center gap-2 transition-all z-10 relative disabled:opacity-50 mx-auto"
+                                >
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive" />
+                                    Import from Drive
+                                </button>
+                                {driveUploadProgress && (
+                                    <div className="mt-4 space-y-2">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-gray-600 dark:text-gray-400 font-medium">{driveUploadProgress}</span>
+                                            <span className="text-orange-500 font-bold">{driveProgressPercent}%</span>
+                                        </div>
+                                        <div className="h-2 bg-white/20 dark:bg-black/30 rounded-full overflow-hidden">
+                                            <div className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-300 ease-out rounded-full" style={{ width: `${driveProgressPercent}%` }} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="bg-white/5 dark:bg-black/5 border border-white/30 dark:border-white/10 rounded-2xl p-6">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="url"
+                                        placeholder="https://github.com/username/repo/blob/main/document.pdf"
+                                        value={githubUrl}
+                                        onChange={(e) => setGithubUrl(e.target.value)}
+                                        className="flex-1 px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-orange-500/50 outline-none transition-all text-gray-900 dark:text-white text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleGithubImport}
+                                        disabled={isFetchingGithub || !githubUrl}
+                                        className="px-6 py-3 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 font-bold text-sm transition-colors border border-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                    >
+                                        {isFetchingGithub ? <Loader2 className="h-5 w-5 animate-spin" /> : <Github className="h-5 w-5" />}
+                                        {isFetchingGithub ? "" : "Import"}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2 ml-1">Paste a URL to a PDF file hosted on GitHub.</p>
+                            </div>
+                        )
                     ) : (
                         <div className="bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-3 flex items-center gap-3">
                             <div className="bg-orange-500/20 p-2 rounded-lg">

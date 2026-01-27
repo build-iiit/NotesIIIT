@@ -54,6 +54,7 @@ export const requestsRouter = createTRPCRouter({
                     { createdAt: 'desc' as const }
                 ];
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const where: any = {
                 ...(filter?.status ? { status: filter.status } : {}),
                 ...(filter?.tag ? { tags: { has: filter.tag } } : {}),

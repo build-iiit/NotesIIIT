@@ -39,7 +39,7 @@ export function FulfillRequestModal({ requestId, trigger }: FulfillRequestModalP
         fulfillMutation.mutate({ requestId, noteId: selectedNoteId });
     };
 
-    const handleUploadSuccess = (note: any) => {
+    const handleUploadSuccess = (note: { id: string }) => {
         // Note created successfully, now link it
         fulfillMutation.mutate({ requestId, noteId: note.id });
     };
@@ -87,7 +87,7 @@ export function FulfillRequestModal({ requestId, trigger }: FulfillRequestModalP
                                 <div className="text-center py-10"><Loader2 className="w-8 h-8 animate-spin mx-auto text-orange-500" /></div>
                             ) : myNotes?.items.length === 0 ? (
                                 <div className="text-center py-10 text-gray-500">
-                                    You haven't uploaded any notes yet.
+                                    You haven&apos;t uploaded any notes yet.
                                     <button onClick={() => setActiveTab("upload")} className="block mx-auto mt-2 text-orange-600 font-medium hover:underline">Upload one now</button>
                                 </div>
                             ) : (
