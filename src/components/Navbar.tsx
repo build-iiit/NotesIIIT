@@ -6,10 +6,11 @@ import { ThemeToggle } from "./theme-toggle";
 import {
     BookOpen, Menu, X, Upload, Trophy,
     User, LogOut, Home, Shield, Search,
-    Bookmark, Folder, Users
+    Bookmark, Folder, Users, Hand
 } from "lucide-react";
 import { useState } from "react";
 import { ProfileImage } from "./ProfileImage";
+import { NotificationBell } from "./NotificationBell";
 
 interface NavbarProps {
     user?: {
@@ -30,6 +31,10 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
         { href: "/", label: "Home", icon: Home },
         { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
         { href: "/my-files", label: "My Files", icon: Folder, authRequired: true },
+Minor-Bug-fixes
+        { href: "/bookmarks", label: "Bookmarks", icon: Bookmark, authRequired: true },
+        { href: "/requests", label: "Requests", icon: Hand },
+main
         { href: "/social", label: "Social", icon: Users },
         ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: Shield, adminOnly: true }] : []),
         { href: "/search", label: "Search", icon: Search }, // Moved to rightmost
@@ -106,6 +111,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         <ThemeToggle />
                         {user ? (
                             <div className="flex items-center gap-3">
+                                <NotificationBell />
                                 <Link
                                     href={`/users/${user.id}`}
                                     className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-gray-200 dark:ring-white/30 hover:ring-orange-400/50 transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg"
@@ -244,6 +250,6 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                     </div>
                 )}
             </div>
-        </nav>
+        </nav >
     );
 }
