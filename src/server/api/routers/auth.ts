@@ -186,4 +186,33 @@ export const authRouter = createTRPCRouter({
             const url = await getPresignedUrl(key, input.contentType);
             return { url, s3Key: key };
         }),
+
+    /**
+     * Update the current user's Gemini API key.
+     * Auth: Protected
+     */
+    updateGeminiApiKey: protectedProcedure
+        .input(z.object({
+            apiKey: z.string().min(1),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            await ctx.prisma.user.update({
+                where: { id: ctx.session.user.id },
+                data: { geminiApiKey: input.apiKey },
+            });
+            return { success: true };
+        }),
+
+    /**
+     * Check if the current user has a Gemini API key configured.
+     * Auth: Protected
+     */
+    hasGeminiApiKey: protectedProcedure
+        .query(async ({ ctx }) => {
+            const user = await ctx.prisma.user.findUnique({
+                where: { id: ctx.session.user.id },
+                select: { geminiApiKey: true },
+            });
+            return { hasKey: !!user?.geminiApiKey };
+        }),
 });
