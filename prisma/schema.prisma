@@ -22,7 +22,8 @@ model User {
   sessions      Session[]
   
   // App Relations
-  notes         Note[]
+  notes              Note[]   @relation("AuthoredNotes")
+  originalNotes      Note[]   @relation("OriginalNotes")
   comments      Comment[]
   votes         Vote[]
   views         View[]

@@ -310,6 +310,7 @@ export const notesRouter = createTRPCRouter({
                         title: sourceNote.title, // Keep original title? Or add "Copy of"? User can rename.
                         description: sourceNote.description,
                         authorId: ctx.session.user.id,
+                        originalAuthorId: sourceNote.authorId, // Track original author for attribution
                         folderId: folderId,
                         courseId: sourceNote.courseId,
                         semester: sourceNote.semester,
