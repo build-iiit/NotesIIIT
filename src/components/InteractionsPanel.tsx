@@ -1,24 +1,43 @@
 "use client";
 
 import { api } from "@/app/_trpc/client";
-import { useState } from "react";
-import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles, FileText, Layers } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles } from "lucide-react";
 import { ApiKeyDialog } from "./ApiKeyDialog";
 
 interface InteractionsPanelProps {
     versionId: string;
     pageNumber: number;
+    getPageImage?: () => string | null;
 }
 
-export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelProps) {
+export function InteractionsPanel({ versionId, pageNumber, getPageImage }: InteractionsPanelProps) {
     const [activeTab, setActiveTab] = useState<"COMMENTS" | "AI">("COMMENTS");
     const [content, setContent] = useState("");
     const [aiQuestion, setAiQuestion] = useState("");
     const [aiAnswer, setAiAnswer] = useState("");
-    const [searchFullDocument, setSearchFullDocument] = useState(false);
-    const [searchMeta, setSearchMeta] = useState<{ pagesSearched: number; searchRange: string; totalPages: number } | null>(null);
+    const [selectedModel, setSelectedModel] = useState("gemini-2.0-flash");
     const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
     const utils = api.useUtils();
+
+    // Fetch available models
+    const { data: availableModels } = api.ai.getAvailableModels.useQuery(undefined, {
+        staleTime: 1000 * 60 * 60, // Cache for 1 hour
+        retry: false
+    });
+
+    // Update selected model if current one is not in the list (once list is loaded)
+    // Preference: 2.0-flash -> 2.5-flash -> 1.5-flash -> first available
+    useEffect(() => {
+        if (availableModels && availableModels.length > 0) {
+            const hasCurrent = availableModels.some((m: { id: string }) => m.id === selectedModel);
+            if (!hasCurrent) {
+                const preference = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+                const bestMatch = preference.find(p => availableModels.some((m: { id: string }) => m.id === p));
+                setSelectedModel(bestMatch || availableModels[0].id);
+            }
+        }
+    }, [availableModels]);
 
     // Fetch comments
     const { data: comments } = api.comments.getByPage.useQuery({
@@ -48,20 +67,21 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
         },
     });
 
-    const aiMutation = api.ai.askDocument.useMutation({
+    const aiMutation = api.ai.askDocumentWithImage.useMutation({
         onSuccess: (data) => {
             setAiAnswer(data.answer);
-            setSearchMeta({
-                pagesSearched: data.pagesSearched,
-                searchRange: data.searchRange,
-                totalPages: data.totalPages
-            });
             setAiQuestion(""); // Clear input after successful query
         },
         onError: (error) => {
             // Check if error is due to missing API key
             if (error.message === "API_KEY_REQUIRED") {
                 setShowApiKeyDialog(true);
+            } else if (error.message?.includes("RATE_LIMIT_EXCEEDED")) {
+                // Show rate limit error as answer with fallback suggestion
+                setAiAnswer(`⏱️ Rate limit reached for ${selectedModel.replace("models/", "")}!\n\nThe free tier has request limits. Try switching models:\n\n1. Select a different model from the dropdown above\n2. Wait about 30 seconds and try again`);
+            } else {
+                // Show generic error
+                setAiAnswer("❌ " + (error.message || "Something went wrong. Please try again."));
             }
         }
     });
@@ -79,8 +99,21 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
     const handleAskAi = (e: React.FormEvent) => {
         e.preventDefault();
         if (!aiQuestion.trim()) return;
-        setSearchMeta(null);
-        aiMutation.mutate({ versionId, question: aiQuestion, pageNumber, searchFullDocument });
+
+        // Capture current page image
+        const imageBase64 = getPageImage?.();
+        if (!imageBase64) {
+            setAiAnswer("Unable to capture page image. Please try again.");
+            return;
+        }
+
+        aiMutation.mutate({
+            versionId,
+            question: aiQuestion,
+            pageNumber,
+            imageBase64,
+            model: selectedModel
+        });
     };
 
     if (!comments || !voteStats) return <div className="p-4 text-gray-600 dark:text-gray-400">Loading interactions...</div>;
@@ -92,9 +125,11 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                     onClose={() => setShowApiKeyDialog(false)}
                     onSave={() => {
                         // Retry the AI query after saving the key
-                        if (aiQuestion.trim()) {
-                            setSearchMeta(null);
-                            aiMutation.mutate({ versionId, question: aiQuestion, pageNumber, searchFullDocument });
+                        if (aiQuestion.trim() && getPageImage) {
+                            const imageBase64 = getPageImage();
+                            if (imageBase64) {
+                                aiMutation.mutate({ versionId, question: aiQuestion, pageNumber, imageBase64, model: selectedModel });
+                            }
                         }
                     }}
                 />
@@ -218,44 +253,35 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                     ) : (
                         // AI Tab
                         <div className="flex flex-col h-full">
-                            {/* Search Mode Toggle */}
-                            <div className="p-4 border-b border-white/20 dark:border-white/10 bg-white/5 dark:bg-black/10">
-                                <div className="flex p-1 backdrop-blur-md bg-black/5 dark:bg-white/5 rounded-xl border border-white/20 dark:border-white/10 relative">
-                                    {/* Animated background sliding pill */}
-                                    <div
-                                        className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-lg transition-all duration-300 ease-in-out ${searchFullDocument
-                                            ? "translate-x-[calc(100%+8px)] bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-400/30"
-                                            : "translate-x-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-400/30"
-                                            }`}
-                                    />
-
-                                    <button
-                                        onClick={() => setSearchFullDocument(false)}
-                                        className={`flex-1 relative z-10 py-2 px-3 text-xs font-medium rounded-lg transition-colors duration-300 flex items-center justify-center gap-1.5 ${!searchFullDocument
-                                            ? "text-blue-600 dark:text-blue-400"
-                                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                                            }`}
-                                    >
-                                        <FileText className="w-3.5 h-3.5" />
-                                        Focused (5 pages)
-                                    </button>
-                                    <button
-                                        onClick={() => setSearchFullDocument(true)}
-                                        className={`flex-1 relative z-10 py-2 px-3 text-xs font-medium rounded-lg transition-colors duration-300 flex items-center justify-center gap-1.5 ${searchFullDocument
-                                            ? "text-purple-600 dark:text-purple-400"
-                                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                                            }`}
-                                    >
-                                        <Layers className="w-3.5 h-3.5" />
-                                        Full Document
-                                    </button>
+                            {/* Page context info & Model Selector */}
+                            <div className="p-4 border-b border-white/20 dark:border-white/10 bg-white/5 dark:bg-black/10 space-y-3">
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/20">
+                                    <Sparkles className="w-4 h-4 text-blue-500" />
+                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Analyzing page {pageNumber}
+                                    </span>
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
-                                    {searchFullDocument
-                                        ? "Searching all pages (slower, uses more tokens)"
-                                        : `Searching pages around page ${pageNumber} (faster)`
-                                    }
-                                </p>
+
+                                {/* Model Selector */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">Model:</span>
+                                    <select
+                                        value={selectedModel}
+                                        onChange={(e) => setSelectedModel(e.target.value)}
+                                        className="flex-1 text-xs px-2 py-1.5 rounded-lg bg-white/40 dark:bg-black/40 border border-white/30 dark:border-white/10 text-gray-800 dark:text-gray-200 outline-none focus:ring-1 focus:ring-blue-500/50"
+                                        disabled={!availableModels}
+                                    >
+                                        {availableModels ? (
+                                            availableModels.map((model: { id: string; displayName: string }) => (
+                                                <option key={model.id} value={model.id}>
+                                                    {model.displayName}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option value="gemini-2.0-flash">Loading models...</option>
+                                        )}
+                                    </select>
+                                </div>
                             </div>
 
                             <div className="flex-1 p-4 space-y-4 overflow-y-auto">
@@ -265,38 +291,15 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                                             <Sparkles className="w-8 h-8 text-blue-500" />
                                         </div>
                                         <p className="font-medium text-lg mb-1">Ask Gemini AI</p>
-                                        <p className="text-sm opacity-75 max-w-[200px] mx-auto">Get summaries, explanations, or ask questions about this document.</p>
+                                        <p className="text-sm opacity-75 max-w-[200px] mx-auto">Get summaries, explanations, or ask questions about what you see on this page.</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        <div className="flex justify-end">
-                                            <div className="bg-blue-500/10 border border-blue-500/20 text-blue-800 dark:text-blue-200 px-4 py-3 rounded-2xl rounded-tr-sm max-w-[90%] backdrop-blur-md">
-                                                {aiQuestion}
-                                            </div>
-                                        </div>
                                         <div className="flex justify-start">
                                             <div className="space-y-2 max-w-[95%]">
                                                 <div className="bg-white/40 dark:bg-white/5 border border-white/20 px-4 py-3 rounded-2xl rounded-tl-sm backdrop-blur-md text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
                                                     {aiAnswer}
                                                 </div>
-                                                {/* Search metadata badge */}
-                                                {searchMeta && (
-                                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 pl-2">
-                                                        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/30 dark:bg-white/5 border border-white/20 dark:border-white/10">
-                                                            {searchMeta.pagesSearched === searchMeta.totalPages ? (
-                                                                <Layers className="w-3 h-3" />
-                                                            ) : (
-                                                                <FileText className="w-3 h-3" />
-                                                            )}
-                                                            <span>
-                                                                {searchMeta.pagesSearched === searchMeta.totalPages
-                                                                    ? `Searched all ${searchMeta.totalPages} pages`
-                                                                    : `Searched pages ${searchMeta.searchRange} of ${searchMeta.totalPages}`
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </div>

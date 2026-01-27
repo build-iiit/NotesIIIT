@@ -18,9 +18,10 @@ interface PdfViewerProps {
     noteId?: string;
     versionId?: string;
     onMaximize?: () => void;
+    onCanvasReady?: (getImageData: () => string | null) => void;
 }
 
-export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDoubleClick, onMaximize }: PdfViewerProps) {
+export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDoubleClick, onMaximize, onCanvasReady }: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -203,6 +204,20 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
             redraw();
         }
     }, [pdfDoc, pageNum, scale, annotations, renderAnnotations]);
+
+    // 5. Expose canvas capture function to parent
+    useEffect(() => {
+        if (onCanvasReady && canvasRef.current) {
+            const getImageData = () => {
+                const canvas = canvasRef.current;
+                if (!canvas) return null;
+                // Get base64 without the data:image/png;base64, prefix
+                const dataUrl = canvas.toDataURL('image/png');
+                return dataUrl.split(',')[1] || null;
+            };
+            onCanvasReady(getImageData);
+        }
+    }, [onCanvasReady, pageNum, scale]); // Re-expose when page changes
 
     const changePage = useCallback((offset: number) => {
         if (!pdfDoc) return;

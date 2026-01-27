@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import { api } from "@/app/_trpc/client";
 import { InteractionsPanel } from "@/components/InteractionsPanel";
 import Link from "next/link";
@@ -27,6 +27,12 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
     const [pageNum, setPageNum] = useState(1);
     const [isFullPageOpen, setIsFullPageOpen] = useState(false);
     const trackViewMutation = api.notes.trackView.useMutation();
+    const [getPageImage, setGetPageImage] = useState<(() => string | null) | undefined>();
+
+    // Callback to receive the canvas image capture function from PdfViewer
+    const handleCanvasReady = useCallback((getImageFn: () => string | null) => {
+        setGetPageImage(() => getImageFn);
+    }, []);
 
     // Track view when the note is loaded
     useEffect(() => {
@@ -94,6 +100,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     onDoubleClick={() => setIsFullPageOpen(true)}
                                     noteId={note?.id}
                                     versionId={currentVersion?.id}
+                                    onCanvasReady={handleCanvasReady}
                                 />
                             ) : (
                                 <div className="p-8 border text-center text-red-500">
@@ -107,6 +114,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                 <InteractionsPanel
                                     versionId={currentVersion.id}
                                     pageNumber={pageNum}
+                                    getPageImage={getPageImage}
                                 />
                             </div>
                         )}

@@ -48,6 +48,11 @@ export default function SignIn() {
                 <p className="mt-6 text-center text-xs text-white/70 drop-shadow">
                     &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
                 </p>
+                <div className="mt-2 text-center">
+                    <span className="inline-block px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-wider backdrop-blur-md">
+                        Rejected by OSDG IIITH
+                    </span>
+                </div>
             </div>
         </div>
     )

@@ -94,9 +94,9 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                         {user && (
                             <Link
                                 href="/bookmarks"
-                                className={`p-2 rounded-xl transition-all duration-300 backdrop-blur-xl border ${isActive("/bookmarks")
-                                    ? "bg-orange-500/20 border-orange-400/50 text-orange-600 dark:text-orange-400"
-                                    : "bg-white/30 dark:bg-white/10 border-white/25 dark:border-white/15 text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/20 hover:text-orange-500"
+                                className={`p-2 rounded-full transition-all duration-500 backdrop-blur-3xl border ${isActive("/bookmarks")
+                                    ? "bg-orange-500/20 border-orange-400/50 text-orange-600 dark:text-orange-400 shadow-[0_8px_24px_0_rgba(251,146,60,0.4)]"
+                                    : "bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border-white/25 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 hover:text-orange-500 hover:border-orange-300/50 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] hover:scale-[1.08] active:scale-[0.95]"
                                     }`}
                                 aria-label="Bookmarks"
                             >

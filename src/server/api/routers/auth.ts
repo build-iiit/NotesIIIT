@@ -215,4 +215,17 @@ export const authRouter = createTRPCRouter({
             });
             return { hasKey: !!user?.geminiApiKey };
         }),
+
+    /**
+     * Revoke (delete) the current user's Gemini API key.
+     * Auth: Protected
+     */
+    revokeGeminiApiKey: protectedProcedure
+        .mutation(async ({ ctx }) => {
+            await ctx.prisma.user.update({
+                where: { id: ctx.session.user.id },
+                data: { geminiApiKey: null },
+            });
+            return { success: true };
+        }),
 });

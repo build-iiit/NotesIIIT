@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image"; // Keep Image for background checks if needed, but we used it for background too
 import Link from "next/link";
 import { ProfileImage } from "@/components/ProfileImage";
@@ -8,9 +8,10 @@ import { UserStatsCard } from "@/components/UserStatsCard";
 import { UserNotesGrid, type Note } from "@/components/UserNotesGrid";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FileExplorer } from "@/components/FileExplorer"; // Features from main
+import { api } from "@/app/_trpc/client";
 import {
     FileText, Eye, TrendingUp, Trophy, Award,
-    Sparkles, Medal, Edit, Folder, Search
+    Sparkles, Medal, Edit, Folder, Search, Settings, Key
 } from "lucide-react";
 
 // Types from main for safety and search logic
@@ -182,12 +183,139 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                 </div>
             </div>
 
+            {/* Settings Section (Own Profile Only) */}
+            {isOwnProfile && <SettingsSection />}
+
             {isEditOpen && (
                 <EditProfileDialog
                     user={user}
                     onClose={() => setIsEditOpen(false)}
                 />
             )}
+        </div>
+    );
+}
+
+// Settings Section Component
+function SettingsSection() {
+    const [showConfirm, setShowConfirm] = useState(false);
+    const { data: apiKeyStatus, refetch: refetchApiKeyStatus } = api.auth.hasGeminiApiKey.useQuery();
+
+    const revokeKeyMutation = api.auth.revokeGeminiApiKey.useMutation({
+        onSuccess: () => {
+            refetchApiKeyStatus();
+            setShowConfirm(false);
+        }
+    });
+
+    // Theme Style Logic
+    const [themeStyle, setThemeStyle] = useState<"sunset" | "monochrome">("sunset");
+
+    useEffect(() => {
+        const stored = localStorage.getItem("theme-style");
+        if (stored === "monochrome") {
+            setThemeStyle("monochrome");
+            document.documentElement.classList.add("monochrome");
+        } else {
+            setThemeStyle("sunset");
+            document.documentElement.classList.remove("monochrome");
+        }
+    }, []);
+
+    const toggleThemeStyle = (style: "sunset" | "monochrome") => {
+        setThemeStyle(style);
+        localStorage.setItem("theme-style", style);
+        if (style === "monochrome") {
+            document.documentElement.classList.add("monochrome");
+        } else {
+            document.documentElement.classList.remove("monochrome");
+        }
+    };
+
+    return (
+        <div className="mb-12 space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2 px-2">
+                <Settings className="h-5 w-5 text-orange-500" />
+                Settings
+            </h2>
+
+            {/* API Key Section */}
+            <div className="backdrop-blur-xl bg-white/20 dark:bg-white/5 rounded-3xl border border-white/30 dark:border-white/10 p-6 shadow-xl">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Gemini API Key</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            {apiKeyStatus?.hasKey
+                                ? "Your personal API key is configured for AI features"
+                                : "No API key configured - you'll be prompted when using AI features"}
+                        </p>
+                    </div>
+
+                    {apiKeyStatus?.hasKey && (
+                        <div className="flex items-center gap-2">
+                            {!showConfirm ? (
+                                <button
+                                    onClick={() => setShowConfirm(true)}
+                                    className="px-4 py-2 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+                                >
+                                    <Key className="w-4 h-4 inline mr-2" />
+                                    Revoke Key
+                                </button>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-500">Are you sure?</span>
+                                    <button
+                                        onClick={() => revokeKeyMutation.mutate()}
+                                        disabled={revokeKeyMutation.isPending}
+                                        className="px-3 py-1.5 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-50"
+                                    >
+                                        {revokeKeyMutation.isPending ? "Revoking..." : "Yes, Revoke"}
+                                    </button>
+                                    <button
+                                        onClick={() => setShowConfirm(false)}
+                                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-zinc-700 hover:bg-gray-300 dark:hover:bg-zinc-600 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Theme Style Toggle */}
+            <div className="backdrop-blur-xl bg-white/20 dark:bg-white/5 rounded-3xl border border-white/30 dark:border-white/10 p-6 shadow-xl">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Theme Style</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                            Choose between the vibrant Sunset theme or a clean Black & White look
+                        </p>
+                    </div>
+
+                    <div className="flex bg-gray-100 dark:bg-black/40 p-1 rounded-xl border border-white/20 dark:border-white/5">
+                        <button
+                            onClick={() => toggleThemeStyle("sunset")}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${themeStyle === "sunset"
+                                ? "bg-white dark:bg-zinc-800 text-orange-500 shadow-md"
+                                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                }`}
+                        >
+                            Sunset
+                        </button>
+                        <button
+                            onClick={() => toggleThemeStyle("monochrome")}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${themeStyle === "monochrome"
+                                ? "bg-white dark:bg-white text-black shadow-md border border-gray-200"
+                                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                }`}
+                        >
+                            Monochrome
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
