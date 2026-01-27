@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/app/_trpc/client";
-import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Plus } from "lucide-react";
+import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Plus, Github } from "lucide-react";
 
 type UploadStep = "idle" | "uploading" | "creating-record" | "complete";
 
@@ -272,6 +272,57 @@ function UploadContent() {
         }
     };
 
+    // GitHub Import Logic
+    const [uploadMode, setUploadMode] = useState<"local" | "github">("local");
+    const [githubUrl, setGithubUrl] = useState("");
+    const [isFetchingGithub, setIsFetchingGithub] = useState(false);
+
+    const handleGithubImport = async () => {
+        if (!githubUrl) return;
+
+        try {
+            setIsFetchingGithub(true);
+
+            // Convert standard GitHub blob URL to raw URL
+            // From: https://github.com/user/repo/blob/branch/path/file.pdf
+            // To:   https://raw.githubusercontent.com/user/repo/branch/path/file.pdf
+            let rawUrl = githubUrl;
+            if (githubUrl.includes("github.com") && githubUrl.includes("/blob/")) {
+                rawUrl = githubUrl
+                    .replace("github.com", "raw.githubusercontent.com")
+                    .replace("/blob/", "/");
+            }
+
+            const response = await fetch(rawUrl);
+            if (!response.ok) throw new Error("Failed to fetch file from GitHub");
+
+            const blob = await response.blob();
+            const filename = githubUrl.split("/").pop() || "github-import.pdf";
+
+            if (blob.type !== "application/pdf" && blob.type !== "application/octet-stream") {
+                console.warn("Unexpected content type:", blob.type);
+            }
+
+            if (!filename.toLowerCase().endsWith(".pdf") && blob.type !== "application/pdf") {
+                throw new Error("The fetched file does not appear to be a PDF");
+            }
+
+            const importedFile = new File([blob], filename, { type: "application/pdf" });
+
+            setFile(importedFile);
+            setUploadMode("local"); // Switch back to view the file
+
+            const thumb = await generateThumbnail(importedFile);
+            if (thumb) setThumbnailFile(thumb);
+
+        } catch (error) {
+            console.error("GitHub import failed:", error);
+            alert(`GitHub import failed: ${error instanceof Error ? error.message : "Check the URL and try again"}`);
+        } finally {
+            setIsFetchingGithub(false);
+        }
+    };
+
     const formatFileSize = (bytes: number) => {
         if (bytes === 0) return "0 Bytes";
         const k = 1024;
@@ -399,22 +450,66 @@ function UploadContent() {
 
                         {/* File Upload Zone */}
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">PDF File *</label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PDF File *</label>
+                                {!file && (
+                                    <div className="flex bg-white/50 dark:bg-black/50 rounded-lg p-1 border border-white/20">
+                                        <button
+                                            type="button"
+                                            onClick={() => setUploadMode("local")}
+                                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "local" ? "bg-white dark:bg-zinc-800 shadow text-orange-600" : "text-gray-500 hover:text-gray-700"}`}
+                                        >
+                                            Local Upload
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setUploadMode("github")}
+                                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "github" ? "bg-white dark:bg-zinc-800 shadow text-orange-600" : "text-gray-500 hover:text-gray-700"}`}
+                                        >
+                                            GitHub Import
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
                             {!file ? (
-                                <div
-                                    onDragEnter={handleDrag}
-                                    onDragLeave={handleDrag}
-                                    onDragOver={handleDrag}
-                                    onDrop={handleDrop}
-                                    className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-orange-500 bg-orange-500/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-orange-400/50 hover:bg-orange-500/5"}`}
-                                >
-                                    <input type="file" accept=".pdf" onChange={handleFileChange} required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Drop your PDF here, or click to browse</p>
-                                    <p className="text-gray-500 text-sm">PDF files only</p>
-                                </div>
+                                uploadMode === 'local' ? (
+                                    <div
+                                        onDragEnter={handleDrag}
+                                        onDragLeave={handleDrag}
+                                        onDragOver={handleDrag}
+                                        onDrop={handleDrop}
+                                        className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-orange-500 bg-orange-500/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-orange-400/50 hover:bg-orange-500/5"}`}
+                                    >
+                                        <input type="file" accept=".pdf" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                        <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Drop your PDF here, or click to browse</p>
+                                        <p className="text-gray-500 text-sm">PDF files only</p>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white/5 dark:bg-black/5 border border-white/30 dark:border-white/10 rounded-2xl p-6">
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="url"
+                                                placeholder="https://github.com/username/repo/blob/main/document.pdf"
+                                                value={githubUrl}
+                                                onChange={(e) => setGithubUrl(e.target.value)}
+                                                className="flex-1 px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-orange-500/50 outline-none transition-all text-gray-900 dark:text-white text-sm"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleGithubImport}
+                                                disabled={isFetchingGithub || !githubUrl}
+                                                className="px-6 py-3 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 font-bold text-sm transition-colors border border-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isFetchingGithub ? <Loader2 className="h-5 w-5 animate-spin" /> : "Import"}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-2 ml-1">Paste a URL to a PDF file hosted on GitHub.</p>
+                                    </div>
+                                )
                             ) : (
-                                <div className="bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4">
+                                <div className="bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 animate-in fade-in zoom-in-95 duration-200">
                                     <div className="bg-orange-500/20 p-3 rounded-xl">
                                         <FileText className="h-8 w-8 text-orange-500" />
                                     </div>
