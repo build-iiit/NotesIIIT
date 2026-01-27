@@ -4,6 +4,7 @@ import "./globals.css";
 import { TRPCReactProvider } from "@/app/_trpc/client";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NavbarWrapper } from "@/components/NavbarWrapper";
+import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,8 +47,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TRPCReactProvider>
-            <NavbarWrapper />
-            <main className="pt-16">{children}</main>
+            <SessionProviderWrapper>
+              <NavbarWrapper />
+              <main className="pt-16">{children}</main>
+            </SessionProviderWrapper>
           </TRPCReactProvider>
         </ThemeProvider>
       </body>

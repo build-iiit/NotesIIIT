@@ -51,9 +51,9 @@ export function HomeFolderGrid({ folders }: HomeFolderGridProps) {
                                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                                     {/* Folder Icon */}
-                                    <div className="relative mb-3">
-                                        <Folder className="h-12 w-12 text-yellow-500 fill-yellow-500/30 drop-shadow-lg group-hover:scale-110 transition-transform duration-300" />
-                                        <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-orange-500 to-pink-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/40 shadow-lg">
+                                    <div className="relative mb-4">
+                                        <Folder className="h-20 w-20 text-yellow-500 fill-yellow-500/30 drop-shadow-xl group-hover:scale-110 transition-transform duration-300" />
+                                        <div className="absolute -bottom-0 -right-2 bg-gradient-to-br from-orange-500 to-pink-500 text-white text-xs font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm border border-white/40 shadow-lg">
                                             {folder._count?.notes || 0}
                                         </div>
                                     </div>

@@ -7,8 +7,11 @@ import { useInView } from "react-intersection-observer";
 import { TrendingUp } from "lucide-react";
 import { networkInterfaces } from "os";
 import { Draggable } from "@/components/dnd/Draggable";
+import { SaveToFiles } from "./SaveToFiles";
+import { useSession } from "next-auth/react";
 
 export function NotesFeed() {
+    const { data: session } = useSession();
     const [sort, setSort] = useState<"newest" | "popular">("popular");
     const [displayCount, setDisplayCount] = useState(10);
 
@@ -147,6 +150,12 @@ export function NotesFeed() {
                                     <span className="flex items-center gap-1 group-hover:text-orange-500 transition-colors">
                                         Read Note &rarr;
                                     </span>
+                                    {/* Save to Files Button */}
+                                    {session?.user?.id && session.user.id !== note.authorId && (
+                                        <div onClick={(e) => e.preventDefault()}>
+                                            <SaveToFiles noteId={note.id} noteTitle={note.title} />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </Link>

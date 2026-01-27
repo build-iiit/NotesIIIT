@@ -255,6 +255,88 @@ export const notesRouter = createTRPCRouter({
         }),
 
     /**
+     * Clone a note to My Files.
+     * Creates a copy of the note metadata pointing to the same S3 object.
+     */
+    clone: protectedProcedure
+        .input(z.object({
+            noteId: z.string(),
+            targetFolderId: z.string().optional()
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const sourceNote = await ctx.prisma.note.findUnique({
+                where: { id: input.noteId },
+                include: {
+                    versions: {
+                        orderBy: { version: 'desc' },
+                        take: 1
+                    },
+                    sharedGroups: {
+                        include: {
+                            members: {
+                                where: { userId: ctx.session.user.id }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (!sourceNote) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
+
+            // Check Access
+            let hasAccess = sourceNote.authorId === ctx.session.user.id || sourceNote.visibility === "PUBLIC";
+            if (!hasAccess && sourceNote.sharedGroups.some(g => g.members.length > 0)) {
+                hasAccess = true;
+            }
+
+            if (!hasAccess) throw new TRPCError({ code: "UNAUTHORIZED", message: "You don't have permission to clone this note" });
+
+            const latestVersion = sourceNote.versions[0];
+            if (!latestVersion) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Source note has no versions" });
+
+            // Create Copy
+            return ctx.prisma.$transaction(async (tx) => {
+                // Determine Folder: Verify target folder belongs to user
+                let folderId: string | undefined = undefined;
+                if (input.targetFolderId) {
+                    const folder = await tx.folder.findUnique({ where: { id: input.targetFolderId } });
+                    if (folder && folder.userId === ctx.session.user.id) {
+                        folderId = folder.id;
+                    }
+                }
+
+                const newNote = await tx.note.create({
+                    data: {
+                        title: sourceNote.title, // Keep original title? Or add "Copy of"? User can rename.
+                        description: sourceNote.description,
+                        authorId: ctx.session.user.id,
+                        originalAuthorId: sourceNote.authorId, // Track original author for attribution
+                        folderId: folderId,
+                        courseId: sourceNote.courseId,
+                        semester: sourceNote.semester,
+                        visibility: "PRIVATE", // Default to private copy
+                        thumbnailS3Key: sourceNote.thumbnailS3Key, // Copy thumb reference
+                        versions: {
+                            create: {
+                                version: 1,
+                                s3Key: latestVersion.s3Key,
+                                thumbnailKey: latestVersion.thumbnailKey
+                            }
+                        }
+                    },
+                    include: { versions: true }
+                });
+
+                await tx.note.update({
+                    where: { id: newNote.id },
+                    data: { currentVersionId: newNote.versions[0].id }
+                });
+
+                return newNote;
+            });
+        }),
+
+    /**
      * Generate S3 Upload URL.
      */
     getUploadUrl: protectedProcedure
