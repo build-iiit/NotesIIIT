@@ -197,18 +197,6 @@ export const foldersRouter = createTRPCRouter({
                 });
             }
 
-            // Check if folder is not empty? Or cascade delete?
-            // Schema has ON DELETE CASCADE for children, but what about notes?
-            // Notes have `folderId` which will be set to NULL or deleted depending on relation?
-            // In schema: `folder Folder? @relation(fields: [folderId], references: [id])` -> Defaults to restriction or set null?
-            // Wait, I didn't specify onDelete behavior for Note -> Folder.
-            // Default is usually restrictive in some DBs or just SetNull logic if not specified in Prisma for optional?
-            // Let's assume user wants to delete folder and contents? Or just folder?
-            // Safer to allow delete only if empty? Or simple recursive delete.
-            // Let's just create a simple delete for now. The Schema update earlier didn't specify onDelete for Note->Folder.
-            // So if I delete folder, notes might throw error or stay orphaned.
-            // Let's update schema later if needed, but for now Standard delete.
-
             return ctx.prisma.folder.delete({
                 where: { id: input.id },
             });
