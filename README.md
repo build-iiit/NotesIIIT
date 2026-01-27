@@ -1,6 +1,6 @@
 # NotesIIIT Platform 📚
 
-**Team hack0d3** presents a modern, full-featured notes sharing platform built with the T3 Stack.
+**NotesIIIT** is a modern, full-featured notes sharing platform built with the T3 Stack.
 
 
 
@@ -34,6 +34,9 @@ We utilized the **T3 Stack** for end-to-end type safety and rapid development.
 | **API** | **tRPC** | End-to-end typesafe APIs without schemas |
 | **Auth** | **NextAuth.js v5** | Secure authentication sessions |
 | **PDF Engine** | **PDF.js** | Client-side PDF rendering and interaction |
+| **AI Engine** | **Google Gemini** | Multimodal AI for document analysis |
+| **Editor** | **BlockNote** | Notion-style rich text editing |
+| **Math Engine** | **KaTeX** | Fast, accessible math rendering |
 
 ### Architecture Diagram
 ```mermaid
@@ -51,11 +54,18 @@ flowchart TD
 - **Dark Mode**: Fully supported system-aware dark/light themes.
 - **Responsive**: Mobile-first design for studying on the go.
 
+### 🤖 AI Study Assistant
+- **Chat with Document**: Ask questions about your notes and get instant answers.
+- **Visual Understanding**: The AI "sees" the exact page you're looking at to provide context-aware help.
+- **Powered by Gemini**: Utilizes Google's latest Multimodal Gemini models.
+
 ### 📚 Advanced Content Management
 - **Smart PDF Viewer**: Custom-built viewer supporting zoom, rotation, and lazy loading.
 - **Annotations**: Draw, highlight, and add text directly on note pages.
 - **Granular Organization**: File hierarchy supports Folders, Courses, and Semesters.
 - **Page-Level Interaction**: Comment on and upvote specific pages, not just the whole document.
+- **Rich Text Editing**: Notion-style block editor withslash commands (`/`).
+- **Math Support**: Full LaTeX/KaTeX support for mathematical equations.
 
 ### 🤝 Social & Gamification
 - **Friend System**: Send requests and follow peers.
@@ -96,6 +106,9 @@ S3_ENDPOINT="http://localhost:9000"
 S3_ACCESS_KEY="minioadmin"
 S3_SECRET_KEY="minioadmin"
 S3_BUCKET_NAME="notes-bucket"
+
+# AI (Optional - Users can also set their own key in settings)
+GEMINI_API_KEY="your-api-key-here"
 ```
 
 ### 3. Start Infrastructure
@@ -134,7 +147,7 @@ docker exec -it notes-postgres psql -U user -d notes_db -c "UPDATE \"User\" SET 
 
 Once promoted, you will see the **Admin** shield icon in the navigation bar.
 
-## 👥 Team hack0d3
+## 👥 The Team
 
 We are a team of passionate developers building cool things.
 
@@ -142,11 +155,4 @@ We are a team of passionate developers building cool things.
 2. **Arjun Tikoo**
 3. **Parth Nyati**
 4. **Swayam Hadape**
----
-> 🚧 **Hackathon Development Note**:
-> We created a very basic authentication system 5 days before the hackathon started.
-> **The entire rest of the application (PDF engine, Social features, Admin dashboard, UI/UX, etc.) was built during the hackathon.**
->
-> 🤖 **Built with help from Antigravity**
----
-Built with ❤️ during the hackathon.
+Built with ❤️ by passionate developers.
