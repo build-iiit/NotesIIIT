@@ -42,6 +42,16 @@ model User {
   
   groups            GroupMember[]
   createdGroups     Group[]         @relation("GroupCreator")
+
+  // Notification Relations
+  notifications        Notification[] @relation("NotificationRecipient")
+  actedNotifications   Notification[] @relation("NotificationActor")
+
+  // Request Board Relations
+  requests             Request[]      @relation("UserRequests")
+  requestUpvotes       RequestUpvote[]
+  fulfillments         RequestFulfillment[]
+  commentUpvotes       CommentUpvote[]
 }
 
 enum Role {
@@ -129,7 +139,8 @@ model Note {
   thumbnailS3Key String?
 
   sharedGroups   Group[]  @relation("SharedNotes")
-  
+  fulfillments   RequestFulfillment[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -265,6 +276,12 @@ model Comment {
   parentId  String?
   parent    Comment?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
   children  Comment[] @relation("ParentChild")
+  
+  upvotes   CommentUpvote[]
+
+  // Request Relations
+  requestId String?
+  request   Request?  @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -272,6 +289,7 @@ model Comment {
   @@index([noteId])
   @@index([pageId])
   @@index([userId])
+  @@index([requestId])
 }
 
 model View {
@@ -413,4 +431,130 @@ enum NoteVisibility {
   PUBLIC
   PRIVATE
   GROUP
+}
+
+// ---------------------------------------------------------
+// 5. Notifications
+// ---------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(cuid())
+  
+  // Target user who receives the notification
+  userId    String
+  user      User     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Actor who triggered the event (nullable for system notifications)
+  actorId   String?
+  actor     User?    @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  // Notification type
+  type      NotificationType
+
+  // Optional data payload (e.g., noteId, commentId, groupId)
+  data      Json?
+  
+  // Read state
+  isRead    Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
+}
+
+enum NotificationType {
+  FRIEND_REQUEST_RECEIVED
+  FRIEND_REQUEST_ACCEPTED
+  COMMENT_ON_NOTE
+  REPLY_TO_COMMENT
+  VOTES_ON_NOTE
+  GROUP_INVITE
+  NOTE_SHARED_TO_GROUP
+  REQUEST_FULFILLED
+  REQUEST_COMMENT
+  FULFILLMENT_ACCEPTED
+}
+
+// ---------------------------------------------------------
+// 6. Request Board
+// ---------------------------------------------------------
+
+model Request {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  
+  status      BoardRequestStatus @default(OPEN)
+  tags        String[] // Tags like "CSE", "MA101", "Endsem"
+  
+  // Requester
+  userId      String
+  user        User     @relation("UserRequests", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  upvotes     RequestUpvote[]
+  fulfillments RequestFulfillment[]
+  comments    Comment[] // Reuse Comment model for discussions
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum BoardRequestStatus {
+  OPEN
+  FULFILLED
+  CLOSED
+}
+
+model RequestUpvote {
+  id        String   @id @default(cuid())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  requestId String
+  request   Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, requestId])
+  @@index([requestId])
+}
+
+model RequestFulfillment {
+  id        String   @id @default(cuid())
+  
+  requestId String
+  request   Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  
+  userId    String   // Fulfiller
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([requestId, noteId])
+  @@index([requestId])
+  @@index([userId])
+}
+
+model CommentUpvote {
+  id        String   @id @default(cuid())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+  @@index([commentId])
 }

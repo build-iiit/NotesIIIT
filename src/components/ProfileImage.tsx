@@ -34,9 +34,25 @@ export function ProfileImage({
             )}
             style={!fill && width && height ? { width, height } : undefined}
         >
-            <div className="absolute inset-0 flex items-center justify-center">
-                <User className="w-3/5 h-3/5 md:w-1/2 md:h-1/2" strokeWidth={1.5} />
-            </div>
+            {src ? (
+                <Image
+                    src={src}
+                    alt={alt || "Profile"}
+                    width={width || (fill ? undefined : 40)}
+                    height={height || (fill ? undefined : 40)}
+                    fill={fill}
+                    priority={priority}
+                    className="object-cover"
+                    unoptimized
+                    {...props}
+                />
+            ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="font-medium text-sm">
+                        {fallback ? fallback.slice(0, 2).toUpperCase() : <User className="w-3/5 h-3/5 md:w-1/2 md:h-1/2" strokeWidth={1.5} />}
+                    </span>
+                </div>
+            )}
         </div>
     );
 }
