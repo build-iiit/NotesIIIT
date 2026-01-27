@@ -54,12 +54,24 @@ export const socialRouter = createTRPCRouter({
                 throw new TRPCError({ code: "CONFLICT", message: "Request exists" });
             }
 
-            return ctx.prisma.friendRequest.create({
+            const friendRequest = await ctx.prisma.friendRequest.create({
                 data: {
                     senderId: ctx.session.user.id,
                     receiverId: input.userId,
                 }
             });
+
+            // Create notification for the receiver
+            await ctx.prisma.notification.create({
+                data: {
+                    userId: input.userId,
+                    actorId: ctx.session.user.id,
+                    type: "FRIEND_REQUEST_RECEIVED",
+                    data: { requestId: friendRequest.id }
+                }
+            });
+
+            return friendRequest;
         }),
 
     getFriendRequests: protectedProcedure
@@ -100,10 +112,22 @@ export const socialRouter = createTRPCRouter({
                 return ctx.prisma.friendRequest.delete({ where: { id: input.requestId } });
             }
 
-            return ctx.prisma.friendRequest.update({
+            const updatedRequest = await ctx.prisma.friendRequest.update({
                 where: { id: input.requestId },
                 data: { status: "ACCEPTED" }
             });
+
+            // Create notification for the original sender that their request was accepted
+            await ctx.prisma.notification.create({
+                data: {
+                    userId: request.senderId,
+                    actorId: ctx.session.user.id,
+                    type: "FRIEND_REQUEST_ACCEPTED",
+                    data: { requestId: request.id }
+                }
+            });
+
+            return updatedRequest;
         }),
 
     getFriends: protectedProcedure
@@ -220,13 +244,31 @@ export const socialRouter = createTRPCRouter({
                 throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can add members" });
             }
 
-            return ctx.prisma.groupMember.create({
+            const newMember = await ctx.prisma.groupMember.create({
                 data: {
                     groupId: input.groupId,
                     userId: input.userId,
                     role: "MEMBER"
                 }
             });
+
+            // Find group name for notification
+            const group = await ctx.prisma.group.findUnique({
+                where: { id: input.groupId },
+                select: { name: true }
+            });
+
+            // Create notification for the invited user
+            await ctx.prisma.notification.create({
+                data: {
+                    userId: input.userId,
+                    actorId: ctx.session.user.id,
+                    type: "GROUP_INVITE",
+                    data: { groupId: input.groupId, groupName: group?.name }
+                }
+            });
+
+            return newMember;
         }),
 
     updateGroup: protectedProcedure
@@ -290,6 +332,30 @@ export const socialRouter = createTRPCRouter({
                 },
                 orderBy: { createdAt: "desc" }
             });
+        }),
+
+    /**
+     * Remove a friend by deleting the accepted friend request between the users.
+     * Auth: Protected
+     */
+    removeFriend: protectedProcedure
+        .input(z.object({ friendId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const result = await ctx.prisma.friendRequest.deleteMany({
+                where: {
+                    status: "ACCEPTED",
+                    OR: [
+                        { senderId: ctx.session.user.id, receiverId: input.friendId },
+                        { senderId: input.friendId, receiverId: ctx.session.user.id }
+                    ]
+                }
+            });
+
+            if (result.count === 0) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Friendship not found" });
+            }
+
+            return { success: true };
         })
 
 });

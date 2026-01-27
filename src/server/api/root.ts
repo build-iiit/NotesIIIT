@@ -10,6 +10,8 @@ import { foldersRouter } from "@/server/api/routers/folders";
 import { adminRouter } from "@/server/api/routers/admin";
 import { bookmarksRouter } from "@/server/api/routers/bookmarks";
 import { socialRouter } from "@/server/api/routers/social";
+import { notificationsRouter } from "@/server/api/routers/notifications";
+import { requestsRouter } from "@/server/api/routers/requests";
 import { aiRouter } from "@/server/api/routers/ai";
 import { markdownNotesRouter } from "@/server/api/routers/markdownNotes";
 
@@ -32,7 +34,10 @@ export const appRouter = createTRPCRouter({
     social: socialRouter,
     ai: aiRouter,
     markdownNotes: markdownNotesRouter,
+    notifications: notificationsRouter,
+    requests: requestsRouter,
 });
+
 
 // export type definition of API
 export type AppRouter = typeof appRouter;

@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { api } from "@/app/_trpc/client";
-import { UserPlus, Check, X, Search, MoreHorizontal } from "lucide-react";
+import { UserPlus, Check, X, Search, MoreHorizontal, User, UserMinus, ExternalLink } from "lucide-react";
 import { AddFriendDialog } from "./AddFriendDialog";
 import { ProfileImage } from "@/components/ProfileImage";
 import Link from "next/link";
 
 export function FriendsList() {
     const [showAddDialog, setShowAddDialog] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const utils = api.useUtils();
 
     // Fetch data
     const { data: friends, isLoading: isLoadingFriends } = api.social.getFriends.useQuery();
@@ -17,9 +21,36 @@ export function FriendsList() {
     const respondMutation = api.social.respondToRequest.useMutation({
         onSuccess: () => {
             refetchRequests();
-            // Refetch friends too
         }
     });
+
+    const removeFriendMutation = api.social.removeFriend.useMutation({
+        onSuccess: () => {
+            utils.social.getFriends.invalidate();
+            setOpenDropdown(null);
+            setConfirmRemove(null);
+        }
+    });
+
+    // Close dropdown on click outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setOpenDropdown(null);
+                setConfirmRemove(null);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleRemoveFriend = (friendId: string) => {
+        if (confirmRemove === friendId) {
+            removeFriendMutation.mutate({ friendId });
+        } else {
+            setConfirmRemove(friendId);
+        }
+    };
 
     return (
         <div className="space-y-8">
@@ -75,9 +106,44 @@ export function FriendsList() {
                                             <p className="text-xs text-gray-500 truncate">Online recently</p>
                                         </div>
                                     </Link>
-                                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 z-10 bg-transparent">
-                                        <MoreHorizontal className="w-5 h-5" />
-                                    </button>
+
+                                    {/* Dropdown Button */}
+                                    <div className="relative" ref={openDropdown === friend.id ? dropdownRef : null}>
+                                        <button
+                                            onClick={() => setOpenDropdown(openDropdown === friend.id ? null : friend.id)}
+                                            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 z-10 bg-white/30 dark:bg-black/30 rounded-lg hover:bg-white/50 dark:hover:bg-black/50 transition-colors"
+                                        >
+                                            <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+
+                                        {/* Dropdown Menu */}
+                                        {openDropdown === friend.id && (
+                                            <div className="absolute right-0 top-full mt-2 w-48 py-2 backdrop-blur-xl bg-white/90 dark:bg-zinc-900/90 rounded-xl border border-white/40 dark:border-white/10 shadow-xl z-50">
+                                                <Link
+                                                    href={`/users/${friend.id}`}
+                                                    className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-white/5 transition-colors"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                    View Profile
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleRemoveFriend(friend.id)}
+                                                    disabled={removeFriendMutation.isPending}
+                                                    className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${confirmRemove === friend.id
+                                                            ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20"
+                                                            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-white/5"
+                                                        }`}
+                                                >
+                                                    <UserMinus className="w-4 h-4" />
+                                                    {removeFriendMutation.isPending
+                                                        ? "Removing..."
+                                                        : confirmRemove === friend.id
+                                                            ? "Click again to confirm"
+                                                            : "Remove Friend"}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>

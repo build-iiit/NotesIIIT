@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TRPCReactProvider } from "@/app/_trpc/client";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NavbarWrapper } from "@/components/NavbarWrapper";
+import { Toaster } from "sonner";
 import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
 
 const geistSans = Geist({
@@ -19,6 +20,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "NotesIIIT - Share Notes, Ace Exams",
   description: "The ultimate platform for IIIT students to share lecture notes and collaborate",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "NotesIIIT",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f97316",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
@@ -46,6 +61,13 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
+          <SessionProviderWrapper>
+            <TRPCReactProvider>
+              <NavbarWrapper />
+              <main className="pt-16">{children}</main>
+              <Toaster richColors position="bottom-right" />
+            </TRPCReactProvider>
+          </SessionProviderWrapper>
           <TRPCReactProvider>
             <SessionProviderWrapper>
               <NavbarWrapper />

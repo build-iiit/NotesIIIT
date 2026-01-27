@@ -1,22 +1,20 @@
 import { signIn } from "@/auth"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { BookOpen, Github } from "lucide-react"
 
 export default function SignIn() {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center py-12 sm:px-6 lg:px-8 relative transition-colors duration-500">
-            <div className="absolute top-4 right-4">
-                <ThemeToggle className="backdrop-blur-2xl bg-white/10 dark:bg-black/20 text-white hover:bg-white/20 dark:hover:bg-black/30 border border-white/30 p-2 rounded-xl transition-all hover:scale-[1.05]" />
-            </div>
+            {/* Removed redundant theme toggle - navbar already has one */}
 
             <div className="sm:mx-auto sm:w-full sm:max-w-md flex flex-col items-center">
-                <div className="backdrop-blur-2xl bg-white/15 dark:bg-black/25 p-5 rounded-full mb-4 shadow-[0_16px_40px_0_rgba(0,0,0,0.2)] border border-white/40 dark:border-white/25">
-                    <BookOpen className="h-10 w-10 text-white drop-shadow-lg" />
+                <div className="relative backdrop-blur-2xl bg-gradient-to-br from-orange-500/20 to-pink-500/20 p-6 rounded-full mb-6 shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-orange-400/30">
+                    <BookOpen className="h-14 w-14 text-orange-500 drop-shadow-lg" />
+                    <div className="absolute inset-0 bg-orange-500/20 blur-xl rounded-full" />
                 </div>
-                <h1 className="text-center text-5xl font-extrabold bg-gradient-to-r from-white via-orange-100 to-white bg-clip-text text-transparent drop-shadow-2xl tracking-tight">
+                <h1 className="text-center text-6xl font-extrabold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent drop-shadow-2xl tracking-tight">
                     NotesIIIT
                 </h1>
-                <p className="mt-2 text-center text-lg text-white/95 font-medium drop-shadow-md">
+                <p className="mt-3 text-center text-lg text-white/90 font-medium drop-shadow-md">
                     Share notes, collaborate, and excel.
                 </p>
             </div>
@@ -50,6 +48,11 @@ export default function SignIn() {
                 <p className="mt-6 text-center text-xs text-white/70 drop-shadow">
                     &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
                 </p>
+                <div className="mt-2 text-center">
+                    <span className="inline-block px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-wider backdrop-blur-md">
+                        Rejected by OSDG IIITH
+                    </span>
+                </div>
             </div>
         </div>
     )

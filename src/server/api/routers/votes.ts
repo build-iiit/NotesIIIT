@@ -52,6 +52,7 @@ export const votesRouter = createTRPCRouter({
             });
 
             let scoreDelta = 0;
+            let isNewUpvote = false;
 
             if (existingVote) {
                 if (existingVote.type === input.type) {
@@ -65,6 +66,7 @@ export const votesRouter = createTRPCRouter({
                         where: { id: existingVote.id },
                         data: { type: input.type },
                     });
+                    if (input.type === "UP") isNewUpvote = true;
                 }
             } else {
                 // New vote
@@ -76,6 +78,7 @@ export const votesRouter = createTRPCRouter({
                         type: input.type,
                     },
                 });
+                if (input.type === "UP") isNewUpvote = true;
             }
 
             // Propagate to Note Score
@@ -83,7 +86,7 @@ export const votesRouter = createTRPCRouter({
             // but we can fetch the noteID via the versionId.
             const noteVersion = await ctx.prisma.noteVersion.findUnique({
                 where: { id: input.versionId },
-                select: { noteId: true }
+                include: { note: { select: { id: true, authorId: true, title: true } } }
             });
 
             if (noteVersion && scoreDelta !== 0) {
@@ -93,6 +96,57 @@ export const votesRouter = createTRPCRouter({
                         voteScore: { increment: scoreDelta }
                     }
                 });
+            }
+
+            // Create/update batched vote notification for upvotes only (not downvotes, to avoid negativity)
+            if (isNewUpvote && noteVersion?.note && noteVersion.note.authorId !== ctx.session.user.id) {
+                const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+                // Check if there's a recent vote notification for this note
+                const existingNotification = await ctx.prisma.notification.findFirst({
+                    where: {
+                        userId: noteVersion.note.authorId,
+                        type: "VOTES_ON_NOTE",
+                        createdAt: { gte: oneHourAgo },
+                        data: {
+                            path: ["noteId"],
+                            equals: noteVersion.note.id
+                        }
+                    }
+                });
+
+                if (existingNotification) {
+                    // Update the existing notification with new count
+                    const currentData = existingNotification.data as { noteId: string; noteTitle: string; voteCount: number } | null;
+                    const currentCount = currentData?.voteCount ?? 1;
+
+                    await ctx.prisma.notification.update({
+                        where: { id: existingNotification.id },
+                        data: {
+                            isRead: false, // Mark as unread again
+                            createdAt: new Date(), // Bump timestamp
+                            data: {
+                                noteId: noteVersion.note.id,
+                                noteTitle: noteVersion.note.title,
+                                voteCount: currentCount + 1
+                            }
+                        }
+                    });
+                } else {
+                    // Create new vote notification
+                    await ctx.prisma.notification.create({
+                        data: {
+                            userId: noteVersion.note.authorId,
+                            actorId: ctx.session.user.id,
+                            type: "VOTES_ON_NOTE",
+                            data: {
+                                noteId: noteVersion.note.id,
+                                noteTitle: noteVersion.note.title,
+                                voteCount: 1
+                            }
+                        }
+                    });
+                }
             }
 
             return { success: true };
