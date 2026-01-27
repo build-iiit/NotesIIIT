@@ -2,8 +2,10 @@
 
 import { api } from "@/app/_trpc/client";
 import { useState } from "react";
-import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles, FileText, Layers } from "lucide-react";
+import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles, FileText, Layers, Heart, Reply, X } from "lucide-react";
 import { ReportButton } from "@/components/ReportButton";
+import { ProfileImage } from "@/components/ProfileImage";
+import { cn } from "@/lib/utils";
 
 interface InteractionsPanelProps {
     versionId: string;
@@ -13,6 +15,7 @@ interface InteractionsPanelProps {
 export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelProps) {
     const [activeTab, setActiveTab] = useState<"COMMENTS" | "AI">("COMMENTS");
     const [content, setContent] = useState("");
+    const [replyTo, setReplyTo] = useState<{ id: string; name: string } | null>(null);
     const [aiQuestion, setAiQuestion] = useState("");
     const [aiAnswer, setAiAnswer] = useState("");
     const [searchFullDocument, setSearchFullDocument] = useState(false);
@@ -43,6 +46,13 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
     const commentMutation = api.comments.create.useMutation({
         onSuccess: () => {
             setContent("");
+            setReplyTo(null);
+            utils.comments.getByPage.invalidate({ versionId, pageNumber });
+        },
+    });
+
+    const toggleCommentUpvote = api.comments.toggleCommentUpvote.useMutation({
+        onSuccess: () => {
             utils.comments.getByPage.invalidate({ versionId, pageNumber });
         },
     });
@@ -65,7 +75,12 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
     const handleComment = (e: React.FormEvent) => {
         e.preventDefault();
         if (!content.trim()) return;
-        commentMutation.mutate({ versionId, pageNumber, content });
+        commentMutation.mutate({
+            versionId,
+            pageNumber,
+            content,
+            parentId: replyTo?.id
+        });
     };
 
     const handleAskAi = (e: React.FormEvent) => {
@@ -73,6 +88,76 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
         if (!aiQuestion.trim()) return;
         setSearchMeta(null);
         aiMutation.mutate({ versionId, question: aiQuestion, pageNumber, searchFullDocument });
+    };
+
+    // Comment Item Component
+    const CommentItem = ({ comment, depth = 0, onReply, onUpvote }: { comment: any; depth?: number; onReply: (id: string, name: string) => void; onUpvote: (id: string) => void }) => {
+        const isChild = depth > 0;
+        return (
+            <div className={cn("group relative", isChild && "mt-3 pl-4 border-l-2 border-white/20 dark:border-white/10")}>
+                <div className="flex items-start gap-3">
+                    <ProfileImage
+                        src={comment.user.image}
+                        alt={comment.user.name}
+                        fallback={comment.user.name}
+                        width={32}
+                        height={32}
+                        className="rounded-full w-8 h-8 mt-1 border border-white/30 dark:border-white/15 flex-shrink-0"
+                    />
+
+                    <div className="flex-1 min-w-0">
+                        <div className="backdrop-blur-xl bg-white/40 dark:bg-black/30 p-3 rounded-xl border border-white/30 dark:border-white/15 shadow-sm">
+                            <div className="flex items-baseline justify-between mb-1">
+                                <span className="font-bold text-xs text-gray-900 dark:text-white mr-2">{comment.user.name}</span>
+                                <span className="text-xs text-gray-400 font-medium">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-words">
+                                {comment.content}
+                            </p>
+                        </div>
+
+                        {/* Comment Actions */}
+                        <div className="flex items-center gap-3 mt-2 ml-1">
+                            <button
+                                onClick={() => onUpvote(comment.id)}
+                                className={cn("text-xs font-bold flex items-center gap-1 transition-colors",
+                                    comment.isUpvoted ? "text-pink-600" : "text-gray-500 hover:text-pink-500"
+                                )}
+                            >
+                                <Heart className={cn("w-3.5 h-3.5", comment.isUpvoted && "fill-current")} />
+                                {comment._count?.upvotes || 0}
+                            </button>
+
+                            <button
+                                onClick={() => onReply(comment.id, comment.user.name || "User")}
+                                className="text-xs font-bold text-gray-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
+                            >
+                                <Reply className="w-3.5 h-3.5" /> Reply
+                            </button>
+
+                            <ReportButton
+                                targetType="comment"
+                                targetId={comment.id}
+                                targetTitle={`Comment by ${comment.user.name}`}
+                                variant="icon"
+                                className="!p-1"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Render Children */}
+                {comment.children?.map((child: any) => (
+                    <CommentItem
+                        key={child.id}
+                        comment={child}
+                        depth={depth + 1}
+                        onReply={onReply}
+                        onUpvote={onUpvote}
+                    />
+                ))}
+            </div>
+        );
     };
 
     if (!comments || !voteStats) return <div className="p-4 text-gray-600 dark:text-gray-400">Loading interactions...</div>;
@@ -147,7 +232,7 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                         </div>
 
                         {/* Comments List */}
-                        <div className="flex-1 p-4 space-y-3">
+                        <div className="flex-1 p-4 space-y-4 overflow-y-auto">
                             {comments.length === 0 ? (
                                 <div className="text-center text-gray-500 dark:text-gray-400 mt-10">
                                     <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -156,26 +241,15 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                                 </div>
                             ) : (
                                 comments.map((comment) => (
-                                    <div
+                                    <CommentItem
                                         key={comment.id}
-                                        className="backdrop-blur-xl bg-white/40 dark:bg-black/30 p-4 rounded-xl border border-white/30 dark:border-white/15 shadow-sm"
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex-1">
-                                                <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{comment.user.name}</span>
-                                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                                                    {new Date(comment.createdAt).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                            <ReportButton
-                                                targetType="comment"
-                                                targetId={comment.id}
-                                                targetTitle={`Comment by ${comment.user.name}`}
-                                                variant="icon"
-                                            />
-                                        </div>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
-                                    </div>
+                                        comment={comment}
+                                        onReply={(id, name) => {
+                                            setReplyTo({ id, name });
+                                            document.getElementById("comment-input")?.focus();
+                                        }}
+                                        onUpvote={(id) => toggleCommentUpvote.mutate({ commentId: id })}
+                                    />
                                 ))
                             )}
                         </div>
@@ -183,10 +257,19 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                         {/* Comment Input */}
                         <div className="p-4 border-t border-white/20 dark:border-white/10 backdrop-blur-xl bg-white/20 dark:bg-black/30">
                             <form onSubmit={handleComment}>
+                                {replyTo && (
+                                    <div className="flex items-center justify-between mb-2 text-xs font-medium text-orange-600 bg-orange-50 dark:bg-orange-900/20 px-3 py-2 rounded-lg">
+                                        <span>Replying to {replyTo.name}</span>
+                                        <button type="button" onClick={() => setReplyTo(null)} className="hover:text-red-500">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                )}
                                 <textarea
+                                    id="comment-input"
                                     value={content}
                                     onChange={(e) => setContent(e.target.value)}
-                                    placeholder="Ask a question or add a note..."
+                                    placeholder={replyTo ? `Reply to ${replyTo.name}...` : "Ask a question or add a note..."}
                                     className="w-full text-sm p-3 rounded-xl border border-white/30 dark:border-white/15 focus:ring-2 focus:ring-orange-500/40 focus:border-orange-400/50 focus:outline-none backdrop-blur-xl bg-white/40 dark:bg-black/30 text-gray-800 dark:text-gray-200 placeholder-gray-500 min-h-[80px] resize-none"
                                 />
                                 <div className="flex justify-end mt-3">
@@ -195,7 +278,7 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                                         disabled={commentMutation.isPending || !content.trim()}
                                         className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-800 dark:text-gray-200 backdrop-blur-3xl bg-gradient-to-br from-white/40 via-white/20 to-white/30 dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-300 shadow-[0_4px_16px_0_rgba(0,0,0,0.08)] border border-white/30 dark:border-white/15 hover:border-orange-300/50 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
                                     >
-                                        {commentMutation.isPending ? "Posting..." : "Post Comment"}
+                                        {commentMutation.isPending ? "Posting..." : (replyTo ? "Post Reply" : "Post Comment")}
                                     </button>
                                 </div>
                             </form>

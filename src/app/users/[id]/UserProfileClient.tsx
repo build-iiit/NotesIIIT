@@ -11,7 +11,7 @@ import { FileExplorer } from "@/components/FileExplorer"; // Features from main
 import { ReportButton } from "@/components/ReportButton";
 import {
     FileText, Eye, TrendingUp, Trophy, Award,
-    Sparkles, Medal, Edit, Folder, Search
+    Sparkles, Medal, Edit, Folder, Search, Flag
 } from "lucide-react";
 
 // Types from main for safety and search logic
@@ -148,7 +148,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                 {/* The "My Files" Section UI from Feature-additions */}
                 {isOwnProfile && (
                     <div className="mb-12 space-y-8">
-                        <div className="flex justify-center">
+                        <div className="flex justify-center gap-4 flex-wrap">
                             <Link
                                 href="/my-files"
                                 className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-gray-800 dark:text-white backdrop-blur-3xl bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-transparent border border-white/50 dark:border-white/10 shadow-2xl hover:shadow-orange-500/20 transition-all hover:-translate-y-1"
@@ -159,6 +159,19 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                                 <div className="text-left">
                                     <p className="text-sm leading-tight">Personal Workspace</p>
                                     <p className="text-xs text-gray-500 font-medium">View My Files & Folders</p>
+                                </div>
+                            </Link>
+
+                            <Link
+                                href="/my-reports"
+                                className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-gray-800 dark:text-white backdrop-blur-3xl bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-transparent border border-white/50 dark:border-white/10 shadow-2xl hover:shadow-red-500/20 transition-all hover:-translate-y-1"
+                            >
+                                <div className="p-2 bg-red-500/20 rounded-lg group-hover:scale-110 transition-transform">
+                                    <Flag className="h-6 w-6 text-red-500" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-sm leading-tight">My Reports</p>
+                                    <p className="text-xs text-gray-500 font-medium">Track Submitted Reports</p>
                                 </div>
                             </Link>
                         </div>

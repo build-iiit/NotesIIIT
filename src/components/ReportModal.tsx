@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { api } from "@/app/_trpc/client";
-import { X, Flag, Loader2 } from "lucide-react";
+import { X, Flag, Loader2, Info } from "lucide-react";
+import { toast } from "sonner";
 
 type ReportReason = "SPAM" | "INAPPROPRIATE" | "HARMFUL" | "WRONG_SUBJECT" | "LOW_QUALITY" | "DUPLICATE" | "OTHER";
 
@@ -31,6 +32,22 @@ export function ReportModal({ isOpen, onClose, targetType, targetId, targetTitle
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
+    // Filter and prioritize reasons based on content type
+    const filteredReasons = useMemo(() => {
+        const priorityMap: Record<string, ReportReason[]> = {
+            note: ["WRONG_SUBJECT", "LOW_QUALITY", "DUPLICATE"],
+            user: ["SPAM", "INAPPROPRIATE", "HARMFUL"],
+            comment: ["SPAM", "INAPPROPRIATE"],
+            request: ["SPAM", "INAPPROPRIATE", "DUPLICATE"],
+        };
+
+        const priority = priorityMap[targetType] || [];
+        const priorityReasons = REPORT_REASONS.filter(r => priority.includes(r.value));
+        const otherReasons = REPORT_REASONS.filter(r => !priority.includes(r.value));
+
+        return [...priorityReasons, ...otherReasons];
+    }, [targetType]);
+
     const createReport = api.reports.create.useMutation();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -51,6 +68,10 @@ export function ReportModal({ isOpen, onClose, targetType, targetId, targetTitle
             });
 
             setSuccess(true);
+            toast.success("Report submitted successfully", {
+                description: "Thank you for helping keep our community safe.",
+            });
+
             setTimeout(() => {
                 onClose();
                 // Reset state
@@ -110,17 +131,30 @@ export function ReportModal({ isOpen, onClose, targetType, targetId, targetTitle
                         </div>
                     ) : (
                         <>
+                            {/* Privacy Notice */}
+                            <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-200 dark:border-blue-800">
+                                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                                        Anonymous Reporting
+                                    </p>
+                                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                                        Your report is completely anonymous. The reported user will not know who submitted this report.
+                                    </p>
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                                     Why are you reporting this?
                                 </label>
                                 <div className="space-y-2">
-                                    {REPORT_REASONS.map((reason) => (
+                                    {filteredReasons.map((reason) => (
                                         <label
                                             key={reason.value}
                                             className={`flex items-start p-3 rounded-xl border-2 cursor-pointer transition-all ${selectedReason === reason.value
-                                                    ? "border-red-500 bg-red-500/5"
-                                                    : "border-gray-200 dark:border-zinc-700 hover:border-red-300 dark:hover:border-red-700"
+                                                ? "border-red-500 bg-red-500/5"
+                                                : "border-gray-200 dark:border-zinc-700 hover:border-red-300 dark:hover:border-red-700"
                                                 }`}
                                         >
                                             <input

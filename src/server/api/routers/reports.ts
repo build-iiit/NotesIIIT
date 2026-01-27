@@ -136,4 +136,40 @@ export const reportsRouter = createTRPCRouter({
 
             return { reports, nextCursor };
         }),
+
+    /**
+     * Check if the current user has already reported specific content
+     */
+    checkIfReported: protectedProcedure
+        .input(
+            z.object({
+                noteId: z.string().optional(),
+                commentId: z.string().optional(),
+                requestId: z.string().optional(),
+                reportedUserId: z.string().optional(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            // Validate that exactly one target is provided
+            const targetCount = [input.noteId, input.commentId, input.requestId, input.reportedUserId].filter(Boolean).length;
+            if (targetCount !== 1) {
+                throw new TRPCError({
+                    code: "BAD_REQUEST",
+                    message: "Exactly one target must be specified",
+                });
+            }
+
+            const existingReport = await ctx.prisma.report.findFirst({
+                where: {
+                    reporterId: ctx.session.user.id,
+                    status: { in: ["PENDING", "REVIEWED"] },
+                    ...(input.noteId && { noteId: input.noteId }),
+                    ...(input.commentId && { commentId: input.commentId }),
+                    ...(input.requestId && { requestId: input.requestId }),
+                    ...(input.reportedUserId && { reportedUserId: input.reportedUserId }),
+                },
+            });
+
+            return { hasReported: !!existingReport };
+        }),
 });

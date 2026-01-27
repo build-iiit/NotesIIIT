@@ -4,7 +4,7 @@ import { getPresignedDownloadUrl } from "@/lib/s3";
 
 export const commentsRouter = createTRPCRouter({
     /**
-     * Get comments for a page.
+     * Get comments for a page with upvote information.
      * Auth: Public
      */
     getByPage: publicProcedure
@@ -17,32 +17,57 @@ export const commentsRouter = createTRPCRouter({
                         where: { parentId: null }, // Fetch roots
                         include: {
                             user: true,
-                            children: { include: { user: true } } // Fetch 1 level down
+                            children: {
+                                include: {
+                                    user: true,
+                                    upvotes: true,
+                                    _count: { select: { upvotes: true } }
+                                }
+                            },
+                            upvotes: true,
+                            _count: { select: { upvotes: true } }
                         },
-                        orderBy: { createdAt: "desc" },
+                        orderBy: [
+                            { upvotes: { _count: "desc" } },
+                            { createdAt: "desc" }
+                        ],
                     },
                 },
             });
 
             if (!page?.comments) return [];
 
-            // Resolve images
+            const userId = ctx.session?.user?.id;
+
+            // Resolve images and add upvote status
             return await Promise.all(page.comments.map(async (comment) => {
                 if (comment.user.image && !comment.user.image.startsWith("http")) {
                     comment.user.image = await getPresignedDownloadUrl(comment.user.image);
                 }
 
-                // Resolve children images
+                // Add user's upvote status
+                const isUpvoted = userId ? comment.upvotes.some(upvote => upvote.userId === userId) : false;
+
+                // Resolve children images and upvote status
                 if (comment.children) {
                     comment.children = await Promise.all(comment.children.map(async (child) => {
                         if (child.user.image && !child.user.image.startsWith("http")) {
                             child.user.image = await getPresignedDownloadUrl(child.user.image);
                         }
-                        return child;
+
+                        const childIsUpvoted = userId ? child.upvotes.some(upvote => upvote.userId === userId) : false;
+
+                        return {
+                            ...child,
+                            isUpvoted: childIsUpvoted
+                        };
                     }));
                 }
 
-                return comment;
+                return {
+                    ...comment,
+                    isUpvoted
+                };
             }));
         }),
 
@@ -133,5 +158,42 @@ export const commentsRouter = createTRPCRouter({
             }
 
             return comment;
+        }),
+
+    /**
+     * Toggle upvote on a comment
+     * Auth: Protected
+     */
+    toggleCommentUpvote: protectedProcedure
+        .input(z.object({ commentId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const userId = ctx.session.user.id;
+
+            // Check if already upvoted
+            const existingUpvote = await ctx.prisma.commentUpvote.findUnique({
+                where: {
+                    userId_commentId: {
+                        userId,
+                        commentId: input.commentId,
+                    },
+                },
+            });
+
+            if (existingUpvote) {
+                // Remove upvote
+                await ctx.prisma.commentUpvote.delete({
+                    where: { id: existingUpvote.id },
+                });
+                return { upvoted: false };
+            } else {
+                // Add upvote
+                await ctx.prisma.commentUpvote.create({
+                    data: {
+                        userId,
+                        commentId: input.commentId,
+                    },
+                });
+                return { upvoted: true };
+            }
         }),
 });
