@@ -22,7 +22,8 @@ model User {
   sessions      Session[]
   
   // App Relations
-  notes         Note[]
+  notes              Note[]   @relation("AuthoredNotes")
+  originalNotes      Note[]   @relation("OriginalNotes")
   comments      Comment[]
   votes         Vote[]
   views         View[]
@@ -103,7 +104,11 @@ model Note {
   description String?
   // Authorship
   authorId    String
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author      User     @relation("AuthoredNotes", fields: [authorId], references: [id], onDelete: Cascade)
+  
+  // Original author (for saved/cloned notes from public or shared sources)
+  originalAuthorId String?
+  originalAuthor   User?  @relation("OriginalNotes", fields: [originalAuthorId], references: [id], onDelete: SetNull)
 
   // Versioning
   versions         NoteVersion[]

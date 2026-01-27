@@ -54,6 +54,12 @@ export default function RootLayout({
               <Toaster richColors position="bottom-right" />
             </TRPCReactProvider>
           </SessionProviderWrapper>
+          <TRPCReactProvider>
+            <SessionProviderWrapper>
+              <NavbarWrapper />
+              <main className="pt-16">{children}</main>
+            </SessionProviderWrapper>
+          </TRPCReactProvider>
         </ThemeProvider>
       </body>
     </html>

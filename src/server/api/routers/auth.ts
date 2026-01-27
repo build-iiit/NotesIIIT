@@ -13,9 +13,15 @@ export const authRouter = createTRPCRouter({
         if (!user) return null;
 
         // Resolve S3 URL for profile image
-        const imageUrl = user.image && !user.image.startsWith("http")
-            ? await getPresignedDownloadUrl(user.image)
-            : user.image;
+        let imageUrl = user.image;
+        if (user.image && !user.image.startsWith("http")) {
+            try {
+                imageUrl = await getPresignedDownloadUrl(user.image);
+            } catch (e) {
+                console.error("Failed to resolve profile image in getMe:", e);
+                // Keep original string (or set to null)
+            }
+        }
 
         return {
             ...user,
@@ -86,13 +92,23 @@ export const authRouter = createTRPCRouter({
             const rank = Number(usersWithHigherScore[0]?.count || 0) + 1;
 
             // Resolve S3 URLs for images
-            const imageUrl = user.image && !user.image.startsWith("http")
-                ? await getPresignedDownloadUrl(user.image)
-                : user.image;
+            let imageUrl = user.image;
+            if (user.image && !user.image.startsWith("http")) {
+                try {
+                    imageUrl = await getPresignedDownloadUrl(user.image);
+                } catch (e) {
+                    console.error("Failed to resolve user image in getProfile:", e);
+                }
+            }
 
-            const backgroundUrl = user.backgroundImage && !user.backgroundImage.startsWith("http")
-                ? await getPresignedDownloadUrl(user.backgroundImage)
-                : user.backgroundImage;
+            let backgroundUrl = user.backgroundImage;
+            if (user.backgroundImage && !user.backgroundImage.startsWith("http")) {
+                try {
+                    backgroundUrl = await getPresignedDownloadUrl(user.backgroundImage);
+                } catch (e) {
+                    console.error("Failed to resolve background image in getProfile:", e);
+                }
+            }
 
             // Resolve thumbnails for notes
             const notesWithThumbnails = await Promise.all(user.notes.map(async (note) => {

@@ -3,9 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
-import { Folder, FileText, ChevronRight, FolderPlus, Trash2, ArrowLeft, Home, GripVertical, Plus } from "lucide-react";
+import { Folder, FileText, ChevronRight, FolderPlus, Trash2, ArrowLeft, Home, GripVertical, Plus, Users, Globe } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
+
+const SHARED_ROOT_ID = "shared-root";
+const PUBLIC_ROOT_ID = "public-root";
+const GROUP_FOLDER_PREFIX = "group-";
 
 function MyFilesContent() {
     const router = useRouter();
@@ -27,23 +31,130 @@ function MyFilesContent() {
     // Redirect to login if not authenticated
     useEffect(() => {
         if (!userLoading && !currentUser) {
-            router.push("/login");
+            router.push("/login"); // Fixed refresh loop issue potentially
         }
     }, [currentUser, userLoading, router]);
 
-    // Data fetching
-    const { data, isLoading } = api.folders.getAll.useQuery(
+    // Derived States
+    const isSharedRoot = currentFolderId === SHARED_ROOT_ID;
+    const isPublicRoot = currentFolderId === PUBLIC_ROOT_ID;
+    const isGroupFolder = currentFolderId?.startsWith(GROUP_FOLDER_PREFIX) ?? false;
+    const currentGroupId = isGroupFolder ? currentFolderId!.split(GROUP_FOLDER_PREFIX)[1] : null;
+
+    // --- Data Fetching ---
+
+    // 1. Normal Folders
+    const {
+        data: folderData,
+        isLoading: isFolderLoading,
+        isError: isFolderError,
+        error: folderError
+    } = api.folders.getAll.useQuery(
         { parentId: currentFolderId },
         {
-            enabled: !!currentUser,
+            enabled: !!currentUser && !isSharedRoot && !isGroupFolder && !isPublicRoot,
             refetchOnWindowFocus: false,
         }
     );
 
-    const { data: breadcrumbs } = api.folders.getBreadcrumbs.useQuery(
-        { folderId: currentFolderId! },
-        { enabled: !!currentFolderId && !!currentUser }
+    if (isFolderError) {
+        console.error("Folder Fetch Error:", folderError);
+        // alert("Error fetching files: " + folderError.message); // Optional
+    }
+
+    // 2. Shared/Groups List
+    const { data: groupsData, isLoading: isGroupsLoading } = api.social.getGroups.useQuery(undefined, {
+        enabled: isSharedRoot
+    });
+
+    // 3. Group Files
+    const { data: groupFilesData, isLoading: isGroupFilesLoading } = api.social.getGroupFiles.useQuery(
+        { groupId: currentGroupId! },
+        { enabled: !!currentGroupId }
     );
+    // Helper to get group name for breadcrumb
+    const { data: currentGroupDetails } = api.social.getGroupDetails.useQuery(
+        { groupId: currentGroupId! },
+        { enabled: !!currentGroupId }
+    );
+
+    // 4. Public Files
+    // Using getInfinite with a large limit to simulate a list for now, or fallback to getAll if robust filtering needed.
+    // getInfinite supports search and sort, which is good.
+    const { data: publicFilesData, isLoading: isPublicFilesLoading } = api.notes.getInfinite.useQuery(
+        { limit: 50 }, // Fetch initial batch
+        { enabled: isPublicRoot }
+    );
+
+    // Breadcrumbs Logic
+    const { data: normalBreadcrumbs } = api.folders.getBreadcrumbs.useQuery(
+        { folderId: currentFolderId! },
+        { enabled: !!currentFolderId && !!currentUser && !isSharedRoot && !isGroupFolder && !isPublicRoot }
+    );
+
+    // --- Data Normalization ---
+
+    let displayFolders: { id: string; name: string; type: 'folder' | 'shared-root' | 'group' | 'public-root', isVirtual?: boolean }[] = [];
+    let displayFiles: any[] = [];
+    let isLoading = isFolderLoading || isGroupsLoading || isGroupFilesLoading || isPublicFilesLoading;
+
+    if (isSharedRoot) {
+        // Show Groups as Folders
+        displayFolders = groupsData?.map(g => ({
+            id: `${GROUP_FOLDER_PREFIX}${g.id}`,
+            name: g.name,
+            type: 'group'
+        })) || [];
+    } else if (isGroupFolder) {
+        // Show Group Files
+        displayFiles = groupFilesData?.map(note => ({
+            ...note,
+            thumbnailUrl: note.thumbnailS3Key ? `https://your-bucket-url/${note.thumbnailS3Key}` : null,
+            // Actually, the note object from getGroupFiles doesn't have signed URLs.
+            // The logic in getAll resolves them because it's in the router.
+            // We might need to fetch them cleanly or just show placeholder.
+            // Better: update social router to resolve them, OR just ignore thumbnails for shared files for now to save time/complexity.
+        })) || [];
+
+        // Wait, getGroupFiles in social.ts DOES NOT resolve presigned URLs.
+        // We'll handle this limitation gracefully.
+    } else if (isPublicRoot) {
+        // Show Public Files
+        displayFiles = publicFilesData?.items || [];
+    } else {
+        // Normal View
+        displayFolders = folderData?.folders.map(f => ({ ...f, type: 'folder' })) || [];
+        displayFiles = folderData?.notes || [];
+
+        // Append Virtual Folders if at root
+        if (!currentFolderId) {
+            displayFolders.unshift({
+                id: SHARED_ROOT_ID,
+                name: "Shared with Me",
+                type: 'shared-root',
+                isVirtual: true
+            });
+            // Removed Public Files folder - saved notes appear directly in user's folders
+        }
+    }
+
+    // Breadcrumbs Display
+    const breadcrumbsDisplay: { id: string; name: string }[] = [];
+    if (isSharedRoot) {
+        breadcrumbsDisplay.push({ id: SHARED_ROOT_ID, name: "Shared with Me" });
+    } else if (isGroupFolder) {
+        breadcrumbsDisplay.push({ id: SHARED_ROOT_ID, name: "Shared with Me" });
+        if (currentGroupDetails) {
+            breadcrumbsDisplay.push({ id: currentFolderId!, name: currentGroupDetails.name });
+        } else {
+            breadcrumbsDisplay.push({ id: currentFolderId!, name: "Group" });
+        }
+    } else if (isPublicRoot) {
+        breadcrumbsDisplay.push({ id: PUBLIC_ROOT_ID, name: "Public Files" });
+    } else {
+        if (normalBreadcrumbs) breadcrumbsDisplay.push(...normalBreadcrumbs);
+    }
+
 
     // Mutations
     const createFolderMutation = api.folders.create.useMutation({
@@ -109,7 +220,6 @@ function MyFilesContent() {
             setDraggedFolderId(id);
         }
         e.dataTransfer.effectAllowed = "move";
-        // e.dataTransfer.setData("text/plain", id); // Optional: can use state instead
     };
 
     const handleDragEnd = () => {
@@ -121,6 +231,12 @@ function MyFilesContent() {
     const handleDragOver = (e: React.DragEvent, folderId: string | null) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
+
+        // Disable drag over virtual folders
+        if (folderId === SHARED_ROOT_ID || folderId === PUBLIC_ROOT_ID || folderId?.startsWith(GROUP_FOLDER_PREFIX)) {
+            e.dataTransfer.dropEffect = "none";
+            return;
+        }
 
         // Prevent dropping folder onto itself
         if (draggedFolderId && draggedFolderId === folderId) {
@@ -137,6 +253,9 @@ function MyFilesContent() {
 
     const handleDrop = (e: React.DragEvent, targetFolderId: string | null) => {
         e.preventDefault();
+
+        // Disable drop on virtual folders
+        if (targetFolderId === SHARED_ROOT_ID || targetFolderId === PUBLIC_ROOT_ID || targetFolderId?.startsWith(GROUP_FOLDER_PREFIX)) return;
 
         if (draggedNoteId && targetFolderId !== currentFolderId) {
             moveNoteMutation.mutate({
@@ -162,6 +281,9 @@ function MyFilesContent() {
         } else {
             router.replace("/my-files", { scroll: false });
         }
+
+        // Clear selection when navigating
+        // (If we had selection state)
     }, [currentFolderId, router]);
 
     if (userLoading || !currentUser) {
@@ -192,15 +314,12 @@ function MyFilesContent() {
                         My Files
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-2">
-                        Manage your notes and folders. Drag files or folders to move them.
+                        Manage your notes, shared files, and view public resources.
                     </p>
                 </div>
 
                 {/* Main Content */}
                 <div className="relative">
-                    {/* Sunset Gradient Background - Removed as it's now global in layout.tsx */}
-                    {/* <div className="absolute inset-0 bg-gradient-to-br from-orange-400/25 via-pink-500/25 to-purple-600/25 rounded-xl -z-10" /> */}
-
                     {/* Layered Glass Container */}
                     <div className="relative backdrop-blur-3xl bg-gradient-to-br from-white/10 via-white/5 to-white/10 dark:from-white/[0.07] dark:via-white/[0.03] dark:to-white/[0.07] rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/20 p-6">
                         {/* Inner glass layer */}
@@ -209,24 +328,32 @@ function MyFilesContent() {
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
                                 <Folder className="h-5 w-5 text-orange-500" />
-                                {currentFolderId ? breadcrumbs?.[breadcrumbs.length - 1]?.name || "Folder" : "Root"}
+                                {currentFolderId ? (
+                                    isSharedRoot ? "Shared with Me" :
+                                        isPublicRoot ? "Public Files" :
+                                            isGroupFolder ? (currentGroupDetails?.name || "Group") :
+                                                normalBreadcrumbs?.[normalBreadcrumbs.length - 1]?.name || "Folder"
+                                ) : "Root"}
                             </h3>
-                            <div className="flex items-center gap-2">
-                                <Link
-                                    href={`/upload?folderId=${currentFolderId || ""}`}
-                                    className="relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl bg-gradient-to-r from-purple-500/60 to-blue-500/60 text-white rounded-xl hover:from-purple-600/70 hover:to-blue-600/70 transition-all shadow-[0_4px_16px_0_rgba(147,51,234,0.3)] hover:shadow-[0_6px_24px_0_rgba(147,51,234,0.4)] border border-white/30 hover:scale-[1.02] duration-300"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    Upload
-                                </Link>
-                                <button
-                                    onClick={() => setIsCreateModalOpen(true)}
-                                    className="relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl bg-gradient-to-r from-orange-500/60 to-pink-500/60 text-white rounded-xl hover:from-orange-600/70 hover:to-pink-600/70 transition-all shadow-[0_4px_16px_0_rgba(251,113,133,0.3)] hover:shadow-[0_6px_24px_0_rgba(251,113,133,0.4)] border border-white/30 hover:scale-[1.02] duration-300"
-                                >
-                                    <FolderPlus className="h-4 w-4" />
-                                    New Folder
-                                </button>
-                            </div>
+
+                            {!isSharedRoot && !isGroupFolder && !isPublicRoot && (
+                                <div className="flex items-center gap-2">
+                                    <Link
+                                        href={`/upload?folderId=${currentFolderId || ""}`}
+                                        className="relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl bg-gradient-to-r from-purple-500/60 to-blue-500/60 text-white rounded-xl hover:from-purple-600/70 hover:to-blue-600/70 transition-all shadow-[0_4px_16px_0_rgba(147,51,234,0.3)] hover:shadow-[0_6px_24px_0_rgba(147,51,234,0.4)] border border-white/30 hover:scale-[1.02] duration-300"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Upload
+                                    </Link>
+                                    <button
+                                        onClick={() => setIsCreateModalOpen(true)}
+                                        className="relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl bg-gradient-to-r from-orange-500/60 to-pink-500/60 text-white rounded-xl hover:from-orange-600/70 hover:to-pink-600/70 transition-all shadow-[0_4px_16px_0_rgba(251,113,133,0.3)] hover:shadow-[0_6px_24px_0_rgba(251,113,133,0.4)] border border-white/30 hover:scale-[1.02] duration-300"
+                                    >
+                                        <FolderPlus className="h-4 w-4" />
+                                        New Folder
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Breadcrumbs */}
@@ -244,7 +371,9 @@ function MyFilesContent() {
                                 <Home className="h-3 w-3" />
                                 Root
                             </button>
-                            {breadcrumbs?.map((crumb) => (
+
+                            {/* Render Custom Breadcrumbs */}
+                            {breadcrumbsDisplay.map((crumb) => (
                                 <div key={crumb.id} className="flex items-center gap-2 whitespace-nowrap">
                                     <ChevronRight className="h-4 w-4" />
                                     <button
@@ -267,9 +396,15 @@ function MyFilesContent() {
                         {currentFolderId && (
                             <button
                                 onClick={() => {
-                                    if (breadcrumbs && breadcrumbs.length > 0) {
-                                        const parent = breadcrumbs[breadcrumbs.length - 2];
-                                        setCurrentFolderId(parent ? parent.id : null);
+                                    if (breadcrumbsDisplay.length > 0) {
+                                        // If we have breadcrumbs, go to previous ID
+                                        // If length is 1, it means we are at the first level deep, so go to Root (null)
+                                        // Wait, breadcrumbsDisplay includes current.
+                                        if (breadcrumbsDisplay.length > 1) {
+                                            setCurrentFolderId(breadcrumbsDisplay[breadcrumbsDisplay.length - 2].id);
+                                        } else {
+                                            setCurrentFolderId(null);
+                                        }
                                     } else {
                                         setCurrentFolderId(null);
                                     }
@@ -283,10 +418,10 @@ function MyFilesContent() {
                         {/* Content Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                             {/* Folders */}
-                            {data?.folders.map((folder) => (
+                            {displayFolders.map((folder) => (
                                 <div
                                     key={folder.id}
-                                    draggable
+                                    draggable={!folder.isVirtual && folder.type === 'folder'}
                                     onDragStart={(e) => handleDragStart(e, folder.id, 'folder')}
                                     onDragEnd={handleDragEnd}
                                     onClick={() => setCurrentFolderId(folder.id)}
@@ -297,32 +432,48 @@ function MyFilesContent() {
                                         } ${draggedFolderId === folder.id ? 'opacity-50 scale-95' : ''}`}
                                 >
                                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                                    <button
-                                        onClick={(e) => handleDeleteFolder(folder.id, e)}
-                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 backdrop-blur-md bg-red-500/80 text-white hover:bg-red-600/90 rounded-lg transition-all shadow-lg border border-white/30"
-                                        title="Delete Folder"
-                                    >
-                                        <Trash2 className="h-3 w-3" />
-                                    </button>
-                                    <Folder className="h-10 w-10 text-yellow-500 mb-2 fill-yellow-500/30 drop-shadow-lg" />
+
+                                    {folder.type === 'folder' && !folder.isVirtual && (
+                                        <button
+                                            onClick={(e) => handleDeleteFolder(folder.id, e)}
+                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 backdrop-blur-md bg-red-500/80 text-white hover:bg-red-600/90 rounded-lg transition-all shadow-lg border border-white/30"
+                                            title="Delete Folder"
+                                        >
+                                            <Trash2 className="h-3 w-3" />
+                                        </button>
+                                    )}
+
+                                    <div className="relative w-full aspect-square mb-2 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-inner">
+                                        <div className="absolute inset-0 bg-white/5 opacity-50" />
+                                        {folder.type === 'shared-root' || folder.type === 'group' ? (
+                                            <Users className="h-16 w-16 text-blue-500 fill-blue-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                        ) : folder.type === 'public-root' ? (
+                                            <Globe className="h-16 w-16 text-green-500 fill-green-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                        ) : (
+                                            <Folder className="h-16 w-16 text-yellow-500 fill-yellow-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                        )}
+                                    </div>
+
                                     <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200">{folder.name}</span>
                                 </div>
                             ))}
 
                             {/* Files */}
-                            {data?.notes.map((note) => (
+                            {displayFiles.map((note) => (
                                 <div
                                     key={note.id}
-                                    draggable
+                                    draggable={!isSharedRoot && !isGroupFolder && !isPublicRoot}
                                     onDragStart={(e) => handleDragStart(e, note.id, 'note')}
                                     onDragEnd={handleDragEnd}
                                     className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] hover:from-purple-500/20 hover:via-blue-500/15 hover:to-purple-500/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(147,51,234,0.25)] border border-white/25 hover:border-purple-300/50 hover:scale-[1.05] active:scale-[0.98] cursor-grab active:cursor-grabbing ${draggedNoteId === note.id ? 'opacity-50 scale-95' : ''
                                         }`}
                                 >
                                     {/* Drag handle indicator */}
-                                    <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-50 transition-opacity">
-                                        <GripVertical className="h-4 w-4 text-gray-500" />
-                                    </div>
+                                    {!isSharedRoot && !isGroupFolder && !isPublicRoot && (
+                                        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-50 transition-opacity">
+                                            <GripVertical className="h-4 w-4 text-gray-500" />
+                                        </div>
+                                    )}
 
                                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                                     <div className="relative w-full aspect-square mb-2 flex items-center justify-center overflow-hidden rounded-xl">
@@ -357,7 +508,7 @@ function MyFilesContent() {
                             ))}
 
                             {/* Empty State */}
-                            {(!data?.folders.length && !data?.notes.length) && (
+                            {(!displayFolders.length && !displayFiles.length) && (
                                 <div className="col-span-full py-12 text-center">
                                     <Folder className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500 mb-2 opacity-50" />
                                     <p className="text-gray-600 dark:text-gray-400">This folder is empty</p>

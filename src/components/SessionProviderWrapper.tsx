@@ -9,3 +9,6 @@ export function SessionProviderWrapper({ children }: { children: React.ReactNode
         </SessionProvider>
     );
 }
+export const SessionProviderWrapper = ({ children }: { children: React.ReactNode }) => {
+    return <SessionProvider>{children}</SessionProvider>;
+};
