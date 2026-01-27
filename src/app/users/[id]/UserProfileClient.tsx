@@ -8,6 +8,7 @@ import { UserStatsCard } from "@/components/UserStatsCard";
 import { UserNotesGrid, type Note } from "@/components/UserNotesGrid";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FileExplorer } from "@/components/FileExplorer"; // Features from main
+import { ReportButton } from "@/components/ReportButton";
 import {
     FileText, Eye, TrendingUp, Trophy, Award,
     Sparkles, Medal, Edit, Folder, Search
@@ -102,6 +103,19 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                                     <Edit size={16} className="text-orange-500" />
                                     Edit Profile
                                 </button>
+                            </div>
+                        )}
+
+                        {/* Report Button - Only shown for other users' profiles */}
+                        {!isOwnProfile && (
+                            <div className="absolute top-32 right-0 sm:right-4">
+                                <ReportButton
+                                    targetType="user"
+                                    targetId={user.id}
+                                    targetTitle={`User: ${user.name || 'Unknown'}`}
+                                    variant="button"
+                                    className="backdrop-blur-3xl bg-white/30 dark:bg-white/10 border border-white/40 dark:border-white/10 hover:bg-white/40 shadow-xl hover:scale-105 active:scale-95"
+                                />
                             </div>
                         )}
 

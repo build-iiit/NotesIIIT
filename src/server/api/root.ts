@@ -13,6 +13,7 @@ import { socialRouter } from "@/server/api/routers/social";
 import { notificationsRouter } from "@/server/api/routers/notifications";
 import { requestsRouter } from "@/server/api/routers/requests";
 import { aiRouter } from "@/server/api/routers/ai";
+import { reportsRouter } from "@/server/api/routers/reports";
 
 /**
  * This is the primary router for your server.
@@ -33,7 +34,8 @@ export const appRouter = createTRPCRouter({
     social: socialRouter,
     notifications: notificationsRouter,
     requests: requestsRouter,
-    ai: aiRouter, // Added AI router
+    ai: aiRouter,
+    reports: reportsRouter,
 });
 
 

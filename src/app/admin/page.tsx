@@ -6,11 +6,12 @@ import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
 import { AdminUsersTable } from "@/components/admin/AdminUsersTable";
 import { AdminNotesTable } from "@/components/admin/AdminNotesTable";
 import { AdminCoursesTable } from "@/components/admin/AdminCoursesTable";
+import { AdminReportsTable } from "@/components/admin/AdminReportsTable";
 import Link from "next/link";
-import { LayoutDashboard, Users, FileText, BookOpen, Shield, AlertCircle } from "lucide-react";
+import { LayoutDashboard, Users, FileText, BookOpen, Shield, AlertCircle, Flag } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-type TabType = "overview" | "users" | "notes" | "courses";
+type TabType = "overview" | "users" | "notes" | "courses" | "reports";
 
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -61,6 +62,7 @@ export default function AdminPage() {
         { id: "users" as TabType, name: "Users", icon: Users },
         { id: "notes" as TabType, name: "Notes", icon: FileText },
         { id: "courses" as TabType, name: "Courses", icon: BookOpen },
+        { id: "reports" as TabType, name: "Reports", icon: Flag },
     ];
 
     return (
@@ -149,6 +151,15 @@ export default function AdminPage() {
                             <h2 className="text-xl font-semibold">Course Management</h2>
                         </div>
                         <AdminCoursesTable />
+                    </div>
+                )}
+
+                {activeTab === "reports" && (
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-semibold">Content Reports</h2>
+                        </div>
+                        <AdminReportsTable />
                     </div>
                 )}
             </div>

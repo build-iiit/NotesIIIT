@@ -3,6 +3,7 @@
 import { api } from "@/app/_trpc/client";
 import { useState } from "react";
 import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles, FileText, Layers } from "lucide-react";
+import { ReportButton } from "@/components/ReportButton";
 
 interface InteractionsPanelProps {
     versionId: string;
@@ -160,10 +161,18 @@ export function InteractionsPanel({ versionId, pageNumber }: InteractionsPanelPr
                                         className="backdrop-blur-xl bg-white/40 dark:bg-black/30 p-4 rounded-xl border border-white/30 dark:border-white/15 shadow-sm"
                                     >
                                         <div className="flex justify-between items-start mb-2">
-                                            <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{comment.user.name}</span>
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                {new Date(comment.createdAt).toLocaleDateString()}
-                                            </span>
+                                            <div className="flex-1">
+                                                <span className="font-semibold text-sm text-gray-800 dark:text-gray-200">{comment.user.name}</span>
+                                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                                                    {new Date(comment.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <ReportButton
+                                                targetType="comment"
+                                                targetId={comment.id}
+                                                targetTitle={`Comment by ${comment.user.name}`}
+                                                variant="icon"
+                                            />
                                         </div>
                                         <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.content}</p>
                                     </div>

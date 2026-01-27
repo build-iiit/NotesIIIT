@@ -563,4 +563,194 @@ export const adminRouter = createTRPCRouter({
                 return { created: result.count, skipped: 0, errors: [] };
             }
         }),
+
+    // ========================================
+    // Report Management
+    // ========================================
+
+    /**
+     * Get all reports with filtering
+     * Auth: Admin only
+     */
+    getReports: adminProcedure
+        .input(
+            z.object({
+                status: z.enum(["PENDING", "REVIEWED", "RESOLVED", "DISMISSED"]).optional(),
+                limit: z.number().min(1).max(100).default(50),
+                cursor: z.string().nullish(),
+            }).optional()
+        )
+        .query(async ({ ctx, input }) => {
+            const limit = input?.limit ?? 50;
+            const cursor = input?.cursor;
+
+            const where = input?.status ? { status: input.status } : undefined;
+
+            const reports = await ctx.prisma.report.findMany({
+                take: limit + 1,
+                cursor: cursor ? { id: cursor } : undefined,
+                where,
+                orderBy: { createdAt: "desc" },
+                include: {
+                    reporter: {
+                        select: { id: true, name: true, email: true, image: true },
+                    },
+                    note: {
+                        select: { id: true, title: true, author: { select: { name: true } } },
+                    },
+                    comment: {
+                        select: { id: true, content: true, user: { select: { name: true } } },
+                    },
+                    request: {
+                        select: { id: true, title: true, user: { select: { name: true } } },
+                    },
+                    reportedUser: {
+                        select: { id: true, name: true, email: true },
+                    },
+                    resolvedBy: {
+                        select: { id: true, name: true },
+                    },
+                },
+            });
+
+            let nextCursor: typeof cursor | undefined = undefined;
+            if (reports.length > limit) {
+                const nextItem = reports.pop();
+                nextCursor = nextItem!.id;
+            }
+
+            // Resolve reporter images
+            const reportsWithImages = await Promise.all(reports.map(async (report) => {
+                let reporterImage = report.reporter.image;
+                if (reporterImage && !reporterImage.startsWith("http")) {
+                    reporterImage = await getPresignedDownloadUrl(reporterImage);
+                }
+                return {
+                    ...report,
+                    reporter: { ...report.reporter, image: reporterImage }
+                };
+            }));
+
+            return { reports: reportsWithImages, nextCursor };
+        }),
+
+    /**
+     * Get report statistics
+     * Auth: Admin only
+     */
+    getReportStats: adminProcedure.query(async ({ ctx }) => {
+        const [pending, reviewed, resolved, dismissed] = await Promise.all([
+            ctx.prisma.report.count({ where: { status: "PENDING" } }),
+            ctx.prisma.report.count({ where: { status: "REVIEWED" } }),
+            ctx.prisma.report.count({ where: { status: "RESOLVED" } }),
+            ctx.prisma.report.count({ where: { status: "DISMISSED" } }),
+        ]);
+
+        return {
+            total: pending + reviewed + resolved + dismissed,
+            pending,
+            reviewed,
+            resolved,
+            dismissed,
+        };
+    }),
+
+    /**
+     * Resolve a report with an action
+     * Auth: Admin only
+     */
+    resolveReport: adminProcedure
+        .input(
+            z.object({
+                reportId: z.string(),
+                action: z.enum(["REMOVE_CONTENT", "WARN_USER", "BAN_USER", "DISMISS"]),
+                resolution: z.string().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const report = await ctx.prisma.report.findUnique({
+                where: { id: input.reportId },
+                include: {
+                    note: true,
+                    comment: true,
+                    request: true,
+                    reportedUser: true,
+                },
+            });
+
+            if (!report) {
+                throw new Error("Report not found");
+            }
+
+            // Perform action
+            if (input.action === "REMOVE_CONTENT") {
+                if (report.noteId) {
+                    await ctx.prisma.note.delete({ where: { id: report.noteId } });
+                } else if (report.commentId) {
+                    await ctx.prisma.comment.delete({ where: { id: report.commentId } });
+                } else if (report.requestId) {
+                    await ctx.prisma.request.delete({ where: { id: report.requestId } });
+                }
+            } else if (input.action === "BAN_USER" && report.reportedUserId) {
+                // Ban user by deleting their account
+                await ctx.prisma.user.delete({ where: { id: report.reportedUserId } });
+            }
+            // WARN_USER and DISMISS don't have additional actions, just update the report
+
+            // Update report status
+            return ctx.prisma.report.update({
+                where: { id: input.reportId },
+                data: {
+                    status: input.action === "DISMISS" ? "DISMISSED" : "RESOLVED",
+                    resolvedById: ctx.session.user.id,
+                    resolvedAt: new Date(),
+                    resolution: input.resolution || `Action taken: ${input.action}`,
+                },
+            });
+        }),
+
+    /**
+     * Dismiss a report
+     * Auth: Admin only
+     */
+    dismissReport: adminProcedure
+        .input(
+            z.object({
+                reportId: z.string(),
+                reason: z.string().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.report.update({
+                where: { id: input.reportId },
+                data: {
+                    status: "DISMISSED",
+                    resolvedById: ctx.session.user.id,
+                    resolvedAt: new Date(),
+                    resolution: input.reason || "Report dismissed by admin",
+                },
+            });
+        }),
+
+    /**
+     * Bulk resolve reports
+     * Auth: Admin only
+     */
+    bulkResolveReports: adminProcedure
+        .input(
+            z.object({
+                reportIds: z.array(z.string()),
+                action: z.enum(["DISMISS"]),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            return ctx.prisma.report.updateMany({
+                where: { id: { in: input.reportIds } },
+                data: {
+                    status: "DISMISSED",
+                    resolvedById: ctx.session.user.id,
+                    resolvedAt: new Date(),
+                },
+            });
+        }),
 });

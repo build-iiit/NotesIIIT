@@ -4,6 +4,7 @@ import { api } from "@/app/_trpc/client";
 import { ArrowBigUp, Calendar, CheckCircle2, MessageSquare, Tag, User, Clock, Trash2, MoreVertical, Heart, Reply, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { ProfileImage } from "@/components/ProfileImage";
+import { ReportButton } from "@/components/ReportButton";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -124,6 +125,17 @@ export default function RequestDetailsPage() {
                             >
                                 <Reply className="w-3.5 h-3.5" /> Reply
                             </button>
+
+                            {/* Only show report button for authenticated users */}
+                            {session?.user && (
+                                <ReportButton
+                                    targetType="comment"
+                                    targetId={comment.id}
+                                    targetTitle={`Comment by ${comment.user.name || 'User'}`}
+                                    variant="icon"
+                                    className="!p-1"
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -198,6 +210,17 @@ export default function RequestDetailsPage() {
                             <Trash2 className="w-3 h-3" /> Delete
                         </button>
                     </div>
+                )}
+
+                {/* Report button for authenticated non-authors */}
+                {session?.user && !canManage && (
+                    <ReportButton
+                        targetType="request"
+                        targetId={request.id}
+                        targetTitle={request.title}
+                        variant="button"
+                        className="text-xs font-bold"
+                    />
                 )}
             </div>
 

@@ -1,9 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
-import { UploadForm } from "@/components/UploadForm";
-import { useSearchParams } from "next/navigation";
-import { useState, useCallback, useRef, useEffect, Suspense } from "react";
+import { Suspense, useState, useCallback, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/app/_trpc/client";
 import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Plus, Github } from "lucide-react";
@@ -13,10 +10,8 @@ type UploadStep = "idle" | "uploading" | "creating-record" | "complete";
 function UploadContent() {
     const searchParams = useSearchParams();
     const initialFolderId = searchParams.get("folderId");
+    const router = useRouter();
 
-    return (
-        <div className="min-h-screen py-12 px-4 relative overflow-hidden pt-24">
-            <UploadForm initialFolderId={initialFolderId} />
     const [file, setFile] = useState<File | null>(null);
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
     const [title, setTitle] = useState("");
