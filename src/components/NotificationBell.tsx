@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
     Bell, Check, X, UserPlus, MessageSquare, ThumbsUp, Users,
-    FileText, Trash2, MailOpen, Clock
+    FileText, Trash2, MailOpen, Clock, Moon, BellOff
 } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
@@ -121,8 +121,22 @@ function getNotificationLink(notification: NotificationData): string {
 export function NotificationBell() {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
+    const [isDndMode, setIsDndMode] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const lastPollTime = useRef<Date>(new Date());
+
+    // Load DND preference
+    useEffect(() => {
+        const savedDnd = localStorage.getItem("notification-dnd-mode");
+        if (savedDnd) setIsDndMode(savedDnd === "true");
+    }, []);
+
+    // Toggle DND
+    const toggleDnd = () => {
+        const newState = !isDndMode;
+        setIsDndMode(newState);
+        localStorage.setItem("notification-dnd-mode", String(newState));
+    };
 
     // --- Queries ---
     const { data: unreadCountData, refetch: refetchCount } = api.notifications.getUnreadCount.useQuery(
@@ -187,7 +201,6 @@ export function NotificationBell() {
     const displayedNotifications = activeTab === "unread"
         ? allNotifications.filter((n) => !n.isRead)
         : allNotifications;
-
     return (
         <div className="relative" ref={dropdownRef}>
             <button
@@ -200,11 +213,25 @@ export function NotificationBell() {
                 )}
                 aria-label="Notifications"
             >
-                <Bell className={cn("h-5 w-5 transition-transform duration-500", isOpen && "rotate-12")} />
+                {/* Icon changes based on DND */}
+                {isDndMode ? (
+                    <BellOff className={cn("h-5 w-5 transition-transform duration-500", isOpen && "rotate-12")} />
+                ) : (
+                    <Bell className={cn("h-5 w-5 transition-transform duration-500", isOpen && "rotate-12")} />
+                )}
+
                 {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-5 w-5 bg-gradient-to-r from-red-500 to-pink-500 text-[10px] items-center justify-center text-white font-bold border-2 border-white dark:border-zinc-950 shadow-sm">
+                        {/* Only animate if NOT in DND mode */}
+                        {!isDndMode && (
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        )}
+                        <span className={cn(
+                            "relative inline-flex rounded-full h-5 w-5 text-[10px] items-center justify-center text-white font-bold border-2 border-white dark:border-zinc-950 shadow-sm transition-colors",
+                            isDndMode
+                                ? "bg-gray-500" // Muted color for DND
+                                : "bg-gradient-to-r from-red-500 to-pink-500"
+                        )}>
                             {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                     </span>
@@ -219,20 +246,31 @@ export function NotificationBell() {
                     <div className="p-4 border-b border-white/20 dark:border-white/10 flex items-center justify-between bg-white/40 dark:bg-white/5 backdrop-blur-md">
                         <div className="flex items-center gap-2">
                             <h3 className="font-bold text-gray-900 dark:text-gray-100 text-lg tracking-tight">Notifications</h3>
-                            <span className="px-2.5 py-0.5 rounded-full bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 text-xs font-bold border border-orange-500/20">
-                                {unreadCount} New
-                            </span>
-                        </div>
-                        {unreadCount > 0 && (
                             <button
-                                onClick={() => markAllAsReadMutation.mutate()}
-                                disabled={markAllAsReadMutation.isPending}
-                                className="text-xs font-semibold text-gray-600 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-white/50 dark:hover:bg-white/10 ml-auto"
+                                onClick={toggleDnd}
+                                title={isDndMode ? "Disable Do Not Disturb" : "Enable Do Not Disturb"}
+                                className={cn(
+                                    "ml-1 p-1.5 rounded-full transition-all border",
+                                    isDndMode
+                                        ? "bg-indigo-500/10 text-indigo-500 border-indigo-200 dark:border-indigo-500/30"
+                                        : "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 border-transparent hover:bg-black/5 dark:hover:bg-white/5"
+                                )}
                             >
-                                <MailOpen className="h-3.5 w-3.5" />
-                                Mark all read
+                                <Moon className={cn("h-4 w-4", isDndMode && "fill-current")} />
                             </button>
-                        )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {unreadCount > 0 && (
+                                <button
+                                    onClick={() => markAllAsReadMutation.mutate()}
+                                    disabled={markAllAsReadMutation.isPending}
+                                    className="text-xs font-semibold text-gray-600 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-white/50 dark:hover:bg-white/10"
+                                >
+                                    <MailOpen className="h-3.5 w-3.5" />
+                                    Mark all read
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Tabs */}
