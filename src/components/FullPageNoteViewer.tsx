@@ -867,12 +867,12 @@ export function FullPageNoteViewer({
                 }
             `}</style>
             <div ref={containerRef} className="custom-scrollbar w-full h-full overflow-auto relative bg-neutral-100 dark:bg-neutral-900/50">
-                <div className="min-w-full min-h-full flex items-center justify-center p-8">
+                <div className={`p-8 ${zoomMode === "custom" ? "" : "min-w-full min-h-full flex items-center justify-center"}`}>
                     {loading && <div className="text-white text-xl m-auto">Loading PDF...</div>}
                     {error && <div className="text-red-400 text-xl m-auto">{error}</div>}
 
                     {!loading && !error && (
-                        <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair">
+                        <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair inline-block">
                             <canvas ref={canvasRef} className="block" />
                             <canvas
                                 ref={annotationCanvasRef}
