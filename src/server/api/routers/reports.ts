@@ -35,25 +35,6 @@ export const reportsRouter = createTRPCRouter({
                 });
             }
 
-            // ABUSE PREVENTION: Check if user has too many dismissed reports
-            const recentDismissedCount = await ctx.prisma.report.count({
-                where: {
-                    reporterId,
-                    status: "DISMISSED",
-                    createdAt: {
-                        // Check last 30 days
-                        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-                    },
-                },
-            });
-
-            // If user has 5+ dismissed reports in last 30 days, block them
-            if (recentDismissedCount >= 5) {
-                throw new TRPCError({
-                    code: "FORBIDDEN",
-                    message: "You have submitted too many invalid reports. Please contact an administrator if you believe this is an error.",
-                });
-            }
 
             // Prevent self-reporting
             if (input.reportedUserId === reporterId) {
