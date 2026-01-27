@@ -116,7 +116,7 @@ export default function SearchPage() {
 
     return (
         <div className="container mx-auto px-4 py-8 min-h-screen pt-24">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">Find Notes</h1>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">&nbsp;&nbsp;&nbsp;Find Notes</h1>
 
             {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4 mb-12 max-w-5xl relative z-20">

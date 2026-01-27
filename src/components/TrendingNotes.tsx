@@ -3,8 +3,10 @@
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
 import { TrendingUp, Eye } from "lucide-react";
+import { useThemeStyle } from "@/components/ThemeStyleProvider";
 
 export function TrendingNotes() {
+    const { themeStyle } = useThemeStyle();
     const { data, isLoading } = api.notes.getAll.useQuery({ cursor: undefined, limit: 50 });
 
     // Sort by voteScore to get trending notes
@@ -30,10 +32,10 @@ export function TrendingNotes() {
     return (
         <div className="w-full max-w-6xl mb-12">
             <div className="flex items-center gap-2 mb-6">
-                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                <div className={`p-2 rounded-lg ${themeStyle === "monochrome" ? "bg-primary/10 text-primary" : "bg-orange-100 dark:bg-orange-900/30"}`}>
+                    <TrendingUp className={`h-5 w-5 ${themeStyle === "monochrome" ? "text-primary" : "text-orange-600 dark:text-orange-400"}`} />
                 </div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">
+                <h2 className={`text-2xl font-bold bg-clip-text text-transparent ${themeStyle === "monochrome" ? "bg-gradient-to-r from-gray-700 to-black dark:from-white dark:to-gray-400" : "bg-gradient-to-r from-orange-600 to-pink-600"}`}>
                     Trending Uploads
                 </h2>
             </div>
@@ -43,10 +45,13 @@ export function TrendingNotes() {
                     <Link
                         key={note.id}
                         href={`/notes/${note.id}`}
-                        className="group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 hover:border-orange-300/30 rounded-xl overflow-hidden shadow-lg hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)] transition-all duration-300 hover:-translate-y-1"
+                        className={`group block backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border border-white/20 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:-translate-y-1 ${themeStyle === "monochrome"
+                            ? "hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5"
+                            : "hover:border-orange-300/30 hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.2)]"
+                            }`}
                     >
                         {/* Glow effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-pink-500/0 to-purple-500/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-tr" />
+                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 bg-gradient-to-tr ${themeStyle === "monochrome" ? "bg-primary" : "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500"}`} />
 
                         <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800 overflow-hidden">
                             {(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey ? (
@@ -69,7 +74,7 @@ export function TrendingNotes() {
 
                         <div className="p-5 h-full flex flex-col relative z-10 flex-1">
                             <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-bold text-lg group-hover:text-orange-600 transition-colors line-clamp-1 pr-4">
+                                <h3 className={`font-bold text-lg transition-colors line-clamp-1 pr-4 ${themeStyle === "monochrome" ? "group-hover:text-primary" : "group-hover:text-orange-600"}`}>
                                     {note.title}
                                 </h3>
                                 <div className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-white/20 dark:bg-black/20 px-2 py-1 rounded-full">
@@ -91,7 +96,7 @@ export function TrendingNotes() {
                             )}
 
                             <div className="mt-auto flex items-center justify-between text-xs text-gray-400 pt-4 border-t border-white/10">
-                                <span className="flex items-center gap-1 group-hover:text-orange-500 transition-colors">
+                                <span className={`flex items-center gap-1 transition-colors ${themeStyle === "monochrome" ? "group-hover:text-primary" : "group-hover:text-orange-500"}`}>
                                     View details &rarr;
                                 </span>
                             </div>

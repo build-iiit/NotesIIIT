@@ -81,7 +81,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                         <div className="flex gap-4">
                             {/* Only show Edit button if user owns the note */}
                             {currentUser?.id === note.authorId && (
-                                <Link href={`/notes/${note.id}/edit`} className="px-4 py-2 rounded-lg text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]">
+                                <Link href={`/notes/${note.id}/edit`} className="px-4 py-2 rounded-lg text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/10 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-lg border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95]">
                                     Edit Note
                                 </Link>
                             )}
@@ -93,7 +93,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                         <div className="hidden md:flex justify-end mb-4">
                             <button
                                 onClick={() => setIsFullPageOpen(true)}
-                                className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-400/20 hover:via-pink-400/15 hover:to-purple-400/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(251,146,60,0.3)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.08] active:scale-[0.95]"
+                                className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/10 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-lg border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95]"
                                 title="Open in Focus Mode"
                             >
                                 <Maximize2 className="w-5 h-5" />

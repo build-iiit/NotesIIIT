@@ -164,12 +164,12 @@ export default function NewMarkdownNotePage() {
 
                     <div className="flex items-center gap-3">
                         {isDirty && (
-                            <span className="text-sm text-orange-500 font-medium">Unsaved changes</span>
+                            <span className="text-sm text-primary font-medium">Unsaved changes</span>
                         )}
                         <button
                             onClick={handleSave}
                             disabled={isSaving || !title.trim()}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
                         >
                             {isSaving ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />

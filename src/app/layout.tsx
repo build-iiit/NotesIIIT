@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { TRPCReactProvider } from "@/app/_trpc/client";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeStyleProvider } from "@/components/ThemeStyleProvider";
 import { NavbarWrapper } from "@/components/NavbarWrapper";
 import { Toaster } from "sonner";
 import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
@@ -34,6 +35,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // interactiveWidget: 'resizes-visual',
 };
 
 export default function RootLayout({
@@ -48,10 +50,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {/* Liquid Glass Background */}
-        {/* Liquid Glass Background */}
         <div className="fixed inset-0 -z-10">
           <div className="absolute inset-0 bg-background transition-colors duration-500" />
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 via-pink-500/20 to-purple-600/20 dark:from-orange-900/20 dark:via-purple-900/20 dark:to-black pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] pointer-events-none" />
           <div className="absolute top-0 left-0 right-0 h-[50vh] bg-gradient-to-b from-white/40 to-transparent dark:from-black/40 dark:to-transparent pointer-events-none" />
         </div>
 
@@ -61,13 +62,15 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <SessionProviderWrapper>
-            <TRPCReactProvider>
-              <NavbarWrapper />
-              <main className="pt-16">{children}</main>
-              <Toaster richColors position="bottom-right" />
-            </TRPCReactProvider>
-          </SessionProviderWrapper>
+          <ThemeStyleProvider>
+            <SessionProviderWrapper>
+              <TRPCReactProvider>
+                <NavbarWrapper />
+                <main className="pt-16">{children}</main>
+                <Toaster richColors position="bottom-right" />
+              </TRPCReactProvider>
+            </SessionProviderWrapper>
+          </ThemeStyleProvider>
         </ThemeProvider>
       </body>
     </html>
