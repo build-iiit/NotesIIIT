@@ -21,6 +21,7 @@ export function RandomQuote() {
 
     useEffect(() => {
         // Randomize on mount
+        // eslint-disable-next-line react-compiler/react-compiler
         setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
     }, []);
 

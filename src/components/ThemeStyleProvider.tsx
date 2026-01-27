@@ -13,11 +13,11 @@ const ThemeStyleContext = createContext<ThemeStyleContextType | undefined>(undef
 
 export function ThemeStyleProvider({ children }: { children: React.ReactNode }) {
     const [themeStyle, setThemeStyleState] = useState<ThemeStyle>("sunset");
-    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         const stored = localStorage.getItem("theme-style") as ThemeStyle;
         if (stored) {
+            // eslint-disable-next-line react-compiler/react-compiler
             setThemeStyleState(stored);
             if (stored === "monochrome") {
                 document.documentElement.classList.add("monochrome");
@@ -25,7 +25,6 @@ export function ThemeStyleProvider({ children }: { children: React.ReactNode }) 
                 document.documentElement.classList.remove("monochrome");
             }
         }
-        setMounted(true);
     }, []);
 
     const setThemeStyle = (style: ThemeStyle) => {

@@ -6,12 +6,14 @@ import { useState, useEffect, Suspense } from "react";
 import { Folder, FileText, ChevronRight, FolderPlus, Trash2, ArrowLeft, Home, GripVertical, Plus, Users, Globe } from "lucide-react";
 import { api } from "@/app/_trpc/client";
 import Link from "next/link";
+import { useThemeStyle } from "@/components/ThemeStyleProvider";
 
 const SHARED_ROOT_ID = "shared-root";
 const PUBLIC_ROOT_ID = "public-root";
 const GROUP_FOLDER_PREFIX = "group-";
 
 function MyFilesContent() {
+    const { themeStyle } = useThemeStyle();
     const router = useRouter();
     const searchParams = useSearchParams();
     const initialFolderId = searchParams.get("folderId");
@@ -96,7 +98,7 @@ function MyFilesContent() {
 
     let displayFolders: { id: string; name: string; type: 'folder' | 'shared-root' | 'group' | 'public-root', isVirtual?: boolean }[] = [];
     let displayFiles: any[] = [];
-    let isLoading = isFolderLoading || isGroupsLoading || isGroupFilesLoading || isPublicFilesLoading;
+    const isLoading = isFolderLoading || isGroupsLoading || isGroupFilesLoading || isPublicFilesLoading;
 
     if (isSharedRoot) {
         // Show Groups as Folders
@@ -310,7 +312,7 @@ function MyFilesContent() {
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                        <Folder className="h-8 w-8 text-orange-500" />
+                        <Folder className={`h-8 w-8 ${themeStyle === "monochrome" ? "text-primary" : "text-orange-500"}`} />
                         My Files
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-2">
@@ -322,12 +324,14 @@ function MyFilesContent() {
                 <div className="relative">
                     {/* Layered Glass Container */}
                     <div className="relative backdrop-blur-3xl bg-gradient-to-br from-white/10 via-white/5 to-white/10 dark:from-white/[0.07] dark:via-white/[0.03] dark:to-white/[0.07] rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/20 p-6">
+                        {/* Monochrome Background Override */}
+                        <div className={`absolute inset-0 rounded-2xl -z-10 ${themeStyle === "monochrome" ? "bg-primary/5" : "bg-gradient-to-br from-orange-400/10 via-pink-500/10 to-purple-600/10 opacity-30"}`} />
                         {/* Inner glass layer */}
                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                                <Folder className="h-5 w-5 text-orange-500" />
+                                <Folder className={`h-5 w-5 ${themeStyle === "monochrome" ? "text-primary" : "text-orange-500"}`} />
                                 {currentFolderId ? (
                                     isSharedRoot ? "Shared with Me" :
                                         isPublicRoot ? "Public Files" :
@@ -340,14 +344,20 @@ function MyFilesContent() {
                                 <div className="flex items-center gap-2">
                                     <Link
                                         href={`/upload?folderId=${currentFolderId || ""}`}
-                                        className="relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white rounded-xl hover:opacity-90 transition-all shadow-md hover:shadow-lg border border-white/30 hover:scale-[1.02] duration-300"
+                                        className={`relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl text-white rounded-xl hover:opacity-90 transition-all shadow-md hover:shadow-lg border border-white/30 hover:scale-[1.02] duration-300 ${themeStyle === "monochrome"
+                                            ? "bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)]"
+                                            : "bg-gradient-to-r from-orange-500 to-pink-500"
+                                            }`}
                                     >
                                         <Plus className="h-4 w-4" />
                                         Upload
                                     </Link>
                                     <button
                                         onClick={() => setIsCreateModalOpen(true)}
-                                        className="relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white rounded-xl hover:opacity-90 transition-all shadow-md hover:shadow-lg border border-white/30 hover:scale-[1.02] duration-300"
+                                        className={`relative flex items-center gap-2 px-4 py-2 text-sm backdrop-blur-2xl text-white rounded-xl hover:opacity-90 transition-all shadow-md hover:shadow-lg border border-white/30 hover:scale-[1.02] duration-300 ${themeStyle === "monochrome"
+                                            ? "bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)]"
+                                            : "bg-gradient-to-r from-orange-500 to-pink-500"
+                                            }`}
                                     >
                                         <FolderPlus className="h-4 w-4" />
                                         New Folder
@@ -364,9 +374,9 @@ function MyFilesContent() {
                                 onDragLeave={handleDragLeave}
                                 onDrop={(e) => handleDrop(e, null)}
                                 className={`px-3 py-1 rounded-lg backdrop-blur-sm transition-all flex items-center gap-1 ${!currentFolderId
-                                    ? 'bg-gradient-to-r from-orange-500/50 to-pink-500/50 text-white font-bold border border-white/30'
-                                    : 'hover:bg-white/20 dark:hover:bg-white/10'
-                                    } ${dragOverFolderId === null && (draggedNoteId || draggedFolderId) ? 'ring-2 ring-orange-500 bg-orange-500/20' : ''}`}
+                                    ? (themeStyle === "monochrome" ? "bg-primary text-primary-foreground font-bold border border-white/30" : "bg-gradient-to-r from-orange-500/50 to-pink-500/50 text-white font-bold border border-white/30")
+                                    : "hover:bg-white/20 dark:hover:bg-white/10"
+                                    } ${dragOverFolderId === null && (draggedNoteId || draggedFolderId) ? (themeStyle === "monochrome" ? "ring-2 ring-primary bg-primary/20" : "ring-2 ring-orange-500 bg-orange-500/20") : ""}`}
                             >
                                 <Home className="h-3 w-3" />
                                 Root
@@ -382,9 +392,9 @@ function MyFilesContent() {
                                         onDragLeave={handleDragLeave}
                                         onDrop={(e) => handleDrop(e, crumb.id)}
                                         className={`px-3 py-1 rounded-lg backdrop-blur-sm transition-all ${currentFolderId === crumb.id
-                                            ? 'bg-gradient-to-r from-orange-500/50 to-pink-500/50 text-white font-bold border border-white/30'
-                                            : 'hover:bg-white/20 dark:hover:bg-white/10'
-                                            } ${dragOverFolderId === crumb.id && (draggedNoteId || draggedFolderId) ? 'ring-2 ring-orange-500 bg-orange-500/20' : ''}`}
+                                            ? (themeStyle === "monochrome" ? "bg-primary text-primary-foreground font-bold border border-white/30" : "bg-gradient-to-r from-orange-500/50 to-pink-500/50 text-white font-bold border border-white/30")
+                                            : "hover:bg-white/20 dark:hover:bg-white/10"
+                                            } ${dragOverFolderId === crumb.id && (draggedNoteId || draggedFolderId) ? (themeStyle === "monochrome" ? "ring-2 ring-primary bg-primary/20" : "ring-2 ring-orange-500 bg-orange-500/20") : ""}`}
                                     >
                                         {crumb.name}
                                     </button>
@@ -428,8 +438,12 @@ function MyFilesContent() {
                                     onDragOver={(e) => handleDragOver(e, folder.id)}
                                     onDragLeave={handleDragLeave}
                                     onDrop={(e) => handleDrop(e, folder.id)}
-                                    className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:from-orange-500/20 hover:via-pink-500/15 hover:to-orange-500/20 cursor-pointer transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(251,146,60,0.25)] border border-white/25 hover:border-orange-300/50 hover:scale-[1.05] active:scale-[0.98] ${dragOverFolderId === folder.id && (draggedNoteId || draggedFolderId) && draggedFolderId !== folder.id ? 'ring-2 ring-orange-500 bg-orange-500/20 scale-105' : ''
-                                        } ${draggedFolderId === folder.id ? 'opacity-50 scale-95' : ''}`}
+                                    className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border cursor-pointer
+                                        ${dragOverFolderId === folder.id && (draggedNoteId || draggedFolderId) && draggedFolderId !== folder.id
+                                            ? (themeStyle === "monochrome" ? "ring-2 ring-primary bg-primary/20 scale-105" : "ring-2 ring-orange-500 bg-orange-500/20 scale-105")
+                                            : `bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border-white/25 active:scale-[0.98] ${themeStyle === "monochrome" ? "hover:bg-primary/5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.05]" : "hover:from-orange-500/20 hover:via-pink-500/15 hover:to-orange-500/20 hover:border-orange-300/50 hover:scale-[1.05] hover:shadow-[0_12px_32px_0_rgba(251,146,60,0.25)]"}`
+                                        }
+                                        ${draggedFolderId === folder.id ? "opacity-50 scale-95" : ""}`}
                                 >
                                     <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
@@ -446,11 +460,11 @@ function MyFilesContent() {
                                     <div className="relative w-full aspect-square mb-2 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-inner">
                                         <div className="absolute inset-0 bg-white/5 opacity-50" />
                                         {folder.type === 'shared-root' || folder.type === 'group' ? (
-                                            <Users className="h-16 w-16 text-blue-500 fill-blue-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                            <Users className={`h-16 w-16 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300 ${themeStyle === "monochrome" ? "text-primary fill-primary/20" : "text-blue-500 fill-blue-500/20"}`} />
                                         ) : folder.type === 'public-root' ? (
-                                            <Globe className="h-16 w-16 text-green-500 fill-green-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                            <Globe className={`h-16 w-16 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300 ${themeStyle === "monochrome" ? "text-primary fill-primary/20" : "text-green-500 fill-green-500/20"}`} />
                                         ) : (
-                                            <Folder className="h-16 w-16 text-yellow-500 fill-yellow-500/20 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300" />
+                                            <Folder className={`h-16 w-16 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300 ${themeStyle === "monochrome" ? "text-primary fill-primary/20" : "text-yellow-500 fill-yellow-500/20"}`} />
                                         )}
                                     </div>
 
@@ -465,8 +479,10 @@ function MyFilesContent() {
                                     draggable={!isSharedRoot && !isGroupFolder && !isPublicRoot}
                                     onDragStart={(e) => handleDragStart(e, note.id, 'note')}
                                     onDragEnd={handleDragEnd}
-                                    className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] hover:from-purple-500/20 hover:via-blue-500/15 hover:to-purple-500/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_0_rgba(147,51,234,0.25)] border border-white/25 hover:border-purple-300/50 hover:scale-[1.05] active:scale-[0.98] cursor-grab active:cursor-grabbing ${draggedNoteId === note.id ? 'opacity-50 scale-95' : ''
-                                        }`}
+                                    className={`group relative flex flex-col items-center p-5 rounded-2xl backdrop-blur-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border border-white/25 active:scale-[0.98] cursor-grab active:cursor-grabbing ${themeStyle === "monochrome"
+                                        ? "hover:bg-primary/5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.05]"
+                                        : "hover:from-purple-500/20 hover:via-blue-500/15 hover:to-purple-500/20 hover:shadow-[0_12px_32px_0_rgba(147,51,234,0.25)] hover:border-purple-300/50 hover:scale-[1.05]"
+                                        } ${draggedNoteId === note.id ? "opacity-50 scale-95" : ""}`}
                                 >
                                     {/* Drag handle indicator */}
                                     {!isSharedRoot && !isGroupFolder && !isPublicRoot && (
@@ -484,7 +500,8 @@ function MyFilesContent() {
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
-                                            <FileText className="h-10 w-10 text-gray-600 dark:text-gray-300 group-hover:text-purple-500 transition-colors drop-shadow-lg" />
+
+                                            <FileText className={`h-10 w-10 mb-2 transition-colors drop-shadow-lg ${themeStyle === "monochrome" ? "text-gray-500 group-hover:text-primary" : "text-gray-600 dark:text-gray-300 group-hover:text-purple-500"}`} />
                                         )}
 
                                         {!(note as any).thumbnailUrl && (
@@ -493,7 +510,7 @@ function MyFilesContent() {
                                             </div>
                                         )}
                                     </div>
-                                    <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200 group-hover:text-purple-700 dark:group-hover:text-purple-400">
+                                    <span className={`text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200 ${themeStyle === "monochrome" ? "group-hover:text-primary" : "group-hover:text-purple-700 dark:group-hover:text-purple-400"}`}>
                                         {note.title}
                                     </span>
 
@@ -543,7 +560,10 @@ function MyFilesContent() {
                                             <button
                                                 type="submit"
                                                 disabled={!newFolderName.trim() || createFolderMutation.isPending}
-                                                className="px-4 py-2 text-sm backdrop-blur-md bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-lg hover:from-orange-600 hover:to-pink-600 disabled:opacity-50 transition-all shadow-lg border border-white/30"
+                                                className={`px-4 py-2 text-sm backdrop-blur-md text-white rounded-lg disabled:opacity-50 transition-all shadow-lg border border-white/30 ${themeStyle === "monochrome"
+                                                    ? "bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)]"
+                                                    : "bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600"
+                                                    }`}
                                             >
                                                 {createFolderMutation.isPending ? "Creating..." : "Create"}
                                             </button>
@@ -563,7 +583,7 @@ export default function MyFilesPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
+                <Folder className="h-12 w-12 animate-pulse text-gray-400" />
             </div>
         }>
             <MyFilesContent />

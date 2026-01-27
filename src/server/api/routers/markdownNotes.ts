@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { getPresignedDownloadUrl } from "@/lib/s3";
+import { generateThumbnail, uploadThumbnail } from "@/server/utils/thumbnail-generator";
 
 /**
  * Markdown Notes Router
@@ -84,6 +85,21 @@ export const markdownNotesRouter = createTRPCRouter({
                     where: { id: note.id },
                     data: { currentMarkdownVersionId: note.markdownVersions[0].id },
                 });
+
+                // Generate Thumbnail asynchronously (don't block response)
+                void (async () => {
+                    try {
+                        const buffer = await generateThumbnail(input.title, initialContent);
+                        const key = await uploadThumbnail(note.id, buffer);
+
+                        await ctx.prisma.note.update({
+                            where: { id: note.id },
+                            data: { thumbnailS3Key: key }
+                        });
+                    } catch (error) {
+                        console.error("Failed to generate initial thumbnail:", error);
+                    }
+                })();
 
                 return note;
             });
@@ -333,6 +349,21 @@ export const markdownNotesRouter = createTRPCRouter({
                     updatedAt: new Date(),
                 },
             });
+
+            // Generate Thumbnail (fire and forget)
+            void (async () => {
+                try {
+                    const buffer = await generateThumbnail(note.title, input.content);
+                    const key = await uploadThumbnail(note.id, buffer);
+
+                    await ctx.prisma.note.update({
+                        where: { id: note.id },
+                        data: { thumbnailS3Key: key }
+                    });
+                } catch (error) {
+                    console.error("Failed to update thumbnail:", error);
+                }
+            })();
 
             return { success: true, version: newVersion.version };
         }),

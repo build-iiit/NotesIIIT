@@ -59,7 +59,7 @@ export function HomeFolderGrid({ folders }: HomeFolderGridProps) {
                                     {/* Folder Icon */}
                                     <div className="relative mb-4">
                                         <Folder className={`h-20 w-20 drop-shadow-xl group-hover:scale-110 transition-transform duration-300 ${themeStyle === "monochrome" ? "text-primary fill-primary/30" : "text-yellow-500 fill-yellow-500/30"}`} />
-                                        <div className={`absolute -bottom-0 -right-2 text-white text-xs font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm border border-white/40 shadow-lg ${themeStyle === "monochrome" ? "bg-primary text-primary-foreground" : "bg-gradient-to-br from-orange-500 to-pink-500"}`}>
+                                        <div className={`absolute -bottom-1 -right-2 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-lg border-2 ${themeStyle === "monochrome" ? "bg-white text-black dark:bg-zinc-800 dark:text-white border-zinc-200 dark:border-zinc-700" : "bg-gradient-to-br from-orange-500 to-pink-500 text-white border-white"}`}>
                                             {folder._count?.notes || 0}
                                         </div>
                                     </div>

@@ -69,7 +69,7 @@ export function NotesFeed() {
                             //     <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                             // </div>
                         )} */}
-                        <h2 className="text-3xl font-black bg-gradient-to-r from-orange-600 via-pink-600 to-purple-600 bg-clip-text text-transparent drop-shadow-sm">
+                        <h2 className={`text-3xl font-black bg-clip-text text-transparent drop-shadow-sm ${themeStyle === "monochrome" ? "bg-gradient-to-r from-gray-700 to-black dark:from-white dark:to-gray-400" : "bg-gradient-to-r from-orange-600 via-pink-600 to-purple-600"}`}>
                             {sort === "popular" ? "Trending Uploads" : "Recent Uploads"}
                         </h2>
                     </div>
@@ -77,13 +77,19 @@ export function NotesFeed() {
                     <div className="flex bg-black/5 dark:bg-white/5 p-1 rounded-xl border border-black/5 dark:border-white/5 backdrop-blur-md">
                         <button
                             onClick={() => setSort("popular")}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${sort === "popular" ? "bg-white dark:bg-zinc-800 text-orange-600 shadow-sm scale-105" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"}`}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${sort === "popular"
+                                ? (themeStyle === "monochrome" ? "bg-primary text-primary-foreground shadow-sm scale-105" : "bg-white dark:bg-zinc-800 text-orange-600 shadow-sm scale-105")
+                                : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"
+                                }`}
                         >
                             Trending
                         </button>
                         <button
                             onClick={() => setSort("newest")}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${sort === "newest" ? "bg-white dark:bg-zinc-800 text-purple-600 shadow-sm scale-105" : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"}`}
+                            className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${sort === "newest"
+                                ? (themeStyle === "monochrome" ? "bg-primary text-primary-foreground shadow-sm scale-105" : "bg-white dark:bg-zinc-800 text-purple-600 shadow-sm scale-105")
+                                : "text-gray-500 hover:text-gray-900 dark:hover:text-gray-200"
+                                }`}
                         >
                             Recent
                         </button>
@@ -122,8 +128,8 @@ export function NotesFeed() {
                                         loading="lazy"
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-500/5 to-pink-500/5">
-                                        <div className="p-4 rounded-full bg-white/10 backdrop-blur-sm border border-white/10">
+                                    <div className={`w-full h-full flex items-center justify-center ${themeStyle === "monochrome" ? "bg-primary/5" : "bg-gradient-to-br from-orange-500/5 to-pink-500/5"}`}>
+                                        <div className={`p-4 rounded-full backdrop-blur-sm border border-white/10 ${themeStyle === "monochrome" ? "bg-primary/10 text-primary" : "bg-white/10"}`}>
                                             {/* <TrendingUp className="h-8 w-8 text-orange-400/50" /> */}
                                             {/* <FileText className="h-8 w-8 text-blue-500" /> */}
                                             <FileText className="h-12 w-12" />
