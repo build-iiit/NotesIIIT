@@ -684,10 +684,38 @@ function UploadContent() {
                                         onDrop={handleDrop}
                                         className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-orange-500 bg-orange-500/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-orange-400/50 hover:bg-orange-500/5"}`}
                                     >
-                                        <input type="file" accept=".pdf" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                        <input type="file" accept=".pdf" onChange={handleFileChange} required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                                         <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                                         <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Drop your PDF here, or click to browse</p>
-                                        <p className="text-gray-500 text-sm">PDF files only</p>
+                                        <p className="text-gray-500 text-sm mb-4">PDF files only</p>
+
+                                        <div className="flex items-center justify-center gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); triggerGoogleDrive(); }}
+                                                disabled={uploading}
+                                                className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm flex items-center gap-2 transition-all z-10 relative disabled:opacity-50"
+                                            >
+                                                <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive" />
+                                                Import from Drive
+                                            </button>
+                                        </div>
+
+                                        {/* Drive Upload Progress */}
+                                        {driveUploadProgress && (
+                                            <div className="mt-4 space-y-2">
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-gray-600 dark:text-gray-400 font-medium">{driveUploadProgress}</span>
+                                                    <span className="text-orange-500 font-bold">{driveProgressPercent}%</span>
+                                                </div>
+                                                <div className="h-2 bg-white/20 dark:bg-black/30 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-300 ease-out rounded-full"
+                                                        style={{ width: `${driveProgressPercent}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="bg-white/5 dark:bg-black/5 border border-white/30 dark:border-white/10 rounded-2xl p-6">
@@ -711,46 +739,7 @@ function UploadContent() {
                                         <p className="text-xs text-gray-500 mt-2 ml-1">Paste a URL to a PDF file hosted on GitHub.</p>
                                     </div>
                                 )
-                                <div
-                                    onDragEnter={handleDrag}
-                                    onDragLeave={handleDrag}
-                                    onDragOver={handleDrag}
-                                    onDrop={handleDrop}
-                                    className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-orange-500 bg-orange-500/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-orange-400/50 hover:bg-orange-500/5"}`}
-                                >
-                                    <input type="file" accept=".pdf" onChange={handleFileChange} required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Drop your PDF here, or click to browse</p>
-                                    <p className="text-gray-500 text-sm mb-4">PDF files only</p>
 
-                                    <div className="flex items-center justify-center gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); triggerGoogleDrive(); }}
-                                            disabled={uploading}
-                                            className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm flex items-center gap-2 transition-all z-10 relative disabled:opacity-50"
-                                        >
-                                            <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive" />
-                                            Import from Drive
-                                        </button>
-                                    </div>
-
-                                    {/* Drive Upload Progress */}
-                                    {driveUploadProgress && (
-                                        <div className="mt-4 space-y-2">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-gray-600 dark:text-gray-400 font-medium">{driveUploadProgress}</span>
-                                                <span className="text-orange-500 font-bold">{driveProgressPercent}%</span>
-                                            </div>
-                                            <div className="h-2 bg-white/20 dark:bg-black/30 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all duration-300 ease-out rounded-full"
-                                                    style={{ width: `${driveProgressPercent}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
                             ) : (
                                 <div className="bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-4 flex items-center gap-4 animate-in fade-in zoom-in-95 duration-200">
                                     <div className="bg-orange-500/20 p-3 rounded-xl">
