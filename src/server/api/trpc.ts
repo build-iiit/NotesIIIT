@@ -86,25 +86,119 @@ export const publicProcedure = t.procedure;
  * Protected (authenticated) procedure
  *
  * If you want a query or mutation to ONLY be accessible to logged in users, use this. It verifies
- * the session is valid and guarantees `ctx.session.user` is not null.
+ * the session is valid, checks user status, and guarantees `ctx.session.user` is not null.
+ * 
+ * IMPORTANT: This now fetches fresh user data from the database to enforce bans/suspensions
+ * immediately, without requiring the user to re-login.
  */
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     if (!ctx.session || !ctx.session.user) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
     }
+
+    // Fetch current user status from database to enforce bans/suspensions immediately
+    const currentUser = await ctx.prisma.user.findUnique({
+        where: { id: ctx.session.user.id },
+        select: {
+            id: true,
+            status: true,
+            role: true,
+            suspendedUntil: true,
+        },
+    });
+
+    if (!currentUser) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "User not found" });
+    }
+
+    // Check if user is banned
+    if (currentUser.status === "BANNED") {
+        throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Your account has been banned. Contact support for assistance.",
+        });
+    }
+
+    // Check if user is suspended (and suspension hasn't expired)
+    if (currentUser.status === "SUSPENDED") {
+        const now = new Date();
+        if (!currentUser.suspendedUntil || currentUser.suspendedUntil > now) {
+            const expiresMsg = currentUser.suspendedUntil
+                ? ` until ${currentUser.suspendedUntil.toLocaleDateString()}`
+                : "";
+            throw new TRPCError({
+                code: "FORBIDDEN",
+                message: `Your account is suspended${expiresMsg}. Contact support for assistance.`,
+            });
+        }
+        // Suspension has expired - automatically reinstate (async, don't await)
+        ctx.prisma.user.update({
+            where: { id: currentUser.id },
+            data: { status: "ACTIVE", suspendedUntil: null },
+        }).catch(() => { }); // Fire and forget
+    }
+
+    // Check maintenance mode - admins can bypass
+    const adminRoles = ["SUPER_ADMIN", "ADMIN"];
+    if (!adminRoles.includes(currentUser.role)) {
+        // Check if maintenance mode is enabled from database settings
+        const maintenanceSetting = await ctx.prisma.platformSetting.findUnique({
+            where: { key: "maintenance.enabled" },
+        });
+        if (maintenanceSetting?.value === true) {
+            // Fetch custom message if available
+            const messageSetting = await ctx.prisma.platformSetting.findUnique({
+                where: { key: "maintenance.message" },
+            });
+            const message = typeof messageSetting?.value === "string"
+                ? messageSetting.value
+                : "The platform is currently under maintenance. Please check back soon.";
+            throw new TRPCError({
+                code: "PRECONDITION_FAILED",
+                message,
+            });
+        }
+    }
+
     return next({
         ctx: {
-            // infers the `session` as non-nullable
+            // Use fresh role from database instead of cached session
+            session: {
+                ...ctx.session,
+                user: {
+                    ...ctx.session.user,
+                    role: currentUser.role,
+                    status: currentUser.status,
+                },
+            },
+        },
+    });
+});
+
+/**
+ * Admin procedure - requires SUPER_ADMIN, ADMIN, or MODERATOR role
+ * This is the base admin panel access procedure
+ */
+export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+    const adminRoles = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
+    if (!adminRoles.includes(ctx.session.user.role)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+    }
+    return next({
+        ctx: {
             session: { ...ctx.session, user: ctx.session.user },
         },
     });
 });
 
 /**
+ * Moderator procedure - requires at least MODERATOR role
+ * For content moderation actions (hide, lock notes, moderate comments)
  */
-export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-    if (ctx.session.user.role !== "ADMIN") {
-        throw new TRPCError({ code: "FORBIDDEN" });
+export const moderatorProcedure = protectedProcedure.use(({ ctx, next }) => {
+    const moderatorRoles = ["SUPER_ADMIN", "ADMIN", "MODERATOR"];
+    if (!moderatorRoles.includes(ctx.session.user.role)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Moderator access required" });
     }
     return next({
         ctx: {
@@ -112,11 +206,68 @@ export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
         },
     });
 });
+
+/**
+ * Super Admin procedure - requires SUPER_ADMIN role only
+ * For sensitive operations like audit logs, user deletion, role promotion
+ */
+export const superAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
+    if ((ctx.session.user.role as string) !== "SUPER_ADMIN") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Super Admin access required" });
+    }
+    return next({
+        ctx: {
+            session: { ...ctx.session, user: ctx.session.user },
+        },
+    });
+});
+
+/**
+ * Create a procedure that requires specific roles
+ * @param allowedRoles - Array of roles that can access this procedure
+ */
+export const createRoleProcedure = (allowedRoles: string[]) => {
+    return protectedProcedure.use(({ ctx, next }) => {
+        if (!allowedRoles.includes(ctx.session.user.role)) {
+            throw new TRPCError({
+                code: "FORBIDDEN",
+                message: `Access denied. Required roles: ${allowedRoles.join(", ")}`
+            });
+        }
+        return next({
+            ctx: {
+                session: { ...ctx.session, user: ctx.session.user },
+            },
+        });
+    });
+};
 
 /**
  * Access Control Helpers
  */
 export const ensureAuthorOrAdmin = (userId: string, authorId: string, role: string) => {
-    if (role === "ADMIN") return true;
+    const adminRoles = ["SUPER_ADMIN", "ADMIN"];
+    if (adminRoles.includes(role)) return true;
     return userId === authorId;
+};
+
+/**
+ * Check if user has admin-level access (any admin role)
+ */
+export const isAdminRole = (role: string): boolean => {
+    return ["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(role);
+};
+
+/**
+ * Check if user role can perform action on target role
+ * Used to prevent privilege escalation
+ */
+export const canActOnRole = (actorRole: string, targetRole: string): boolean => {
+    const hierarchy: Record<string, number> = {
+        SUPER_ADMIN: 4,
+        ADMIN: 3,
+        MODERATOR: 2,
+        USER: 1,
+    };
+    return (hierarchy[actorRole] || 0) > (hierarchy[targetRole] || 0);
 };

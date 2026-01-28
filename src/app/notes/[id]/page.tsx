@@ -6,6 +6,7 @@ import { InteractionsPanel } from "@/components/InteractionsPanel";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Maximize2, Eye } from "lucide-react";
+import { ReportButton } from "@/components/ReportButton";
 
 // Dynamically import PDF components with SSR disabled to avoid "DOMMatrix is not defined" error
 const PdfViewer = dynamic(() => import("@/components/PdfViewer").then(mod => mod.PdfViewer), {
@@ -78,7 +79,12 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                             </p>
                             {note.description && <p className="mt-2 text-lg">{note.description}</p>}
                         </div>
-                        <div className="flex gap-4">
+                        <div className="flex items-center gap-2">
+                            {/* Report button - visible to non-authors */}
+                            <ReportButton
+                                noteId={note.id}
+                                isAuthor={currentUser?.id === note.authorId}
+                            />
                             {/* Only show Edit button if user owns the note */}
                             {currentUser?.id === note.authorId && (
                                 <Link href={`/notes/${note.id}/edit`} className="px-4 py-2 rounded-lg text-gray-800 dark:text-gray-200 relative backdrop-blur-3xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/10 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-lg border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95]">
