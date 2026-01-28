@@ -55,11 +55,31 @@ model User {
   requestUpvotes       RequestUpvote[]
   fulfillments         RequestFulfillment[]
   commentUpvotes       CommentUpvote[]
+
+  // Moderation Status
+  status          UserStatus @default(ACTIVE)
+  suspendedAt     DateTime?
+  suspendedUntil  DateTime?  // null = indefinite for banned users
+  banReason       String?
+  shadowBanned    Boolean    @default(false)
+
+  // Report & Audit Relations
+  reportsMade      Report[]   @relation("ReportsMade")
+  reportsResolved  Report[]   @relation("ReportsResolved")
+  auditLogs        AuditLog[]
 }
 
 enum Role {
-  USER
+  SUPER_ADMIN
   ADMIN
+  MODERATOR
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
 }
 
 model Account {
@@ -104,6 +124,13 @@ model VerificationToken {
 enum NoteType {
   PDF
   MARKDOWN
+}
+
+enum NoteModerationStatus {
+  VISIBLE        // Normal state
+  HIDDEN         // Admin-hidden (soft, author still sees)
+  DELETED        // Soft deleted
+  UNDER_REVIEW   // Under moderation review
 }
 
 model Note {
@@ -154,6 +181,14 @@ model Note {
   sharedGroups   Group[]  @relation("SharedNotes")
   fulfillments   RequestFulfillment[]
 
+  // Moderation
+  moderationStatus  NoteModerationStatus @default(VISIBLE)
+  isLocked          Boolean              @default(false)  // Prevent edits
+  isFeatured        Boolean              @default(false)  // Featured on leaderboard
+  isPinned          Boolean              @default(false)  // Pinned to top
+  moderatedAt       DateTime?
+  moderatedBy       String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -161,6 +196,7 @@ model Note {
   @@index([courseId])
   @@index([createdAt])
   @@index([folderId])
+  @@index([moderationStatus])
 }
 
 model Folder {
@@ -587,4 +623,131 @@ model CommentUpvote {
 
   @@unique([userId, commentId])
   @@index([commentId])
+}
+
+// ---------------------------------------------------------
+// 7. Platform Settings (Admin Configurable)
+// ---------------------------------------------------------
+
+model PlatformSetting {
+  id          String      @id @default(cuid())
+  key         String      @unique
+  value       Json        // Flexible value storage (string, number, boolean, object)
+  type        SettingType @default(STRING)
+  category    String      // e.g., "registration", "uploads", "features", "limits"
+  description String?
+  
+  updatedAt   DateTime    @updatedAt
+  updatedBy   String?     // Admin who last changed it
+  
+  @@index([category])
+}
+
+enum SettingType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+// ---------------------------------------------------------
+// 8. Reporting System (Abuse Reports)
+// ---------------------------------------------------------
+
+model Report {
+  id          String   @id @default(cuid())
+  
+  // Reporter
+  reporterId  String
+  reporter    User     @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  
+  // Target (polymorphic via type + id)
+  targetType  ReportTargetType
+  targetId    String   // ID of note, comment, user, or page
+  
+  reason      ReportReason
+  description String?  // Optional user-provided description
+  
+  // Resolution
+  status      ReportStatus @default(PENDING)
+  resolvedAt  DateTime?
+  resolvedBy  String?
+  resolver    User?    @relation("ReportsResolved", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  resolution  String?  // e.g., "warning issued", "content removed", "no action"
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([status])
+  @@index([targetType, targetId])
+  @@index([reporterId])
+  @@index([createdAt])
+}
+
+enum ReportTargetType {
+  NOTE
+  PAGE
+  COMMENT
+  USER
+}
+
+enum ReportReason {
+  SPAM
+  INAPPROPRIATE
+  COPYRIGHT
+  HARASSMENT
+  MISINFORMATION
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+// ---------------------------------------------------------
+// 9. Audit Logging (Immutable Admin Actions)
+// ---------------------------------------------------------
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  
+  // Actor (the admin who performed the action)
+  adminId       String?
+  admin         User?    @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  adminEmail    String   // Denormalized for auditability (survives user deletion)
+  
+  // Action details
+  action        String   // e.g., "user.suspend", "note.delete", "settings.update"
+  category      AuditCategory
+  
+  // Target entity
+  targetType    String?  // e.g., "User", "Note", "PlatformSetting"
+  targetId      String?
+  
+  // State capture for reversibility/audit review
+  beforeState   Json?    // State before action
+  afterState    Json?    // State after action
+  metadata      Json?    // Additional context (reason, notes, etc.)
+  
+  // Request context
+  ipAddress     String?
+  userAgent     String?
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([adminId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@index([category])
+}
+
+enum AuditCategory {
+  USER_MANAGEMENT
+  CONTENT_MODERATION
+  SETTINGS
+  SYSTEM
+  REPORTS
 }

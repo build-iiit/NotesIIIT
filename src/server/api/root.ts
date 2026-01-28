@@ -14,6 +14,10 @@ import { notificationsRouter } from "@/server/api/routers/notifications";
 import { requestsRouter } from "@/server/api/routers/requests";
 import { aiRouter } from "@/server/api/routers/ai";
 import { markdownNotesRouter } from "@/server/api/routers/markdownNotes";
+// Admin Panel Evolution - New Routers
+import { settingsRouter } from "@/server/api/routers/settings";
+import { reportsRouter } from "@/server/api/routers/reports";
+import { auditRouter } from "@/server/api/routers/audit";
 
 /**
  * This is the primary router for your server.
@@ -36,6 +40,10 @@ export const appRouter = createTRPCRouter({
     markdownNotes: markdownNotesRouter,
     notifications: notificationsRouter,
     requests: requestsRouter,
+    // Admin Panel Evolution - New Routes
+    settings: settingsRouter,
+    reports: reportsRouter,
+    audit: auditRouter,
 });
 
 

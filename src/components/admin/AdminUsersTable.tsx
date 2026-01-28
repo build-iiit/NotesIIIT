@@ -2,15 +2,53 @@
 
 import { api } from "@/app/_trpc/client";
 import { useState } from "react";
-import Image from "next/image";
-import { Shield, User, Trash2, Search, CheckSquare, Square } from "lucide-react";
+import {
+    Shield,
+    User,
+    Trash2,
+    Search,
+    CheckSquare,
+    Square,
+    Ban,
+    Clock,
+    EyeOff,
+    UserCheck,
+    MoreVertical,
+    Crown,
+    AlertCircle,
+    ChevronDown
+} from "lucide-react";
 import { ProfileImage } from "../ProfileImage";
 
+type UserStatus = "ACTIVE" | "SUSPENDED" | "BANNED";
 
+const statusColors: Record<UserStatus, string> = {
+    ACTIVE: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    SUSPENDED: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+    BANNED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+};
+
+const roleColors: Record<string, string> = {
+    SUPER_ADMIN: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+    ADMIN: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+    MODERATOR: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    USER: "bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
+};
+
+const roleIcons: Record<string, React.ReactNode> = {
+    SUPER_ADMIN: <Crown className="w-3 h-3" />,
+    ADMIN: <Shield className="w-3 h-3" />,
+    MODERATOR: <Shield className="w-3 h-3" />,
+    USER: <User className="w-3 h-3" />,
+};
 
 export function AdminUsersTable() {
     const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState<UserStatus | "ALL">("ALL");
     const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+    const [expandedUser, setExpandedUser] = useState<string | null>(null);
+    const [actionMenu, setActionMenu] = useState<string | null>(null);
+
     const { data, isLoading, refetch } = api.admin.getAllUsers.useQuery({ search });
 
     // Mutations
@@ -36,10 +74,37 @@ export function AdminUsersTable() {
         },
     });
 
+    const suspendMutation = api.admin.suspendUser.useMutation({
+        onSuccess: () => {
+            refetch();
+            setActionMenu(null);
+        },
+    });
+
+    const banMutation = api.admin.banUser.useMutation({
+        onSuccess: () => {
+            refetch();
+            setActionMenu(null);
+        },
+    });
+
+    const shadowBanMutation = api.admin.shadowBanUser.useMutation({
+        onSuccess: () => {
+            refetch();
+            setActionMenu(null);
+        },
+    });
+
+    const reinstateMutation = api.admin.reinstateUser.useMutation({
+        onSuccess: () => {
+            refetch();
+            setActionMenu(null);
+        },
+    });
+
     // Individual Actions
-    const handleRoleToggle = async (userId: string, currentRole: string) => {
-        const newRole = currentRole === "ADMIN" ? "USER" : "ADMIN";
-        if (confirm(`Are you sure you want to ${newRole === "ADMIN" ? "promote" : "demote"} this user?`)) {
+    const handleRoleChange = async (userId: string, newRole: "SUPER_ADMIN" | "ADMIN" | "MODERATOR" | "USER") => {
+        if (confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
             try {
                 await updateRoleMutation.mutateAsync({ userId, role: newRole });
             } catch (error) {
@@ -58,6 +123,74 @@ export function AdminUsersTable() {
         }
     };
 
+    const handleSuspend = async (userId: string) => {
+        const durationStr = prompt("Enter suspension duration in days (e.g., 1, 3, 7, 30):", "7");
+        if (!durationStr) return;
+
+        const days = parseInt(durationStr, 10);
+        if (isNaN(days) || days <= 0 || days > 365) {
+            alert("Invalid duration (must be 1-365 days)");
+            return;
+        }
+
+        const reason = prompt("Enter suspension reason:");
+        if (!reason) return;
+
+        try {
+            await suspendMutation.mutateAsync({ userId, durationDays: days, reason });
+        } catch (error) {
+            alert(error instanceof Error ? error.message : "Failed to suspend user");
+        }
+    };
+
+    const handleBan = async (userId: string) => {
+        const reason = prompt("Enter ban reason (required):");
+        if (!reason) return;
+
+        if (confirm("Are you sure you want to permanently ban this user?")) {
+            try {
+                await banMutation.mutateAsync({ userId, reason });
+            } catch (error) {
+                alert(error instanceof Error ? error.message : "Failed to ban user");
+            }
+        }
+    };
+
+    const handleShadowBan = async (userId: string, currentShadowBan: boolean) => {
+        if (currentShadowBan) {
+            // Remove shadow ban via reinstate
+            if (confirm("Are you sure you want to remove shadow ban from this user?")) {
+                try {
+                    await reinstateMutation.mutateAsync({ userId });
+                } catch (error) {
+                    alert(error instanceof Error ? error.message : "Failed to remove shadow ban");
+                }
+            }
+        } else {
+            // Add shadow ban
+            const reason = prompt("Enter reason for shadow ban:");
+            if (!reason) return;
+
+            if (confirm("Are you sure you want to shadow ban this user?")) {
+                try {
+                    await shadowBanMutation.mutateAsync({ userId, reason });
+                } catch (error) {
+                    alert(error instanceof Error ? error.message : "Failed to shadow ban user");
+                }
+            }
+        }
+    };
+
+    const handleReinstate = async (userId: string) => {
+        if (confirm("Are you sure you want to reinstate this user?")) {
+            try {
+                await reinstateMutation.mutateAsync({ userId });
+            } catch (error) {
+                alert(error instanceof Error ? error.message : "Failed to reinstate user");
+            }
+        }
+    };
+
     // Bulk Actions
     const toggleUserSelection = (userId: string) => {
         setSelectedUsers(prev =>
@@ -66,11 +199,11 @@ export function AdminUsersTable() {
     };
 
     const toggleAllUsers = () => {
-        if (!data?.users) return;
-        if (selectedUsers.length === data.users.length) {
+        if (!filteredUsers) return;
+        if (selectedUsers.length === filteredUsers.length) {
             setSelectedUsers([]);
         } else {
-            setSelectedUsers(data.users.map(u => u.id));
+            setSelectedUsers(filteredUsers.map(u => u.id));
         }
     };
 
@@ -97,6 +230,21 @@ export function AdminUsersTable() {
 
     const isBulkLoading = bulkDeleteMutation.isPending || bulkRoleMutation.isPending;
 
+    // Filter users by status
+    const filteredUsers = data?.users?.filter(user => {
+        const userStatus = (user.status as UserStatus) || "ACTIVE";
+        if (statusFilter === "ALL") return true;
+        return userStatus === statusFilter;
+    });
+
+    const getStatusIcon = (status: UserStatus) => {
+        switch (status) {
+            case "ACTIVE": return <UserCheck className="w-3 h-3" />;
+            case "SUSPENDED": return <Clock className="w-3 h-3" />;
+            case "BANNED": return <Ban className="w-3 h-3" />;
+        }
+    };
+
     return (
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800">
             {/* Search and Toolbar */}
@@ -113,34 +261,48 @@ export function AdminUsersTable() {
                         />
                     </div>
 
-                    {selectedUsers.length > 0 && (
-                        <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-right-5 duration-200">
-                            <button
-                                onClick={() => handleBulkRoleUpdate("ADMIN")}
-                                disabled={isBulkLoading}
-                                className="px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 rounded-lg transition-colors flex items-center gap-2"
-                            >
-                                <Shield className="w-4 h-4" />
-                                Make Admin
-                            </button>
-                            <button
-                                onClick={() => handleBulkRoleUpdate("USER")}
-                                disabled={isBulkLoading}
-                                className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center gap-2"
-                            >
-                                <User className="w-4 h-4" />
-                                Make User
-                            </button>
-                            <button
-                                onClick={handleBulkDelete}
-                                disabled={isBulkLoading}
-                                className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-lg transition-colors flex items-center gap-2"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Delete ({selectedUsers.length})
-                            </button>
-                        </div>
-                    )}
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {/* Status filter */}
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value as UserStatus | "ALL")}
+                            className="px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800"
+                        >
+                            <option value="ALL">All Status</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="SUSPENDED">Suspended</option>
+                            <option value="BANNED">Banned</option>
+                        </select>
+
+                        {selectedUsers.length > 0 && (
+                            <div className="flex flex-wrap gap-2 animate-in fade-in slide-in-from-right-5 duration-200">
+                                <button
+                                    onClick={() => handleBulkRoleUpdate("ADMIN")}
+                                    disabled={isBulkLoading}
+                                    className="px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <Shield className="w-4 h-4" />
+                                    Make Admin
+                                </button>
+                                <button
+                                    onClick={() => handleBulkRoleUpdate("USER")}
+                                    disabled={isBulkLoading}
+                                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:hover:bg-zinc-700 rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <User className="w-4 h-4" />
+                                    Make User
+                                </button>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    disabled={isBulkLoading}
+                                    className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete ({selectedUsers.length})
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -154,7 +316,7 @@ export function AdminUsersTable() {
                                     onClick={toggleAllUsers}
                                     className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 >
-                                    {data?.users && data.users.length > 0 && selectedUsers.length === data.users.length ? (
+                                    {filteredUsers && filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length ? (
                                         <CheckSquare className="w-5 h-5 text-blue-600" />
                                     ) : (
                                         <Square className="w-5 h-5" />
@@ -165,10 +327,10 @@ export function AdminUsersTable() {
                                 User
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Email
+                                Role
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Role
+                                Status
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Stats
@@ -185,79 +347,157 @@ export function AdminUsersTable() {
                                     Loading users...
                                 </td>
                             </tr>
-                        ) : data?.users && data.users.length > 0 ? (
-                            data.users.map((user) => (
-                                <tr key={user.id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${selectedUsers.includes(user.id) ? "bg-blue-50/50 dark:bg-blue-900/10" : ""}`}>
-                                    <td className="px-6 py-4">
-                                        <button
-                                            onClick={() => toggleUserSelection(user.id)}
-                                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                        >
-                                            {selectedUsers.includes(user.id) ? (
-                                                <CheckSquare className="w-5 h-5 text-blue-600" />
-                                            ) : (
-                                                <Square className="w-5 h-5" />
-                                            )}
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center gap-3">
-                                            <ProfileImage
-                                                src={null}
-                                                alt={user.name || "User"}
-                                                width={40}
-                                                height={40}
-                                                className="rounded-full"
-                                            />
-                                            <div>
-                                                <div className="font-medium">{user.name || "Anonymous"}</div>
-                                                <div className="text-sm text-gray-500">ID: {user.id.slice(0, 8)}...</div>
+                        ) : filteredUsers && filteredUsers.length > 0 ? (
+                            filteredUsers.map((user) => {
+                                const userStatus = (user.status as UserStatus) || "ACTIVE";
+                                const userRole = user.role as string;
+                                const shadowBanned = (user as { shadowBanned?: boolean }).shadowBanned || false;
+
+                                return (
+                                    <tr key={user.id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${selectedUsers.includes(user.id) ? "bg-blue-50/50 dark:bg-blue-900/10" : ""}`}>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                onClick={() => toggleUserSelection(user.id)}
+                                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                            >
+                                                {selectedUsers.includes(user.id) ? (
+                                                    <CheckSquare className="w-5 h-5 text-blue-600" />
+                                                ) : (
+                                                    <Square className="w-5 h-5" />
+                                                )}
+                                            </button>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-3">
+                                                <ProfileImage
+                                                    src={null}
+                                                    alt={user.name || "User"}
+                                                    width={40}
+                                                    height={40}
+                                                    className="rounded-full"
+                                                />
+                                                <div>
+                                                    <div className="font-medium flex items-center gap-2">
+                                                        {user.name || "Anonymous"}
+                                                        {shadowBanned && (
+                                                            <span className="text-xs px-1.5 py-0.5 bg-gray-200 dark:bg-zinc-700 rounded" title="Shadow Banned">
+                                                                <EyeOff className="w-3 h-3 inline" />
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">{user.email || "N/A"}</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {user.email || "N/A"}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span
-                                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === "ADMIN"
-                                                ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400"
-                                                : "bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400"
-                                                }`}
-                                        >
-                                            {user.role === "ADMIN" ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                                            {user.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <div className="text-gray-900 dark:text-gray-100">
-                                            {user._count.notes} notes • {user.karma} karma
-                                        </div>
-                                        <div className="text-gray-500 dark:text-gray-400 text-xs">
-                                            {user.totalViews} views • {user._count.votes} votes
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => handleRoleToggle(user.id, user.role)}
-                                                disabled={updateRoleMutation.isPending}
-                                                className="px-3 py-1 text-xs font-medium rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 disabled:opacity-50"
-                                            >
-                                                {user.role === "ADMIN" ? "Demote" : "Promote"}
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteUser(user.id, user.name)}
-                                                disabled={deleteUserMutation.isPending}
-                                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md disabled:opacity-50"
-                                                title="Delete user"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
+                                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${roleColors[userRole] || roleColors.USER}`}
+                                                >
+                                                    {roleIcons[userRole] || roleIcons.USER}
+                                                    {userRole.replace("_", " ")}
+                                                    <ChevronDown className="w-3 h-3" />
+                                                </button>
+
+                                                {expandedUser === user.id && (
+                                                    <div className="absolute z-10 mt-1 w-40 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 animate-in fade-in slide-in-from-top-2">
+                                                        {["USER", "MODERATOR", "ADMIN", "SUPER_ADMIN"].map((role) => (
+                                                            <button
+                                                                key={role}
+                                                                onClick={() => {
+                                                                    handleRoleChange(user.id, role as "SUPER_ADMIN" | "ADMIN" | "MODERATOR" | "USER");
+                                                                    setExpandedUser(null);
+                                                                }}
+                                                                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2 ${userRole === role ? "bg-gray-50 dark:bg-zinc-700" : ""}`}
+                                                            >
+                                                                {roleIcons[role]}
+                                                                {role.replace("_", " ")}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[userStatus]}`}>
+                                                {getStatusIcon(userStatus)}
+                                                {userStatus}
+                                            </span>
+                                            {userStatus === "SUSPENDED" && (user as { suspendedUntil?: Date }).suspendedUntil && (
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    Until {new Date((user as { suspendedUntil?: Date }).suspendedUntil!).toLocaleDateString()}
+                                                </div>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <div className="text-gray-900 dark:text-gray-100">
+                                                {user._count.notes} notes • {user.karma} karma
+                                            </div>
+                                            <div className="text-gray-500 dark:text-gray-400 text-xs">
+                                                {user.totalViews} views • {user._count.votes} votes
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <div className="relative">
+                                                <button
+                                                    onClick={() => setActionMenu(actionMenu === user.id ? null : user.id)}
+                                                    className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg"
+                                                >
+                                                    <MoreVertical className="w-4 h-4" />
+                                                </button>
+
+                                                {actionMenu === user.id && (
+                                                    <div className="absolute right-0 z-10 mt-1 w-48 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 animate-in fade-in slide-in-from-top-2">
+                                                        {userStatus === "ACTIVE" && (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => handleSuspend(user.id)}
+                                                                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2 text-amber-600"
+                                                                >
+                                                                    <Clock className="w-4 h-4" />
+                                                                    Suspend User
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleBan(user.id)}
+                                                                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2 text-red-600"
+                                                                >
+                                                                    <Ban className="w-4 h-4" />
+                                                                    Ban User
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        {(userStatus === "SUSPENDED" || userStatus === "BANNED") && (
+                                                            <button
+                                                                onClick={() => handleReinstate(user.id)}
+                                                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2 text-green-600"
+                                                            >
+                                                                <UserCheck className="w-4 h-4" />
+                                                                Reinstate User
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleShadowBan(user.id, shadowBanned)}
+                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                                                        >
+                                                            <EyeOff className="w-4 h-4" />
+                                                            {shadowBanned ? "Remove Shadow Ban" : "Shadow Ban"}
+                                                        </button>
+                                                        <hr className="my-1 border-gray-200 dark:border-zinc-700" />
+                                                        <button
+                                                            onClick={() => handleDeleteUser(user.id, user.name)}
+                                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2 text-red-600"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                            Delete User
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         ) : (
                             <tr>
                                 <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
