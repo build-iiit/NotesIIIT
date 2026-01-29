@@ -14,6 +14,7 @@ export function ApiKeyDialog({ onClose, onSave }: ApiKeyDialogProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const utils = api.useUtils();
     const updateApiKeyMutation = api.auth.updateGeminiApiKey.useMutation();
 
     const handleSave = async () => {
@@ -26,6 +27,8 @@ export function ApiKeyDialog({ onClose, onSave }: ApiKeyDialogProps) {
             setIsSaving(true);
             setError(null);
             await updateApiKeyMutation.mutateAsync({ apiKey: apiKey.trim() });
+            // Invalidate models query to fetch fresh list with new key
+            utils.ai.getAvailableModels.invalidate();
             onSave?.();
             onClose();
         } catch (err) {

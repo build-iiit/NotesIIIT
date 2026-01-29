@@ -21,6 +21,11 @@ export const metadata: Metadata = {
   title: "NotesIIIT - Share Notes, Ace Exams",
   description: "The ultimate platform for IIIT students to share lecture notes and collaborate",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

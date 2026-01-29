@@ -65,7 +65,7 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
     // Initialize state from fetched data
     useEffect(() => {
         if (note) {
-            setContent((note.content as MarkdownDocument) || EMPTY_DOCUMENT);
+            setContent((note.content as unknown as MarkdownDocument) || EMPTY_DOCUMENT);
             setTitle(note.title);
         }
     }, [note]);
@@ -217,8 +217,8 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isEditing
-                                        ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                                    ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                                    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
                                     }`}
                             >
                                 {isEditing ? (

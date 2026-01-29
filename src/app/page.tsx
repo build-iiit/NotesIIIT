@@ -7,13 +7,11 @@ import { HomeFolderGrid } from "@/components/HomeFolderGrid";
 import { HomeGroupsGrid } from "@/components/HomeGroupsGrid";
 import { TrendingNotes } from "@/components/TrendingNotes";
 import { DashboardDndWrapper } from "@/components/dnd/DashboardDndWrapper";
+import { RandomQuote } from "@/components/RandomQuote";
 
 export default async function Home() {
   const session = await auth();
 
-  // Use a simple deterministic quote for server, client can randomize if needed but for now let's keep it simple to fix the error
-  // Or better, just use the first quote as default and don't randomize to avoid hydration issues completely for now
-  const quoteIndex = 0;
 
   // Fetch user's folders if logged in
   const userFolders = session?.user?.id
@@ -74,18 +72,9 @@ export default async function Home() {
               Welcome, {session.user.name?.split(" ")[0]}!
             </h1>
 
-            <p className="text-lg text-gray-600 dark:text-gray-300 italic max-w-lg">
-              &quot;{[
-                "Notes so good, you might actually pass.",
-                "Study smarter, not... well, just study.",
-                "Your GPA called, it needs these notes.",
-                "Because re-watching the lecture at 2x speed isn't enough.",
-                "Sharing is caring (and improves your karma).",
-                "The night before the exam is a pathway to many abilities some consider to be unnatural.",
-                "Knowledge is power. Notes are the battery.",
-                "Don't panic. Just read the notes."
-              ][quoteIndex]}&quot;
-            </p>
+            <div className="min-h-[2rem] flex justify-center">
+              <RandomQuote />
+            </div>
           </div>
 
           {/* Folder Grid */}
