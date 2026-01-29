@@ -6,7 +6,8 @@ import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
 
 export default function CourseDetailsPage() {
-    const { courseId } = useParams();
+    const params = useParams();
+    const courseId = params?.courseId as string;
 
     // Need to add getById to course router to fetch course details + notes.
     // Assuming getById returns course with notes included.

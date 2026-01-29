@@ -16,7 +16,7 @@ function MyFilesContent() {
     const { themeStyle } = useThemeStyle();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const initialFolderId = searchParams.get("folderId");
+    const initialFolderId = searchParams?.get("folderId") || null;
 
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(initialFolderId);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

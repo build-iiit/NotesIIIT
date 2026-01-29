@@ -16,7 +16,7 @@ export default function RequestDetailsPage() {
     const params = useParams();
     const router = useRouter();
     const { data: session } = useSession();
-    const requestId = params.requestId as string;
+    const requestId = params?.requestId as string;
 
     const { data: request, isLoading, refetch } = api.requests.getById.useQuery(
         { id: requestId },

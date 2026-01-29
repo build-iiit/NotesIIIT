@@ -42,6 +42,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
     ];
 
     const isActive = (path: string) => {
+        if (!pathname) return false;
         if (path === "/") return pathname === path;
         return pathname.startsWith(path);
     };

@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 function UploadContent() {
     const searchParams = useSearchParams();
-    const initialFolderId = searchParams.get("folderId");
+    const initialFolderId = searchParams?.get("folderId") || null;
 
     return (
         <div className="min-h-screen py-12 px-4 relative overflow-hidden pt-24">

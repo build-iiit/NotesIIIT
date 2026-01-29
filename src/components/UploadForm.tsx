@@ -278,7 +278,11 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
             const formData = new FormData();
             formData.append("file", file);
             const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
-            if (!uploadResponse.ok) throw new Error("PDF upload failed");
+            if (!uploadResponse.ok) {
+                const errorText = await uploadResponse.text();
+                console.error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`, errorText);
+                throw new Error(`Upload failed (${uploadResponse.status}): ${errorText || uploadResponse.statusText}`);
+            }
             const { key: pdfS3Key } = await uploadResponse.json();
             setUploadProgress(40);
 

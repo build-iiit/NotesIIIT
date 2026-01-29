@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// import { Geist, Geist_Mono } from "next/font/google"; // Commented out to fix build error
 import "./globals.css";
 import { TRPCReactProvider } from "@/app/_trpc/client";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -7,16 +7,17 @@ import { ThemeStyleProvider } from "@/components/ThemeStyleProvider";
 import { NavbarWrapper } from "@/components/NavbarWrapper";
 import { Toaster } from "sonner";
 import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
+import { GoogleScripts } from "@/components/GoogleScripts";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// const geistSans = Geist({
+//   variable: "--font-geist-sans",
+//   subsets: ["latin"],
+// });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// const geistMono = Geist_Mono({
+//   variable: "--font-geist-mono",
+//   subsets: ["latin"],
+// });
 
 export const metadata: Metadata = {
   title: "NotesIIIT - Share Notes, Ace Exams",
@@ -46,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative overflow-x-hidden`}
+        className={`antialiased min-h-screen relative overflow-x-hidden`}
         suppressHydrationWarning
       >
         {/* Liquid Glass Background */}
@@ -72,6 +73,9 @@ export default function RootLayout({
             </SessionProviderWrapper>
           </ThemeStyleProvider>
         </ThemeProvider>
+
+        {/* Google API Scripts */}
+        <GoogleScripts />
       </body>
     </html>
   );

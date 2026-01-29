@@ -50,6 +50,11 @@ const nextConfig: NextConfig = {
     ],
   },
   serverExternalPackages: ["canvas", "pdfjs-dist"],
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["localhost:3000", "4wmbxmp7-3000.inc1.devtunnels.ms"]
+    }
+  }
 };
 
 export default nextConfig;
