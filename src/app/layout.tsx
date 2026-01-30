@@ -8,6 +8,7 @@ import { NavbarWrapper } from "@/components/NavbarWrapper";
 import { Toaster } from "sonner";
 import { SessionProviderWrapper } from "@/components/SessionProviderWrapper";
 import { GoogleScripts } from "@/components/GoogleScripts";
+import { Footer } from "@/components/Footer";
 
 // const geistSans = Geist({
 //   variable: "--font-geist-sans",
@@ -75,6 +76,7 @@ export default function RootLayout({
         </ThemeProvider>
 
         {/* Google API Scripts */}
+        <Footer />
         <GoogleScripts />
       </body>
     </html>
