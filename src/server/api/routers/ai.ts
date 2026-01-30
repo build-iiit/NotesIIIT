@@ -30,7 +30,9 @@ export const aiRouter = createTRPCRouter({
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${user.geminiApiKey}`);
 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch models");
+                    const errorText = await response.text();
+                    console.error("[AI Router] Gemini API Error:", { status: response.status, statusText: response.statusText, body: errorText });
+                    throw new Error(`Failed to fetch models: ${response.status} ${response.statusText} - ${errorText}`);
                 }
 
                 const data = await response.json();
@@ -68,12 +70,32 @@ export const aiRouter = createTRPCRouter({
 
             } catch (error) {
                 console.error("Error fetching models:", error);
-                // Fallback to defaults
-                return [
-                    { id: "gemini-2.0-flash", displayName: "Gemini 2.0 Flash (Default)" },
-                    { id: "gemini-1.5-pro", displayName: "Gemini 1.5 Pro" },
-                    { id: "gemini-1.5-flash", displayName: "Gemini 1.5 Flash" }
-                ];
+
+                const errMessage = error instanceof Error ? error.message : String(error);
+
+                if (errMessage.includes("429") || errMessage.includes("RESOURCE_EXHAUSTED")) {
+                    throw new TRPCError({
+                        code: "TOO_MANY_REQUESTS",
+                        message: "Gemini API rate limit reached. Please wait a moment.",
+                        cause: error
+                    });
+                }
+
+                if (errMessage.includes("400") || errMessage.includes("INVALID_ARGUMENT") || errMessage.includes("API_KEY_INVALID")) {
+                    throw new TRPCError({
+                        code: "PRECONDITION_FAILED",
+                        message: "Invalid API Key. Please check your settings.",
+                        cause: error
+                    });
+                }
+
+                // If the key is invalid or request failed, do NOT return a misleading fallback list.
+                // Throw an error so the UI knows something is wrong.
+                throw new TRPCError({
+                    code: "PRECONDITION_FAILED",
+                    message: "Failed to fetch models: " + errMessage,
+                    cause: error
+                });
             }
         }),
 
@@ -137,9 +159,14 @@ export const aiRouter = createTRPCRouter({
                 throw new TRPCError({ code: "UNAUTHORIZED", message: "You do not have access to this document" });
             }
 
-            // Use selected model, default to 2.0-flash
-            const modelName = input.model || "gemini-2.0-flash";
-            const model = genAI.getGenerativeModel({ model: modelName });
+            try {
+                // Use selected model, default to 2.5-flash
+                const modelName = input.model || "gemini-2.5-flash";
+
+                console.log(`[AI Debug] Using model: ${modelName}`);
+                console.log(`[AI Debug] Using API Key: ${user.geminiApiKey?.substring(0, 8)}... (Length: ${user.geminiApiKey?.length})`);
+
+                const model = genAI.getGenerativeModel({ model: modelName });
 
             const prompt = `You are an intelligent assistant helping a student understand a document.
 You are looking at page ${input.pageNumber} of a PDF document.

@@ -6,7 +6,7 @@ import { ThemeToggle } from "./theme-toggle";
 import {
     BookOpen, Menu, X, Upload, Trophy,
     User, LogOut, Home, Shield, Search,
-    Bookmark, Folder, Users, Hand
+    Bookmark, Folder, Users, Hand, PenSquare
 } from "lucide-react";
 import { useState } from "react";
 import { ProfileImage } from "./ProfileImage";
@@ -31,7 +31,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
 
     const navLinks = [
         { href: "/", label: "Home", icon: Home },
-        { href: "/markdown/new", label: "Note", icon: Upload, authRequired: true },
+        { href: "/markdown/new", label: "Note", icon: PenSquare, authRequired: true },
         // { href: "/search", label: "Search", icon: Search },
         { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
         { href: "/my-files", label: "Folders", icon: Folder, authRequired: true },

@@ -2,7 +2,7 @@
 
 import { api } from "@/app/_trpc/client";
 import { useState, useEffect } from "react";
-import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles } from "lucide-react";
+import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles, Settings } from "lucide-react";
 import { ApiKeyDialog } from "./ApiKeyDialog";
 
 interface InteractionsPanelProps {
@@ -21,7 +21,7 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
     const utils = api.useUtils();
 
     // Fetch available models
-    const { data: availableModels } = api.ai.getAvailableModels.useQuery(undefined, {
+    const { data: availableModels, error: modelsError } = api.ai.getAvailableModels.useQuery(undefined, {
         staleTime: 1000 * 60 * 60, // Cache for 1 hour
         retry: false
     });
@@ -254,6 +254,7 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
                         // AI Tab
                         <div className="flex flex-col h-full">
                             {/* Page context info & Model Selector */}
+                            {/* Page context info & Model Selector */}
                             <div className="p-4 border-b border-white/20 dark:border-white/10 bg-white/5 dark:bg-black/10 space-y-3">
                                 <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/20">
                                     <Sparkles className="w-4 h-4 text-blue-500" />
@@ -265,22 +266,33 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
                                 {/* Model Selector */}
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-gray-500 dark:text-gray-400">Model:</span>
-                                    <select
-                                        value={selectedModel}
-                                        onChange={(e) => setSelectedModel(e.target.value)}
-                                        className="flex-1 text-xs px-2 py-1.5 rounded-lg bg-white/40 dark:bg-black/40 border border-white/30 dark:border-white/10 text-gray-800 dark:text-gray-200 outline-none focus:ring-1 focus:ring-blue-500/50"
-                                        disabled={!availableModels}
-                                    >
-                                        {availableModels ? (
-                                            availableModels.map((model: { id: string; displayName: string }) => (
-                                                <option key={model.id} value={model.id}>
-                                                    {model.displayName}
-                                                </option>
-                                            ))
-                                        ) : (
-                                            <option value="gemini-2.0-flash">Loading models...</option>
-                                        )}
-                                    </select>
+                                    <div className="flex-1 flex gap-2">
+                                        <select
+                                            value={selectedModel}
+                                            onChange={(e) => setSelectedModel(e.target.value)}
+                                            className="flex-1 text-xs px-2 py-1.5 rounded-lg bg-white/40 dark:bg-black/40 border border-white/30 dark:border-white/10 text-gray-800 dark:text-gray-200 outline-none focus:ring-1 focus:ring-blue-500/50"
+                                            disabled={!availableModels && !modelsError}
+                                        >
+                                            {availableModels && availableModels.length > 0 ? (
+                                                availableModels.map((model: { id: string; displayName: string }) => (
+                                                    <option key={model.id} value={model.id}>
+                                                        {model.displayName}
+                                                    </option>
+                                                ))
+                                            ) : modelsError ? (
+                                                <option value="">Issue with API Key</option>
+                                            ) : (
+                                                <option value="gemini-2.0-flash">Loading models...</option>
+                                            )}
+                                        </select>
+                                        <button
+                                            onClick={() => setShowApiKeyDialog(true)}
+                                            className="p-1.5 rounded-lg bg-white/40 dark:bg-black/40 border border-white/30 dark:border-white/10 text-gray-500 hover:text-orange-500 transition-colors"
+                                            title="Update API Key"
+                                        >
+                                            <Settings className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -299,6 +311,17 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
                                             <div className="space-y-2 max-w-[95%]">
                                                 <div className="bg-white/40 dark:bg-white/5 border border-white/20 px-4 py-3 rounded-2xl rounded-tl-sm backdrop-blur-md text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
                                                     {aiAnswer}
+                                                    {aiAnswer.includes("Rate limit reached") && (
+                                                        <div className="mt-3">
+                                                            <button
+                                                                onClick={() => setShowApiKeyDialog(true)}
+                                                                className="text-xs px-3 py-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 font-medium hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors flex items-center gap-1.5"
+                                                            >
+                                                                <Settings className="w-3 h-3" />
+                                                                Update API Key
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>

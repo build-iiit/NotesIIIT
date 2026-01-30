@@ -222,9 +222,14 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
     );
 }
 
+import { ApiKeyDialog } from "@/components/ApiKeyDialog";
+
+// ...
+
 // Settings Section Component
 function SettingsSection() {
     const [showConfirm, setShowConfirm] = useState(false);
+    const [isEditKeyOpen, setIsEditKeyOpen] = useState(false);
     const { data: apiKeyStatus, refetch: refetchApiKeyStatus } = api.auth.hasGeminiApiKey.useQuery();
 
     const revokeKeyMutation = api.auth.revokeGeminiApiKey.useMutation({
@@ -263,6 +268,14 @@ function SettingsSection() {
 
                     {apiKeyStatus?.hasKey && (
                         <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setIsEditKeyOpen(true)}
+                                className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-colors"
+                            >
+                                <Edit className="w-4 h-4 inline mr-2" />
+                                Change Key
+                            </button>
+
                             {!showConfirm ? (
                                 <button
                                     onClick={() => setShowConfirm(true)}
@@ -290,6 +303,16 @@ function SettingsSection() {
                                 </div>
                             )}
                         </div>
+                    )}
+
+                    {!apiKeyStatus?.hasKey && (
+                        <button
+                            onClick={() => setIsEditKeyOpen(true)}
+                            className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                        >
+                            <Key className="w-4 h-4" />
+                            Add API Key
+                        </button>
                     )}
                 </div>
             </div>
@@ -326,6 +349,15 @@ function SettingsSection() {
                     </div>
                 </div>
             </div>
+
+            {isEditKeyOpen && (
+                <ApiKeyDialog
+                    onClose={() => setIsEditKeyOpen(false)}
+                    onSave={() => {
+                        refetchApiKeyStatus();
+                    }}
+                />
+            )}
         </div>
     );
 }
