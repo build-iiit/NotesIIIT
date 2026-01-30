@@ -29,15 +29,32 @@ export const getPresignedDownloadUrl = async (key: string) => {
     // Remove leading slash if present to avoid double slash in S3 paths
     const cleanKey = key.startsWith('/') ? key.slice(1) : key;
 
-    // Check if this is a local file (stored in public/uploads/)
-    // If so, return the local URL instead of generating a MinIO presigned URL
-    if (cleanKey.startsWith('uploads/')) {
-        return `/api/${cleanKey}`;
-    }
-
     // Use the proxy route for all S3 downloads to avoid connectivity issues
     // with local MinIO when accessing via tunnels or different networks.
+    // This includes 'uploads/' which are now stored in MinIO.
     return `/api/files/${cleanKey}`;
+};
+
+
+export const uploadFileToS3 = async (buffer: Buffer, key: string, contentType: string) => {
+    // Remove leading slash if present
+    const cleanKey = key.startsWith('/') ? key.slice(1) : key;
+
+    const command = new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME || "notes-bucket",
+        Key: cleanKey,
+        Body: buffer,
+        ContentType: contentType,
+    });
+
+    try {
+        await s3Client.send(command);
+        console.log(`Successfully uploaded to S3: ${cleanKey}`);
+        return cleanKey;
+    } catch (error) {
+        console.error("S3 Upload Error:", error);
+        throw error;
+    }
 };
 
 export { s3Client };

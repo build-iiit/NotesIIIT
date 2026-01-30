@@ -3,6 +3,7 @@ import { writeFile, mkdir, appendFile, rename, unlink, readFile } from "fs/promi
 import path from "path";
 import { IncomingForm, File as FormidableFile, Fields, Files } from "formidable";
 import { existsSync } from "fs";
+import { uploadFileToS3 } from "@/lib/s3";
 
 // Disable default body parser to handle file uploads
 export const config = {
@@ -71,29 +72,31 @@ export default async function handler(
                 return res.status(400).json({ success: false, error: "No file uploaded" });
             }
 
-            const oldPath = uploadedFile.filepath;
             const originalFilename = uploadedFile.originalFilename || "unknown.pdf";
             const timestamp = Date.now();
             const sanitizedFilename = originalFilename.replace(/[^a-zA-Z0-9.-]/g, "_");
             const newFilename = `${timestamp}-${sanitizedFilename}`;
-            const finalDir = path.join(process.cwd(), "public", "uploads");
-            if (!existsSync(finalDir)) {
-                await mkdir(finalDir, { recursive: true });
-            }
-            const newPath = path.join(finalDir, newFilename);
 
-            // Move file
-            // Use rename if possible, otherwise read/write for cross-device
-            try {
-                await rename(oldPath, newPath);
-            } catch (error) {
-                await writeFile(newPath, await readFile(oldPath));
-                await unlink(oldPath);
-            }
+            // Determine folder (thumbnails or uploads) based on extension or context
+            // Ideally should be passed in fields, but for now we can guess or default to 'uploads'
+            // Thumbnails usually come from metadata dialog which might not hit this specific route 
+            // the same way, but let's support general upload.
+            const isImage = uploadedFile.mimetype?.startsWith("image/") || originalFilename.match(/\.(jpg|jpeg|png|webp)$/i);
+            const folder = isImage ? "thumbnails" : "uploads";
+            const key = `${folder}/${newFilename}`;
+
+            // Read file buffer
+            const fileBuffer = await readFile(uploadedFile.filepath);
+
+            // Upload to S3
+            await uploadFileToS3(fileBuffer, key, uploadedFile.mimetype || "application/octet-stream");
+
+            // Clean up temp file
+            await unlink(uploadedFile.filepath);
 
             return res.status(200).json({
                 success: true,
-                key: `/uploads/${newFilename}`
+                key: key // Return the S3 key (e.g. "uploads/xyz.pdf")
             });
         }
 
@@ -114,12 +117,6 @@ export default async function handler(
         // Read the chunk data
         const chunkData = await readFile(uploadedChunk.filepath);
 
-        // If chunkIndex is 0, we start fresh. If file exists, we overwrite it.
-        // If chunkIndex > 0, we append.
-
-        // Note: For robustness, we could check if file exists for index > 0.
-        // But assuming sequential uploads for now.
-
         if (chunkIndex === 0) {
             await writeFile(tempFilePath, chunkData);
         } else {
@@ -133,24 +130,28 @@ export default async function handler(
 
         // If last chunk, finalize
         if (chunkIndex === totalChunks - 1) {
-            const finalDir = path.join(process.cwd(), "public", "uploads");
-            if (!existsSync(finalDir)) {
-                await mkdir(finalDir, { recursive: true });
-            }
 
             const originalFn = fileName || "unknown.pdf";
             const timestamp = Date.now();
             const sanitizedFn = originalFn.replace(/[^a-zA-Z0-9.-]/g, "_");
             const finalFilename = `${timestamp}-${uploadId}-${sanitizedFn}`;
-            const finalPath = path.join(finalDir, finalFilename);
+            const key = `uploads/${finalFilename}`;
 
-            await rename(tempFilePath, finalPath);
+            // Read the fully merged file
+            const finalFileBuffer = await readFile(tempFilePath);
 
-            console.log(`Finalized chunked upload: ${finalPath}`);
+            // Upload to S3
+            // Assert PDF for now as this is primary use case for chunked upload
+            await uploadFileToS3(finalFileBuffer, key, "application/pdf");
+
+            // Clean up local merged file
+            await unlink(tempFilePath);
+
+            console.log(`Finalized chunked upload to S3: ${key}`);
 
             return res.status(200).json({
                 success: true,
-                key: `/uploads/${finalFilename}`,
+                key: key,
                 completed: true
             });
         }
