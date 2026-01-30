@@ -19,9 +19,10 @@ interface PdfViewerProps {
     versionId?: string;
     onMaximize?: () => void;
     onCanvasReady?: (getImageData: () => string | null) => void;
+    enableShortcuts?: boolean;
 }
 
-export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDoubleClick, onMaximize, onCanvasReady }: PdfViewerProps) {
+export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDoubleClick, onMaximize, onCanvasReady, enableShortcuts = true }: PdfViewerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
@@ -251,6 +252,8 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
     }, [noteId, pageNum, toggleBookmarkMutation]);
 
     useEffect(() => {
+        if (!enableShortcuts) return; // Skip if disabled
+
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
             switch (e.key.toLowerCase()) {
@@ -261,7 +264,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [changePage, handleToggleBookmark]);
+    }, [changePage, handleToggleBookmark, enableShortcuts]);
 
     if (error) return <div className="text-red-500 font-bold p-4 bg-red-100 rounded-lg">{error}</div>;
 

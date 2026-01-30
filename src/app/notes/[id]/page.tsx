@@ -18,14 +18,27 @@ const FullPageNoteViewer = dynamic(() => import("@/components/FullPageNoteViewer
     ssr: false
 });
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function NotePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
     const router = useRouter();
     const [note] = api.notes.getById.useSuspenseQuery({ id });
     const { data: currentUser } = api.auth.getMe.useQuery();
-    const [pageNum, setPageNum] = useState(1);
+
+    const searchParams = useSearchParams();
+    const pageParam = searchParams?.get("page");
+    const initialPage = pageParam ? parseInt(pageParam) : 1;
+    const [pageNum, setPageNum] = useState(initialPage);
+
+    // Update page number when URL param changes
+    useEffect(() => {
+        const pageParam = searchParams?.get("page");
+        if (pageParam) {
+            setPageNum(parseInt(pageParam));
+        }
+    }, [searchParams]);
+
     const [isFullPageOpen, setIsFullPageOpen] = useState(false);
     const trackViewMutation = api.notes.trackView.useMutation();
     const [getPageImage, setGetPageImage] = useState<(() => string | null) | undefined>();
@@ -119,6 +132,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                                     noteId={note?.id}
                                     versionId={currentVersion?.id}
                                     onCanvasReady={handleCanvasReady}
+                                    enableShortcuts={!isFullPageOpen}
                                 />
                             ) : (
                                 <div className="p-8 border text-center text-red-500">
@@ -146,7 +160,10 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                     url={s3Url}
                     initialPage={pageNum}
                     isOpen={isFullPageOpen}
-                    onClose={() => setIsFullPageOpen(false)}
+                    onClose={(page?: number) => {
+                        setIsFullPageOpen(false);
+                        if (page) setPageNum(page);
+                    }}
                     noteTitle={note?.title || ""}
                     versionId={note?.currentVersionId || ""}
                 />

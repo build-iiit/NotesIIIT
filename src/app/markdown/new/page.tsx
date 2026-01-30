@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { Save, ArrowLeft, Loader2 } from "lucide-react";
 import type { MarkdownDocument } from "@/types/markdownSchema";
 import { EMPTY_DOCUMENT } from "@/types/markdownSchema";
+import { NoteMetadataDialog, type NoteMetadata } from "@/components/markdown/NoteMetadataDialog";
 
 // Dynamic import to avoid SSR issues with TipTap
 const NotionEditor = dynamic(
@@ -30,6 +31,9 @@ export default function NewMarkdownNotePage() {
     const [isDirty, setIsDirty] = useState(false);
     const [noteId, setNoteId] = useState<string | null>(null);
     const titleInputRef = useRef<HTMLInputElement>(null);
+
+    // Metadata Dialog State
+    const [isMetadataDialogOpen, setIsMetadataDialogOpen] = useState(false);
 
     // Create mutation
     const createMutation = api.markdownNotes.create.useMutation({
@@ -96,53 +100,80 @@ export default function NewMarkdownNotePage() {
         };
     }, []);
 
-    // Save handler
-    const handleSave = useCallback(async () => {
+    // Initial Save Trigger (opens dialog for new notes)
+    const handleSaveClick = useCallback(() => {
         if (!title.trim()) {
             titleInputRef.current?.focus();
             return;
         }
 
-        setIsSaving(true);
+        if (noteId) {
+            // If note already exists, just save content directly
+            handleSaveExisting();
+        } else {
+            // New note -> Open dialog
+            setIsMetadataDialogOpen(true);
+        }
+    }, [title, noteId]);
 
+    // Save Existing Note
+    const handleSaveExisting = async () => {
+        if (!noteId) return;
+        setIsSaving(true);
         try {
-            if (noteId) {
-                // Update existing note
-                await updateContentMutation.mutateAsync({
-                    id: noteId,
-                    content,
-                    createNewVersion: true,
-                });
-            } else {
-                // Create new note
-                const newNote = await createMutation.mutateAsync({
-                    title: title.trim(),
-                    content,
-                });
-                setNoteId(newNote.id);
-                // Navigate to the created note
-                router.push(`/markdown/${newNote.id}`);
-            }
+            await updateContentMutation.mutateAsync({
+                id: noteId,
+                content,
+                createNewVersion: true, // Explicit save creates new version
+            });
             setIsDirty(false);
         } catch (error) {
             console.error("Failed to save:", error);
         } finally {
             setIsSaving(false);
         }
-    }, [title, content, noteId, createMutation, updateContentMutation, router]);
+    };
+
+    // Handle Metadata Save (Create Note)
+    const handleMetadataSave = async (metadata: NoteMetadata) => {
+        setIsSaving(true);
+        try {
+            // Create new note
+            const newNote = await createMutation.mutateAsync({
+                title: metadata.title,
+                description: metadata.description,
+                courseId: metadata.courseId,
+                semester: metadata.semester,
+                visibility: metadata.visibility,
+                groupIds: metadata.groupIds,
+                content,
+            });
+            setNoteId(newNote.id);
+            setIsMetadataDialogOpen(false);
+            // Navigate to the created note
+            router.push(`/markdown/${newNote.id}`);
+            setIsDirty(false);
+        } catch (error) {
+            console.error("Failed to create note:", error);
+            // Keep dialog open on error so user can retry? 
+            // Or maybe close and show toast? For now, we'll just log and stop spinning.
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // Keyboard shortcut for save
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === "s") {
                 e.preventDefault();
-                handleSave();
+                handleSaveClick();
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [handleSave]);
+    }, [handleSaveClick]);
 
     return (
         <div className="min-h-screen bg-background">
@@ -167,7 +198,7 @@ export default function NewMarkdownNotePage() {
                             <span className="text-sm text-primary font-medium">Unsaved changes</span>
                         )}
                         <button
-                            onClick={handleSave}
+                            onClick={handleSaveClick}
                             disabled={isSaving || !title.trim()}
                             className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
                         >
@@ -205,6 +236,18 @@ export default function NewMarkdownNotePage() {
                     placeholder="Start writing, or press '/' for commands..."
                 />
             </div>
+
+            {/* Metadata Dialog */}
+            <NoteMetadataDialog
+                isOpen={isMetadataDialogOpen}
+                onClose={() => {
+                    setIsMetadataDialogOpen(false);
+                    // If user cancels, we just close dialog. Title is still in main input.
+                }}
+                onSave={handleMetadataSave}
+                initialTitle={title}
+                isSaving={isSaving}
+            />
         </div>
     );
 }

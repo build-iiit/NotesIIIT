@@ -1,8 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, appendFile, rename, unlink, readFile } from "fs/promises";
 import path from "path";
 import { IncomingForm, File as FormidableFile, Fields, Files } from "formidable";
-import { auth } from "@/auth";
+import { existsSync } from "fs";
 
 // Disable default body parser to handle file uploads
 export const config = {
@@ -15,9 +15,11 @@ const parseForm = async (
     req: NextApiRequest
 ): Promise<{ fields: Fields; files: Files }> => {
     return new Promise(async (resolve, reject) => {
-        const uploadDir = path.join(process.cwd(), "public", "uploads");
+        const uploadDir = path.join(process.cwd(), "public", "uploads", "temp");
         try {
-            await mkdir(uploadDir, { recursive: true });
+            if (!existsSync(uploadDir)) {
+                await mkdir(uploadDir, { recursive: true });
+            }
         } catch (e) {
             console.error("Error creating directory", e);
         }
@@ -26,7 +28,7 @@ const parseForm = async (
             multiples: true,
             keepExtensions: true,
             uploadDir,
-            maxFileSize: 50 * 1024 * 1024, // 50MB
+            maxFileSize: 50 * 1024 * 1024, // 50MB per chunk limit
         });
 
         form.parse(req, (err, fields, files) => {
@@ -44,74 +46,119 @@ export default async function handler(
         return res.status(405).json({ success: false, error: "Method not allowed" });
     }
 
-    // Session check - for pages router we might need standard next-auth getSession or similar
-    // But importing 'auth' from '@/auth' works in server contexts usually.
-    // Actually, for Pages Router 'auth()' helper returns session? No, usually req involved.
-    // We can try to assume it's publicly protected or check header if possible.
-    // WORKAROUND: For now, let's keep it open or try to use `auth` if compatible.
-    // The original route had: const session = await auth();
-
-    // Note: auth() from v5 relies on headers. It might work.
-    // If not, we skip auth for this specific upload or use `unstable_getServerSession` equivalent.
-
     try {
-        const { files } = await parseForm(req);
+        const { fields, files } = await parseForm(req);
 
-        // Check if file exists
-        // formidable 'files.file' might be an array or single object
-        const uploadedFileVal = files.file;
-        const uploadedFile = Array.isArray(uploadedFileVal) ? uploadedFileVal[0] : uploadedFileVal;
+        // helper to get single value
+        const getValue = (val: string[] | string | undefined) => {
+            if (Array.isArray(val)) return val[0];
+            return val;
+        };
 
-        if (!uploadedFile) {
-            return res.status(400).json({ success: false, error: "No file uploaded" });
-        }
+        const chunkIndexStr = getValue(fields.chunkIndex);
+        const totalChunksStr = getValue(fields.totalChunks);
+        const uploadId = getValue(fields.uploadId);
+        const fileName = getValue(fields.fileName);
 
-        // Since Formidable automatically saves files to uploadDir, we just need to rename/return key
-        const oldPath = uploadedFile.filepath;
-        const originalFilename = uploadedFile.originalFilename || "unknown.pdf";
-        const timestamp = Date.now();
-        const sanitizedFilename = originalFilename.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const newFilename = `${timestamp}-${sanitizedFilename}`;
-        const newPath = path.join(process.cwd(), "public", "uploads", newFilename);
-        const relativeKey = `/uploads/${newFilename}`;
+        // Handle standard single-file upload (backward compatibility / thumbnail upload)
+        if (!chunkIndexStr || !totalChunksStr || !uploadId) {
 
-        // Rename file to our naming convention
-        await writeFile(newPath, await (await import("fs/promises")).readFile(oldPath));
-        // clean up formidable temp file if needed (though we set uploadDir to target, renaming is better)
-        // Actually formidable saves with random name.
+            // Checks if it's a thumbnail or standard file
+            const uploadedFileVal = files.file;
+            const uploadedFile = Array.isArray(uploadedFileVal) ? uploadedFileVal[0] : uploadedFileVal;
 
-        // Delete temp file
-        try {
-            await (await import("fs/promises")).unlink(oldPath);
-        } catch (e) {
-            // ignore
-        }
+            if (!uploadedFile) {
+                return res.status(400).json({ success: false, error: "No file uploaded" });
+            }
 
-        // Handle thumbnail
-        let thumbnailKey = null;
-        const thumbFileVal = files.thumbnail;
-        const thumbFile = Array.isArray(thumbFileVal) ? thumbFileVal[0] : thumbFileVal;
+            const oldPath = uploadedFile.filepath;
+            const originalFilename = uploadedFile.originalFilename || "unknown.pdf";
+            const timestamp = Date.now();
+            const sanitizedFilename = originalFilename.replace(/[^a-zA-Z0-9.-]/g, "_");
+            const newFilename = `${timestamp}-${sanitizedFilename}`;
+            const finalDir = path.join(process.cwd(), "public", "uploads");
+            if (!existsSync(finalDir)) {
+                await mkdir(finalDir, { recursive: true });
+            }
+            const newPath = path.join(finalDir, newFilename);
 
-        if (thumbFile) {
-            const tOriginal = thumbFile.originalFilename || "thumb.jpg";
-            const tSanitized = tOriginal.replace(/[^a-zA-Z0-9.-]/g, "_");
-            const tFilename = `${timestamp}-${tSanitized}`;
-            const tPath = path.join(process.cwd(), "public", "uploads", tFilename);
-
-            await writeFile(tPath, await (await import("fs/promises")).readFile(thumbFile.filepath));
-            thumbnailKey = `/uploads/${tFilename}`;
-
+            // Move file
+            // Use rename if possible, otherwise read/write for cross-device
             try {
-                await (await import("fs/promises")).unlink(thumbFile.filepath);
-            } catch { }
+                await rename(oldPath, newPath);
+            } catch (error) {
+                await writeFile(newPath, await readFile(oldPath));
+                await unlink(oldPath);
+            }
+
+            return res.status(200).json({
+                success: true,
+                key: `/uploads/${newFilename}`
+            });
         }
 
-        console.log(`Saved file to ${newPath}`);
+        // --- Chunked Upload Logic ---
+        const chunkIndex = parseInt(chunkIndexStr);
+        const totalChunks = parseInt(totalChunksStr);
+
+        const uploadedFileVal = files.file;
+        const uploadedChunk = Array.isArray(uploadedFileVal) ? uploadedFileVal[0] : uploadedFileVal;
+
+        if (!uploadedChunk) {
+            return res.status(400).json({ success: false, error: "No chunk uploaded" });
+        }
+
+        const tempDir = path.join(process.cwd(), "public", "uploads", "temp");
+        const tempFilePath = path.join(tempDir, `${uploadId}.part`);
+
+        // Read the chunk data
+        const chunkData = await readFile(uploadedChunk.filepath);
+
+        // If chunkIndex is 0, we start fresh. If file exists, we overwrite it.
+        // If chunkIndex > 0, we append.
+
+        // Note: For robustness, we could check if file exists for index > 0.
+        // But assuming sequential uploads for now.
+
+        if (chunkIndex === 0) {
+            await writeFile(tempFilePath, chunkData);
+        } else {
+            await appendFile(tempFilePath, chunkData);
+        }
+
+        // Clean up the formidable chunk file
+        try {
+            await unlink(uploadedChunk.filepath);
+        } catch (e) { }
+
+        // If last chunk, finalize
+        if (chunkIndex === totalChunks - 1) {
+            const finalDir = path.join(process.cwd(), "public", "uploads");
+            if (!existsSync(finalDir)) {
+                await mkdir(finalDir, { recursive: true });
+            }
+
+            const originalFn = fileName || "unknown.pdf";
+            const timestamp = Date.now();
+            const sanitizedFn = originalFn.replace(/[^a-zA-Z0-9.-]/g, "_");
+            const finalFilename = `${timestamp}-${uploadId}-${sanitizedFn}`;
+            const finalPath = path.join(finalDir, finalFilename);
+
+            await rename(tempFilePath, finalPath);
+
+            console.log(`Finalized chunked upload: ${finalPath}`);
+
+            return res.status(200).json({
+                success: true,
+                key: `/uploads/${finalFilename}`,
+                completed: true
+            });
+        }
 
         return res.status(200).json({
             success: true,
-            key: relativeKey,
-            thumbnailKey
+            chunkIndex,
+            message: "Chunk received"
         });
 
     } catch (error) {

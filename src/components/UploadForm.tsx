@@ -271,25 +271,71 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
         try {
             setUploading(true);
             setUploadStep("uploading");
-            setUploadProgress(10);
+            setUploadProgress(0);
             let thumbnailKey: string | undefined;
+            let pdfS3Key: string | undefined;
 
-            // 1. Upload PDF
-            const formData = new FormData();
-            formData.append("file", file);
-            const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
-            if (!uploadResponse.ok) {
-                const errorText = await uploadResponse.text();
-                console.error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`, errorText);
-                throw new Error(`Upload failed (${uploadResponse.status}): ${errorText || uploadResponse.statusText}`);
+            // 1. Upload PDF (Chunked)
+            const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
+            const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+            const uploadId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+
+            if (totalChunks === 1) {
+                // Single chunk - can send as normal or via new logic. 
+                // Let's use the new logic for consistency but it's just 1 call.
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("chunkIndex", "0");
+                formData.append("totalChunks", "1");
+                formData.append("uploadId", uploadId);
+                formData.append("fileName", file.name);
+
+                const res = await fetch("/api/upload", { method: "POST", body: formData });
+                if (!res.ok) throw new Error("Upload failed");
+                const data = await res.json();
+                pdfS3Key = data.key;
+                setUploadProgress(40);
+            } else {
+                // Multi-chunk upload
+                for (let i = 0; i < totalChunks; i++) {
+                    const start = i * CHUNK_SIZE;
+                    const end = Math.min(start + CHUNK_SIZE, file.size);
+                    const chunk = file.slice(start, end);
+
+                    const formData = new FormData();
+                    formData.append("file", chunk);
+                    formData.append("chunkIndex", i.toString());
+                    formData.append("totalChunks", totalChunks.toString());
+                    formData.append("uploadId", uploadId);
+                    formData.append("fileName", file.name);
+
+                    // Retry logic could be added here
+                    const res = await fetch("/api/upload", { method: "POST", body: formData });
+
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        throw new Error(`Chunk ${i + 1}/${totalChunks} failed: ${errText}`);
+                    }
+
+                    const data = await res.json();
+
+                    if (i === totalChunks - 1) {
+                        pdfS3Key = data.key;
+                    }
+
+                    // Update progress (scale 0-40% for upload phase)
+                    const percentComplete = Math.round(((i + 1) / totalChunks) * 40);
+                    setUploadProgress(percentComplete);
+                }
             }
-            const { key: pdfS3Key } = await uploadResponse.json();
-            setUploadProgress(40);
 
-            // 2. Upload Thumbnail
+            if (!pdfS3Key) throw new Error("Failed to retrieve final file key");
+
+            // 2. Upload Thumbnail (Standard single upload)
             if (thumbnailFile) {
                 const thumbFormData = new FormData();
                 thumbFormData.append("file", thumbnailFile);
+                // No chunk args -> treated as standard/legacy upload
                 const thumbResponse = await fetch("/api/upload", { method: "POST", body: thumbFormData });
                 if (thumbResponse.ok) {
                     const { key } = await thumbResponse.json();

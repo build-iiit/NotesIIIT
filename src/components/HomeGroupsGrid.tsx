@@ -67,7 +67,7 @@ export function HomeGroupsGrid() {
                                         className="relative inline-block w-6 h-6 rounded-full ring-2 ring-white dark:ring-zinc-900 overflow-hidden"
                                     >
                                         <ProfileImage
-                                            src={null}
+                                            src={member.user.image}
                                             alt={member.user.name || "Member"}
                                             width={25}
                                             height={25}
