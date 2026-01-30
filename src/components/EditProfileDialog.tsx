@@ -22,11 +22,14 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
     const [name, setName] = useState(user.name || "");
     const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
     const [backgroundPreview, setBackgroundPreview] = useState<string | null>(user.backgroundImage);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(user.image);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Refs for file inputs
     const backgroundInputRef = useRef<HTMLInputElement>(null);
+    const avatarInputRef = useRef<HTMLInputElement>(null);
 
     const getUploadUrlMutation = api.auth.getProfileUploadUrl.useMutation();
     const updateProfileMutation = api.auth.updateProfile.useMutation();
@@ -53,11 +56,34 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
         }
     };
 
+    const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files?.[0]) {
+            const file = e.target.files[0];
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError('Please select a valid image file');
+                return;
+            }
+
+            // Validate file size (5MB max for avatars)
+            if (file.size > 5 * 1024 * 1024) {
+                setError('Profile image must be less than 5MB');
+                return;
+            }
+
+            setError(null);
+            setAvatarFile(file);
+            setAvatarPreview(URL.createObjectURL(file));
+        }
+    };
+
     const handleSave = async () => {
         try {
             setIsSaving(true);
             setError(null);
             let newBackgroundKey = undefined;
+            let newAvatarKey = undefined;
 
             // 1. Upload Background if changed
             if (backgroundFile) {
@@ -87,11 +113,40 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                 }
             }
 
-            // 2. Update Profile
+            // 2. Upload Avatar if changed
+            if (avatarFile) {
+                try {
+                    const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
+                        filename: avatarFile.name,
+                        contentType: avatarFile.type,
+                        type: "avatar",
+                    });
+
+                    const uploadResponse = await fetch(url, {
+                        method: "PUT",
+                        body: avatarFile,
+                        headers: { "Content-Type": avatarFile.type },
+                    });
+
+                    if (!uploadResponse.ok) {
+                        const errorText = await uploadResponse.text();
+                        console.error("Avatar upload failed:", uploadResponse.status, errorText);
+                        throw new Error(`Failed to upload avatar: ${uploadResponse.status} ${uploadResponse.statusText}`);
+                    }
+                    newAvatarKey = s3Key;
+                } catch {
+                    setError('Failed to upload profile image. Please try again.');
+                    setIsSaving(false);
+                    return;
+                }
+            }
+
+            // 3. Update Profile
             try {
                 await updateProfileMutation.mutateAsync({
                     name: name !== user.name ? name : undefined,
                     backgroundImage: newBackgroundKey,
+                    image: newAvatarKey,
                 });
 
                 router.refresh();
@@ -113,9 +168,9 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
 
                 {/* Header Preview Section */}
                 <div className="relative h-32 bg-gray-100 dark:bg-zinc-800">
-                    {user.backgroundImage ? (
+                    {backgroundPreview ? (
                         <Image
-                            src={user.backgroundImage}
+                            src={backgroundPreview}
                             alt="Background Cover"
                             fill
                             className="object-cover"
@@ -146,14 +201,26 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
                 <div className="px-6 relative">
                     <div className="absolute -top-12 left-6">
                         <div className="relative group">
-                            <div className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-900 overflow-hidden bg-white dark:bg-zinc-800 relative shadow-lg">
+                            <div className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-900 overflow-hidden bg-white dark:bg-zinc-800 relative shadow-lg group">
                                 <ProfileImage
-                                    src={null}
+                                    src={avatarPreview}
                                     alt="Avatar"
                                     fallback={name || "User"}
                                     width={90}
                                     height={90}
                                     className="object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                    onClick={() => avatarInputRef.current?.click()}
+                                >
+                                    <Camera size={24} className="text-white drop-shadow-md" />
+                                </div>
+                                <input
+                                    type="file"
+                                    ref={avatarInputRef}
+                                    hidden
+                                    accept="image/*"
+                                    onChange={handleAvatarChange}
                                 />
                             </div>
                         </div>
