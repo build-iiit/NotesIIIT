@@ -35,12 +35,9 @@ export const getPresignedDownloadUrl = async (key: string) => {
         return `/api/${cleanKey}`;
     }
 
-    const command = new GetObjectCommand({
-        Bucket: process.env.S3_BUCKET_NAME || "notes-bucket",
-        Key: cleanKey,
-    });
-
-    return getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    // Use the proxy route for all S3 downloads to avoid connectivity issues
+    // with local MinIO when accessing via tunnels or different networks.
+    return `/api/files/${cleanKey}`;
 };
 
 export { s3Client };
