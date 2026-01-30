@@ -68,13 +68,11 @@ export default async function Home() {
       {session?.user ? (
         <div className="flex flex-col items-center gap-8 w-full z-10">
           <div className="flex flex-col items-center gap-4 mb-4 text-center">
-            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-orange-500 to-pink-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-via)] bg-clip-text text-transparent">
               Welcome, {session.user.name?.split(" ")[0]}!
             </h1>
 
-            <div className="min-h-[2rem] flex justify-center">
-              <RandomQuote />
-            </div>
+            <RandomQuote />
           </div>
 
           {/* Folder Grid */}

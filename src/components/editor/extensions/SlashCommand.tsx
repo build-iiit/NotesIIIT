@@ -1,6 +1,6 @@
 "use client";
 
-import { Extension } from '@tiptap/core';
+import { Extension, Editor, Range } from '@tiptap/core';
 import { ReactRenderer } from '@tiptap/react';
 import Suggestion, { SuggestionOptions } from '@tiptap/suggestion';
 import tippy, { Instance as TippyInstance } from 'tippy.js';
@@ -33,7 +33,7 @@ interface CommandItem {
     title: string;
     description: string;
     icon: React.ComponentType<{ className?: string }>;
-    command: (props: { editor: any; range: any }) => void;
+    command: (props: { editor: Editor; range: Range }) => void;
 }
 
 const COMMANDS: CommandItem[] = [
@@ -160,6 +160,7 @@ const CommandList = forwardRef<CommandListRef, CommandListProps>(
         }, [selectItem, selectedIndex]);
 
         useEffect(() => {
+            // eslint-disable-next-line react-compiler/react-compiler
             setSelectedIndex(0);
         }, [items]);
 

@@ -127,6 +127,7 @@ export const aiRouter = createTRPCRouter({
             }
 
             // Initialize Gemini with user's personal API key
+            console.log("DEBUG: Using API Key from DB:", user.geminiApiKey ? user.geminiApiKey.substring(0, 10) + "..." : "UNDEFINED");
             const genAI = new GoogleGenerativeAI(user.geminiApiKey);
 
             // Verify the version exists and user has access
@@ -159,21 +160,22 @@ export const aiRouter = createTRPCRouter({
             }
 
             try {
-                // Use selected model, default to 2.0-flash
-                const modelName = input.model || "gemini-2.0-flash";
+                // Use selected model, default to 2.5-flash
+                const modelName = input.model || "gemini-2.5-flash";
 
                 console.log(`[AI Debug] Using model: ${modelName}`);
                 console.log(`[AI Debug] Using API Key: ${user.geminiApiKey?.substring(0, 8)}... (Length: ${user.geminiApiKey?.length})`);
 
                 const model = genAI.getGenerativeModel({ model: modelName });
 
-                const prompt = `You are an intelligent assistant helping a student understand a document.
+            const prompt = `You are an intelligent assistant helping a student understand a document.
 You are looking at page ${input.pageNumber} of a PDF document.
 
 User Question: ${input.question}
 
 Please answer the question based on what you can see in the image. Be concise and helpful. If the answer isn't visible on this page, let the user know they may need to check other pages.`;
 
+            try {
                 const result = await model.generateContent([
                     prompt,
                     {
@@ -192,7 +194,62 @@ Please answer the question based on what you can see in the image. Be concise an
                 };
 
             } catch (error) {
-                console.error("AI Error:", error);
+                console.error("AI Error (Primary Model):", (error as Error).message);
+
+                // Fallback to gemini-1.5-flash-001 (stable) if we weren't already using it
+                const primaryModel = input.model || "gemini-2.0-flash";
+                if (!primaryModel.includes("1.5")) {
+                    console.log("DEBUG: Attempting fallback to gemini-1.5-flash-001");
+                    try {
+                        // Try stable flash version
+                        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+                        const fallbackResult = await fallbackModel.generateContent([
+                            prompt,
+                            {
+                                inlineData: {
+                                    mimeType: "image/png",
+                                    data: input.imageBase64
+                                }
+                            }
+                        ]);
+                        const fallbackResponse = fallbackResult.response.text();
+                        return {
+                            answer: fallbackResponse,
+                            pageViewed: input.pageNumber
+                        };
+                    } catch (fallbackError) {
+                        console.error("AI Error (Fallback 1.5-Flash):", (fallbackError as Error).message);
+
+                        // Try one last time with Pro if Flash failed
+                        console.log("DEBUG: Attempting second fallback to gemini-1.5-pro");
+                        try {
+                            const proModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+                            const proResult = await proModel.generateContent([
+                                prompt,
+                                {
+                                    inlineData: {
+                                        mimeType: "image/png",
+                                        data: input.imageBase64
+                                    }
+                                }
+                            ]);
+                            return {
+                                answer: proResult.response.text(),
+                                pageViewed: input.pageNumber
+                            };
+                        } catch (proError) {
+                            console.error("AI Error (Fallback 1.5-Pro):", (proError as Error).message);
+
+                            throw new TRPCError({
+                                code: "INTERNAL_SERVER_ERROR",
+                                message: `AI Generation Failed. 
+                                Primary (2.0-Flash): ${(error as Error).message}
+                                Fallback (1.5-Flash): ${(fallbackError as Error).message}
+                                Fallback (1.5-Pro): ${(proError as Error).message}`,
+                            });
+                        }
+                    }
+                }
 
                 // Check for rate limit error (429)
                 const err = error as { status?: number; message?: string };

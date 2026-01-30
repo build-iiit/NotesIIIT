@@ -3,12 +3,48 @@
 import { api } from "@/app/_trpc/client";
 import { useState } from "react";
 import Link from "next/link";
-import { Search, Trash2, Eye, EyeOff, ExternalLink, CheckSquare, Square, Lock, Globe, Users } from "lucide-react";
+import {
+    Search,
+    Trash2,
+    Eye,
+    EyeOff,
+    ExternalLink,
+    CheckSquare,
+    Square,
+    Lock,
+    Unlock,
+    Globe,
+    Users,
+    Star,
+    Pin,
+    MoreVertical,
+    AlertCircle,
+    RotateCcw,
+    Shield
+} from "lucide-react";
+
+type ModerationStatus = "VISIBLE" | "HIDDEN" | "DELETED" | "UNDER_REVIEW";
+
+const moderationStatusColors: Record<ModerationStatus, string> = {
+    VISIBLE: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    HIDDEN: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+    DELETED: "bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
+    UNDER_REVIEW: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+};
+
+const moderationStatusIcons: Record<ModerationStatus, React.ReactNode> = {
+    VISIBLE: <Eye className="w-3 h-3" />,
+    HIDDEN: <EyeOff className="w-3 h-3" />,
+    DELETED: <Trash2 className="w-3 h-3" />,
+    UNDER_REVIEW: <AlertCircle className="w-3 h-3" />,
+};
 
 export function AdminNotesTable() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState<"all" | "public" | "private">("all");
+    const [statusFilter, setStatusFilter] = useState<ModerationStatus | "ALL">("ALL");
     const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
+    const [actionMenu, setActionMenu] = useState<string | null>(null);
 
     const { data, isLoading, refetch } = api.admin.getAllNotes.useQuery({
         search,
@@ -27,8 +63,41 @@ export function AdminNotesTable() {
     });
 
     const toggleVisibilityMutation = api.admin.toggleNoteVisibility.useMutation({
+        onSuccess: () => refetch(),
+    });
+
+    const hideMutation = api.admin.hideNote.useMutation({
         onSuccess: () => {
             refetch();
+            setActionMenu(null);
+        },
+    });
+
+    const lockMutation = api.admin.lockNote.useMutation({
+        onSuccess: () => {
+            refetch();
+            setActionMenu(null);
+        },
+    });
+
+    const featureMutation = api.admin.featureNote.useMutation({
+        onSuccess: () => {
+            refetch();
+            setActionMenu(null);
+        },
+    });
+
+    const pinMutation = api.admin.pinNote.useMutation({
+        onSuccess: () => {
+            refetch();
+            setActionMenu(null);
+        },
+    });
+
+    const restoreMutation = api.admin.restoreNote.useMutation({
+        onSuccess: () => {
+            refetch();
+            setActionMenu(null);
         },
     });
 
@@ -44,7 +113,6 @@ export function AdminNotesTable() {
     };
 
     const handleVisibilityToggle = async (noteId: string, currentVisibility: string) => {
-        // Cycle: PUBLIC -> PRIVATE -> GROUP -> PUBLIC
         const nextVisibility = currentVisibility === "PUBLIC" ? "PRIVATE" :
             currentVisibility === "PRIVATE" ? "GROUP" : "PUBLIC";
 
@@ -58,6 +126,56 @@ export function AdminNotesTable() {
         }
     };
 
+    const handleHide = async (noteId: string) => {
+        const reason = prompt("Enter reason for hiding (required):");
+        if (!reason) {
+            alert("Reason is required to hide a note");
+            return;
+        }
+        try {
+            await hideMutation.mutateAsync({
+                noteId,
+                reason
+            });
+        } catch (error) {
+            alert(error instanceof Error ? error.message : "Failed to hide note");
+        }
+    };
+
+    const handleLock = async (noteId: string, currentlyLocked: boolean) => {
+        try {
+            await lockMutation.mutateAsync({ noteId, locked: !currentlyLocked });
+        } catch (error) {
+            alert(error instanceof Error ? error.message : "Failed to update note");
+        }
+    };
+
+    const handleFeature = async (noteId: string, currentlyFeatured: boolean) => {
+        try {
+            await featureMutation.mutateAsync({ noteId, featured: !currentlyFeatured });
+        } catch (error) {
+            alert(error instanceof Error ? error.message : "Failed to update note");
+        }
+    };
+
+    const handlePin = async (noteId: string, currentlyPinned: boolean) => {
+        try {
+            await pinMutation.mutateAsync({ noteId, pinned: !currentlyPinned });
+        } catch (error) {
+            alert(error instanceof Error ? error.message : "Failed to update note");
+        }
+    };
+
+    const handleRestore = async (noteId: string) => {
+        if (confirm("Are you sure you want to restore this note?")) {
+            try {
+                await restoreMutation.mutateAsync({ noteId });
+            } catch (error) {
+                alert(error instanceof Error ? error.message : "Failed to restore note");
+            }
+        }
+    };
+
     // Bulk Actions
     const toggleNoteSelection = (noteId: string) => {
         setSelectedNotes(prev =>
@@ -66,11 +184,11 @@ export function AdminNotesTable() {
     };
 
     const toggleAllNotes = () => {
-        if (!data?.notes) return;
-        if (selectedNotes.length === data.notes.length) {
+        if (!filteredNotes) return;
+        if (selectedNotes.length === filteredNotes.length) {
             setSelectedNotes([]);
         } else {
-            setSelectedNotes(data.notes.map(n => n.id));
+            setSelectedNotes(filteredNotes.map(n => n.id));
         }
     };
 
@@ -102,6 +220,13 @@ export function AdminNotesTable() {
         }
     };
 
+    // Filter notes by moderation status
+    const filteredNotes = data?.notes?.filter(note => {
+        const noteStatus = ((note as { moderationStatus?: ModerationStatus }).moderationStatus) || "VISIBLE";
+        if (statusFilter === "ALL") return true;
+        return noteStatus === statusFilter;
+    });
+
     return (
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800">
             {/* Search and Filter Header */}
@@ -118,7 +243,20 @@ export function AdminNotesTable() {
                         />
                     </div>
 
-                    <div className="flex gap-2 items-center">
+                    <div className="flex flex-wrap gap-2 items-center">
+                        {/* Moderation status filter */}
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value as ModerationStatus | "ALL")}
+                            className="px-3 py-2 text-sm border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800"
+                        >
+                            <option value="ALL">All Status</option>
+                            <option value="VISIBLE">Visible</option>
+                            <option value="HIDDEN">Hidden</option>
+                            <option value="UNDER_REVIEW">Under Review</option>
+                            <option value="DELETED">Deleted</option>
+                        </select>
+
                         {selectedNotes.length > 0 && (
                             <button
                                 onClick={handleBulkDelete}
@@ -157,7 +295,7 @@ export function AdminNotesTable() {
                                     onClick={toggleAllNotes}
                                     className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                 >
-                                    {data?.notes && data.notes.length > 0 && selectedNotes.length === data.notes.length ? (
+                                    {filteredNotes && filteredNotes.length > 0 && selectedNotes.length === filteredNotes.length ? (
                                         <CheckSquare className="w-5 h-5 text-blue-600" />
                                     ) : (
                                         <Square className="w-5 h-5" />
@@ -171,7 +309,7 @@ export function AdminNotesTable() {
                                 Author
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                Visibility
+                                Status
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                 Stats
@@ -188,79 +326,185 @@ export function AdminNotesTable() {
                                     Loading notes...
                                 </td>
                             </tr>
-                        ) : data?.notes && data.notes.length > 0 ? (
-                            data.notes.map((note) => (
-                                <tr key={note.id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${selectedNotes.includes(note.id) ? "bg-blue-50/50 dark:bg-blue-900/10" : ""}`}>
-                                    <td className="px-6 py-4">
-                                        <button
-                                            onClick={() => toggleNoteSelection(note.id)}
-                                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                        >
-                                            {selectedNotes.includes(note.id) ? (
-                                                <CheckSquare className="w-5 h-5 text-blue-600" />
-                                            ) : (
-                                                <Square className="w-5 h-5" />
-                                            )}
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div>
-                                            <div className="font-medium max-w-md truncate">{note.title}</div>
-                                            {note.description && (
-                                                <div className="text-sm text-gray-500 max-w-md truncate">
-                                                    {note.description}
-                                                </div>
-                                            )}
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                Created {new Date(note.createdAt).toLocaleDateString()}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <div className="font-medium">{note.author.name || "Anonymous"}</div>
-                                        <div className="text-gray-500 text-xs">{note.author.email}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <button
-                                            onClick={() => handleVisibilityToggle(note.id, note.visibility)}
-                                            disabled={toggleVisibilityMutation.isPending}
-                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors hover:opacity-80 disabled:opacity-50 ${getVisibilityColor(note.visibility)}`}
-                                            title="Click to cycle visibility"
-                                        >
-                                            {getVisibilityIcon(note.visibility)}
-                                            {note.visibility}
-                                        </button>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <div className="text-gray-900 dark:text-gray-100">
-                                            {note.viewCount} views • {note.voteScore} score
-                                        </div>
-                                        <div className="text-gray-500 dark:text-gray-400 text-xs">
-                                            {note._count.comments} comments
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                        <div className="flex items-center gap-2">
-                                            <Link
-                                                href={`/notes/${note.id}`}
-                                                target="_blank"
-                                                className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
-                                                title="View note"
-                                            >
-                                                <ExternalLink className="w-4 h-4" />
-                                            </Link>
+                        ) : filteredNotes && filteredNotes.length > 0 ? (
+                            filteredNotes.map((note) => {
+                                const moderationStatus = ((note as { moderationStatus?: ModerationStatus }).moderationStatus) || "VISIBLE";
+                                const isLocked = (note as { isLocked?: boolean }).isLocked || false;
+                                const isFeatured = (note as { isFeatured?: boolean }).isFeatured || false;
+                                const isPinned = (note as { isPinned?: boolean }).isPinned || false;
+
+                                return (
+                                    <tr key={note.id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${selectedNotes.includes(note.id) ? "bg-blue-50/50 dark:bg-blue-900/10" : ""}`}>
+                                        <td className="px-6 py-4">
                                             <button
-                                                onClick={() => handleDeleteNote(note.id, note.title)}
-                                                disabled={deleteNoteMutation.isPending}
-                                                className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md disabled:opacity-50"
-                                                title="Delete note"
+                                                onClick={() => toggleNoteSelection(note.id)}
+                                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                {selectedNotes.includes(note.id) ? (
+                                                    <CheckSquare className="w-5 h-5 text-blue-600" />
+                                                ) : (
+                                                    <Square className="w-5 h-5" />
+                                                )}
                                             </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div>
+                                                <div className="font-medium max-w-md truncate flex items-center gap-2">
+                                                    {note.title}
+                                                    {isFeatured && (
+                                                        <span title="Featured">
+                                                            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                                        </span>
+                                                    )}
+                                                    {isPinned && (
+                                                        <span title="Pinned">
+                                                            <Pin className="w-4 h-4 text-blue-500" />
+                                                        </span>
+                                                    )}
+                                                    {isLocked && (
+                                                        <span title="Locked">
+                                                            <Lock className="w-4 h-4 text-gray-500" />
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {note.description && (
+                                                    <div className="text-sm text-gray-500 max-w-md truncate">
+                                                        {note.description}
+                                                    </div>
+                                                )}
+                                                <div className="text-xs text-gray-400 mt-1">
+                                                    Created {new Date(note.createdAt).toLocaleDateString()}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <div className="font-medium">{note.author.name || "Anonymous"}</div>
+                                            <div className="text-gray-500 text-xs">{note.author.email}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex flex-col gap-1">
+                                                {/* Moderation status */}
+                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium w-fit ${moderationStatusColors[moderationStatus]}`}>
+                                                    {moderationStatusIcons[moderationStatus]}
+                                                    {moderationStatus.replace("_", " ")}
+                                                </span>
+                                                {/* Visibility */}
+                                                <button
+                                                    onClick={() => handleVisibilityToggle(note.id, note.visibility)}
+                                                    disabled={toggleVisibilityMutation.isPending}
+                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium w-fit transition-colors hover:opacity-80 disabled:opacity-50 ${getVisibilityColor(note.visibility)}`}
+                                                    title="Click to cycle visibility"
+                                                >
+                                                    {getVisibilityIcon(note.visibility)}
+                                                    {note.visibility}
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <div className="text-gray-900 dark:text-gray-100">
+                                                {note.viewCount} views • {note.voteScore} score
+                                            </div>
+                                            <div className="text-gray-500 dark:text-gray-400 text-xs">
+                                                {note._count.comments} comments
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            <div className="flex items-center gap-1">
+                                                <Link
+                                                    href={`/notes/${note.id}`}
+                                                    target="_blank"
+                                                    className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
+                                                    title="View note"
+                                                >
+                                                    <ExternalLink className="w-4 h-4" />
+                                                </Link>
+
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => setActionMenu(actionMenu === note.id ? null : note.id)}
+                                                        className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md"
+                                                    >
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </button>
+
+                                                    {actionMenu === note.id && (
+                                                        <div className="absolute right-0 z-10 mt-1 w-48 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-lg shadow-lg py-1 animate-in fade-in slide-in-from-top-2">
+                                                            {moderationStatus === "HIDDEN" ? (
+                                                                <button
+                                                                    onClick={() => handleRestore(note.id)}
+                                                                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2 text-green-600"
+                                                                >
+                                                                    <Eye className="w-4 h-4" />
+                                                                    Unhide Note
+                                                                </button>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleHide(note.id)}
+                                                                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                                                                >
+                                                                    <EyeOff className="w-4 h-4 text-red-500" />
+                                                                    Hide Note
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => handleLock(note.id, isLocked)}
+                                                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                                                            >
+                                                                {isLocked ? (
+                                                                    <>
+                                                                        <Unlock className="w-4 h-4" />
+                                                                        Unlock Note
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Lock className="w-4 h-4 text-amber-500" />
+                                                                        Lock Note
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                            <hr className="my-1 border-gray-200 dark:border-zinc-700" />
+                                                            <button
+                                                                onClick={() => handleFeature(note.id, isFeatured)}
+                                                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                                                            >
+                                                                <Star className={`w-4 h-4 ${isFeatured ? "text-amber-500 fill-amber-500" : ""}`} />
+                                                                {isFeatured ? "Unfeature" : "Feature Note"}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handlePin(note.id, isPinned)}
+                                                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                                                            >
+                                                                <Pin className={`w-4 h-4 ${isPinned ? "text-blue-500" : ""}`} />
+                                                                {isPinned ? "Unpin" : "Pin Note"}
+                                                            </button>
+                                                            {(moderationStatus === "HIDDEN" || moderationStatus === "DELETED") && (
+                                                                <>
+                                                                    <hr className="my-1 border-gray-200 dark:border-zinc-700" />
+                                                                    <button
+                                                                        onClick={() => handleRestore(note.id)}
+                                                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2 text-green-600"
+                                                                    >
+                                                                        <RotateCcw className="w-4 h-4" />
+                                                                        Restore Note
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            <hr className="my-1 border-gray-200 dark:border-zinc-700" />
+                                                            <button
+                                                                onClick={() => handleDeleteNote(note.id, note.title)}
+                                                                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2 text-red-600"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                                Delete Permanently
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         ) : (
                             <tr>
                                 <td colSpan={6} className="px-6 py-12 text-center text-gray-500">

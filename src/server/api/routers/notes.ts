@@ -202,6 +202,7 @@ export const notesRouter = createTRPCRouter({
     /**
      * Get a single note by ID with its current version and S3 URL.
      * Source: MAIN (Security check preserved)
+     * Now also checks moderation status (hidden/deleted)
      */
     getById: publicProcedure
         .input(z.object({ id: z.string() }))
@@ -214,25 +215,41 @@ export const notesRouter = createTRPCRouter({
 
             if (!note) return null;
 
-            const isAuthor = ctx.session?.user?.id === note.authorId;
+            const userId = ctx.session?.user?.id;
+            const userRole = ctx.session?.user?.role as string | undefined;
+            const isAuthor = userId === note.authorId;
+            const isAdmin = ["SUPER_ADMIN", "ADMIN", "MODERATOR"].includes(userRole || "");
+
+            // Safely access moderation fields with type assertion
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const noteAny = note as any;
+            const moderationStatus = noteAny.moderationStatus as string | undefined;
+            const isLocked = noteAny.isLocked as boolean | undefined;
+            const isFeatured = noteAny.isFeatured as boolean | undefined;
+            const isPinned = noteAny.isPinned as boolean | undefined;
+
+            // Check moderation status - hidden/deleted notes only visible to author or admins
+            if (moderationStatus) {
+                const hiddenStatuses = ["HIDDEN", "DELETED", "UNDER_REVIEW"];
+                if (hiddenStatuses.includes(moderationStatus) && !isAuthor && !isAdmin) {
+                    return null; // Note is hidden from regular users
+                }
+            }
 
             // Access Check
             let hasAccess = isAuthor || note.visibility === "PUBLIC";
 
-            if (!hasAccess && ctx.session?.user?.id) {
-                // Check group access - Removed strict "GROUP" visibility check
-                // because notes might be shared with groups but have different visibility flags (e.g. PRIVATE but shared)
+            if (!hasAccess && userId) {
+                // Check group access
                 const noteWithGroups = await ctx.prisma.note.findUnique({
                     where: { id: input.id },
-                    include: { sharedGroups: { include: { members: { where: { userId: ctx.session.user.id } } } } }
+                    include: { sharedGroups: { include: { members: { where: { userId } } } } }
                 });
 
                 if (noteWithGroups?.sharedGroups.some(g => g.members.length > 0)) {
                     hasAccess = true;
                 }
             }
-
-            if (!hasAccess) return null;
 
             if (!hasAccess) return null;
 
@@ -251,7 +268,12 @@ export const notesRouter = createTRPCRouter({
             return {
                 ...note,
                 fileUrl,
-                author: { ...note.author, image: authorImage }
+                author: { ...note.author, image: authorImage },
+                // Include moderation fields for UI display (with defaults)
+                isLocked: isLocked ?? false,
+                isFeatured: isFeatured ?? false,
+                isPinned: isPinned ?? false,
+                moderationStatus: moderationStatus ?? "VISIBLE",
             };
         }),
 

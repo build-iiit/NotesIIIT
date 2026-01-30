@@ -39,8 +39,8 @@ export default function BookmarksPage() {
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="mb-10 text-center md:text-left">
-                    <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent inline-flex items-center gap-3">
-                        <Bookmark className="h-8 w-8 text-orange-500 fill-orange-500" />
+                    <h1 className="text-4xl font-bold mb-3 bg-gradient-to-r from-[var(--brand-from)] via-[var(--brand-via)] to-[var(--brand-to)] bg-clip-text text-transparent inline-flex items-center gap-3">
+                        <Bookmark className="h-8 w-8 text-primary fill-primary" />
                         My Bookmarks
                     </h1>
                     <p className="text-gray-600 dark:text-gray-300 text-lg">
@@ -63,7 +63,7 @@ export default function BookmarksPage() {
                         </p>
                         <Link
                             href="/"
-                            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-105 transition-all"
+                            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-lg hover:shadow-xl hover:scale-105 transition-all"
                         >
                             Browse Notes
                             <ArrowRight className="h-5 w-5" />
@@ -82,7 +82,7 @@ export default function BookmarksPage() {
                                     className="flex items-center justify-between p-6 bg-white/30 dark:bg-white/5 border-b border-white/20 dark:border-white/5 hover:bg-white/50 dark:hover:bg-white/10 transition-colors"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 text-white shadow-lg">
+                                        <div className="p-3 rounded-xl bg-gradient-to-br from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white shadow-lg">
                                             <FileText className="w-6 h-6" />
                                         </div>
                                         <div>

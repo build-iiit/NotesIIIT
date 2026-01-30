@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles, PenTool } from "lucide-react";
 
 const QUOTES = [
     "Notes so good, you might actually pass.",
@@ -12,39 +11,23 @@ const QUOTES = [
     "The night before the exam is a pathway to many abilities some consider to be unnatural.",
     "Knowledge is power. Notes are the battery.",
     "Don't panic. Just read the notes.",
-    // New Markdown/Witty Quotes
-    "Now with Markdown support: Because plain text is beautiful.",
-    "**Boldly** go where no student has gone before.",
-    "Writing notes in Markdown makes you look 10x smarter.",
-    "`code` is poetry. Your notes should be too.",
-    "> Blockquotes are for profound thoughts (or copying the textbook).",
-    "Everything looks better in `monospace`.",
-    "Structured notes for structured minds.",
-    "Markdown: Because formatting shouldn't be a mouse click away.",
-    "Syntax highlighting your study material since 2025.",
-    "Render your knowledge into success."
+    "Academic weapon in the making.",
+    "Powered by caffeine and last-minute panic.",
+    "For when you zoned out during the important part."
 ];
 
 export function RandomQuote() {
-    const [quote, setQuote] = useState<string>("");
-    const [mounted, setMounted] = useState(false);
+    const [quote, setQuote] = useState(QUOTES[0]);
 
     useEffect(() => {
-        // Randomize on mount only
+        // Randomize on mount
+        // eslint-disable-next-line react-compiler/react-compiler
         setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-        setMounted(true);
     }, []);
 
-    // Show nothing or a skeleton until mounted to match server HTML (empty) or avoid mismatch
-    if (!mounted) {
-        return <div className="h-7 w-64 bg-gray-200 dark:bg-white/5 rounded-full animate-pulse" />;
-    }
-
     return (
-        <p className="text-lg text-gray-600 dark:text-gray-300 italic max-w-lg flex items-center justify-center gap-2 animate-in fade-in duration-500">
-            <span className="text-orange-500 text-2xl font-serif">"</span>
-            {quote}
-            <span className="text-orange-500 text-2xl font-serif">"</span>
+        <p className="text-lg text-gray-600 dark:text-gray-300 italic max-w-lg min-h-[3rem] transition-opacity duration-500">
+            &quot;{quote}&quot;
         </p>
     );
 }
