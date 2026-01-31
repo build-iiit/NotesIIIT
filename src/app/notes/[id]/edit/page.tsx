@@ -4,7 +4,7 @@ import { use, useState, useRef, useEffect } from "react";
 import { api } from "@/app/_trpc/client";
 import { useRouter } from "next/navigation";
 import DeleteNoteButton from "@/components/DeleteNoteButton";
-import { Folder } from "lucide-react";
+import { Folder, Tag, Plus } from "lucide-react";
 import { Search, X, ChevronDown, CheckCircle } from "lucide-react";
 
 export default function EditNotePage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,6 +19,8 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     const addVersion = api.versions.addVersion.useMutation();
 
     const { data: courses } = api.course.getAll.useQuery();
+    const { data: tags, refetch: refetchTags } = api.tags.getAll.useQuery();
+    const createTagMutation = api.tags.create.useMutation();
 
     const [title, setTitle] = useState(note?.title || "");
     const [description, setDescription] = useState(note?.description || "");
@@ -35,6 +37,12 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
     const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>(
         note?.sharedGroups?.map((g: { id: string }) => g.id) || []
     );
+
+    // Tags State
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [selectedTagIds, setSelectedTagIds] = useState<string[]>((note as any)?.tags?.map((t: { id: string }) => t.id) || []);
+    const [customTagInput, setCustomTagInput] = useState("");
+    const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
 
     const [courseSearch, setCourseSearch] = useState(note?.course ? `${note.course.code} - ${note.course.name}` : note?.courseId ? `Course ${note.courseId}` : "");
     const [isCourseDropdownOpen, setIsCourseDropdownOpen] = useState(false);
@@ -114,6 +122,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
                 folderId: selectedFolderId,
                 visibility,
                 groupIds: visibility === "GROUP" ? selectedGroupIds : undefined,
+                tagIds: selectedTagIds.length > 0 ? selectedTagIds : undefined,
             });
             router.push(`/notes/${id}`);
         } catch (error) {
@@ -359,7 +368,164 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
                         </p>
                     </div>
 
+                    {/* Tags Selection */}
+                    <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                            <Tag className="h-4 w-4 text-primary" />
+                            Tags
+                        </label>
+
+                        {/* Selected Tags Display */}
+                        {selectedTagIds.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {selectedTagIds.map(tagId => {
+                                    const tag = tags?.find(t => t.id === tagId);
+                                    return tag ? (
+                                        <span
+                                            key={tagId}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-xl bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary dark:text-primary border border-primary/30 shadow-sm"
+                                        >
+                                            {tag.name}
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedTagIds(prev => prev.filter(id => id !== tagId))}
+                                                className="ml-0.5 hover:text-red-500 hover:scale-110 transition-all"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    ) : null;
+                                })}
+                            </div>
+                        )}
+
+                        {/* Tag Dropdown */}
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+                                className="w-full flex items-center justify-between px-4 py-3 rounded-xl backdrop-blur-xl bg-white/50 dark:bg-white/10 border border-white/40 dark:border-white/10 hover:border-primary/50 transition-colors"
+                            >
+                                <span className="flex items-center gap-2 text-gray-500">
+                                    <Tag className="h-4 w-4" />
+                                    {selectedTagIds.length > 0 ? `${selectedTagIds.length} tags selected` : "Select tags..."}
+                                </span>
+                                <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${isTagDropdownOpen ? "rotate-180" : ""}`} />
+                            </button>
+
+                            {isTagDropdownOpen && (
+                                <div className="absolute z-[100] w-full mt-2 backdrop-blur-3xl bg-white/80 dark:bg-zinc-900/80 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.2)] border border-white/40 dark:border-white/10 max-h-72 overflow-y-auto">
+                                    {/* Decorative gradient blur */}
+                                    <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-full blur-[60px] pointer-events-none" />
+                                    <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-orange-400/20 to-pink-500/20 rounded-full blur-[60px] pointer-events-none" />
+
+                                    {/* Default Tags */}
+                                    <div className="relative p-3 border-b border-white/20 dark:border-white/10">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 px-1 py-1 mb-2">Default Tags</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {tags?.filter(t => t.isDefault).map(tag => (
+                                                <button
+                                                    key={tag.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (selectedTagIds.includes(tag.id)) {
+                                                            setSelectedTagIds(prev => prev.filter(id => id !== tag.id));
+                                                        } else {
+                                                            setSelectedTagIds(prev => [...prev, tag.id]);
+                                                        }
+                                                    }}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-300 ${selectedTagIds.includes(tag.id)
+                                                            ? "bg-gradient-to-r from-primary to-purple-500 text-white shadow-lg shadow-primary/30"
+                                                            : "backdrop-blur-xl bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
+                                                        }`}
+                                                >
+                                                    {tag.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Custom Tags */}
+                                    {tags?.some(t => !t.isDefault) && (
+                                        <div className="relative p-3 border-b border-white/20 dark:border-white/10">
+                                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 px-1 py-1 mb-2">Custom Tags</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {tags?.filter(t => !t.isDefault).map(tag => (
+                                                    <button
+                                                        key={tag.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (selectedTagIds.includes(tag.id)) {
+                                                                setSelectedTagIds(prev => prev.filter(id => id !== tag.id));
+                                                            } else {
+                                                                setSelectedTagIds(prev => [...prev, tag.id]);
+                                                            }
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-300 ${selectedTagIds.includes(tag.id)
+                                                                ? "bg-gradient-to-r from-primary to-purple-500 text-white shadow-lg shadow-primary/30"
+                                                                : "backdrop-blur-xl bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
+                                                            }`}
+                                                    >
+                                                        {tag.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Add Custom Tag */}
+                                    <div className="relative p-3">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 px-1 py-1 mb-2">Add Custom Tag</p>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={customTagInput}
+                                                onChange={(e) => setCustomTagInput(e.target.value)}
+                                                onKeyDown={async (e) => {
+                                                    if (e.key === "Enter" && customTagInput.trim()) {
+                                                        e.preventDefault();
+                                                        try {
+                                                            const newTag = await createTagMutation.mutateAsync({ name: customTagInput.trim() });
+                                                            setSelectedTagIds(prev => [...prev, newTag.id]);
+                                                            setCustomTagInput("");
+                                                            refetchTags();
+                                                        } catch (error) {
+                                                            console.error("Failed to create tag:", error);
+                                                        }
+                                                    }
+                                                }}
+                                                placeholder="Type new tag..."
+                                                className="flex-1 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-white/50 dark:bg-white/10 border border-white/40 dark:border-white/10 text-sm outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-all text-gray-900 dark:text-white placeholder:text-gray-400"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (customTagInput.trim()) {
+                                                        try {
+                                                            const newTag = await createTagMutation.mutateAsync({ name: customTagInput.trim() });
+                                                            setSelectedTagIds(prev => [...prev, newTag.id]);
+                                                            setCustomTagInput("");
+                                                            refetchTags();
+                                                        } catch (error) {
+                                                            console.error("Failed to create tag:", error);
+                                                        }
+                                                    }
+                                                }}
+                                                disabled={!customTagInput.trim() || createTagMutation.isPending}
+                                                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white text-sm font-semibold disabled:opacity-50 hover:shadow-lg hover:shadow-primary/30 hover:scale-105 transition-all duration-300"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+
                     {/* Visibility Selection */}
+
                     <div className="pt-4 border-t border-gray-200 dark:border-zinc-700">
                         <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">Visibility</label>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

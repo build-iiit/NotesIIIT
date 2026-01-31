@@ -180,6 +180,7 @@ model Note {
 
   sharedGroups   Group[]  @relation("SharedNotes")
   fulfillments   RequestFulfillment[]
+  tags           Tag[]
 
   // Moderation
   moderationStatus  NoteModerationStatus @default(VISIBLE)
@@ -197,6 +198,18 @@ model Note {
   @@index([createdAt])
   @@index([folderId])
   @@index([moderationStatus])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isDefault Boolean  @default(false)  // Predefined tags like Assignments, PYQs
+  
+  notes     Note[]
+  
+  createdAt DateTime @default(now())
+  
+  @@index([name])
 }
 
 model Folder {

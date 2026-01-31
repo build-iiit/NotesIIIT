@@ -271,7 +271,7 @@ export function FileExplorer({ }: FileExplorerProps) {
                             <Folder className={`h-10 w-10 mb-2 drop-shadow-lg transition-colors ${dragOverTarget === folder.id
                                 ? (themeStyle === "monochrome" ? "text-primary fill-primary/30" : "text-orange-500 fill-orange-500/30")
                                 : (themeStyle === "monochrome" ? "text-gray-400 group-hover:text-primary fill-primary/5 group-hover:fill-primary/20" : "text-yellow-500 fill-yellow-500/30")
-                            }`} />
+                                }`} />
                             <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200">{folder.name}</span>
                         </div>
                     ))}

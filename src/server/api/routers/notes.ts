@@ -106,6 +106,7 @@ export const notesRouter = createTRPCRouter({
                     { title: { contains: input.search, mode: 'insensitive' } },
                     { course: { code: { contains: input.search, mode: 'insensitive' } } },
                     { course: { name: { contains: input.search, mode: 'insensitive' } } },
+                    { tags: { some: { name: { contains: input.search, mode: 'insensitive' } } } },
                 ];
             }
 
@@ -390,7 +391,8 @@ export const notesRouter = createTRPCRouter({
                 semester: z.string().optional(),
                 visibility: z.enum(["PUBLIC", "PRIVATE", "GROUP"]).default("PUBLIC"),
                 groupIds: z.array(z.string()).optional(),
-                thumbnailS3Key: z.string().optional()
+                thumbnailS3Key: z.string().optional(),
+                tagIds: z.array(z.string()).optional()
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -430,6 +432,10 @@ export const notesRouter = createTRPCRouter({
                         // Merged: Handle Group connections
                         sharedGroups: input.groupIds && input.visibility === "GROUP" ? {
                             connect: input.groupIds.map(id => ({ id }))
+                        } : undefined,
+                        // Tags connection
+                        tags: input.tagIds ? {
+                            connect: input.tagIds.map(id => ({ id }))
                         } : undefined
                     },
                     include: { versions: true },
@@ -456,7 +462,8 @@ export const notesRouter = createTRPCRouter({
             courseId: z.string().optional(),
             semester: z.string().optional(),
             visibility: z.enum(["PUBLIC", "PRIVATE", "GROUP"]).optional(),
-            groupIds: z.array(z.string()).optional()
+            groupIds: z.array(z.string()).optional(),
+            tagIds: z.array(z.string()).optional()
         }))
         .mutation(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
@@ -481,6 +488,11 @@ export const notesRouter = createTRPCRouter({
                 };
             } else if (input.visibility !== "GROUP") {
                 updateData.sharedGroups = { set: [] }; // Clear groups if not GROUP visibility
+            }
+
+            // Handle Tags
+            if (input.tagIds !== undefined) {
+                updateData.tags = { set: input.tagIds.map(id => ({ id })) };
             }
 
             // Folder logic from Feature branch

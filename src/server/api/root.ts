@@ -18,6 +18,7 @@ import { markdownNotesRouter } from "@/server/api/routers/markdownNotes";
 import { settingsRouter } from "@/server/api/routers/settings";
 import { reportsRouter } from "@/server/api/routers/reports";
 import { auditRouter } from "@/server/api/routers/audit";
+import { tagsRouter } from "@/server/api/routers/tags";
 
 /**
  * This is the primary router for your server.
@@ -44,6 +45,7 @@ export const appRouter = createTRPCRouter({
     settings: settingsRouter,
     reports: reportsRouter,
     audit: auditRouter,
+    tags: tagsRouter,
 });
 
 

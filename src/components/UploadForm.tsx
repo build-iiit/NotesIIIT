@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
-import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Github, FolderOpen } from "lucide-react";
+import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Github, FolderOpen, Tag, Plus } from "lucide-react";
 
 type UploadStep = "idle" | "uploading" | "creating-record" | "complete";
 
@@ -12,6 +12,7 @@ interface QueuedFile {
     title: string;
     courseId: string;
     semester: string;
+    tagIds: string[];
     status: "pending" | "uploading" | "complete" | "error";
     progress: number;
     error?: string;
@@ -118,6 +119,11 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
     const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "GROUP">("PUBLIC");
     const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
+    // Tags State
+    const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+    const [customTagInput, setCustomTagInput] = useState("");
+    const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+
     // Upload Mode State (local, github, drive)
     const [uploadMode, setUploadMode] = useState<"local" | "github">("local");
     const [githubUrl, setGithubUrl] = useState("");
@@ -131,7 +137,9 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
     const { data: allFoldersData } = api.folders.getAllFlat.useQuery();
     const { data: courses } = api.course.getAll.useQuery();
     const { data: userGroups } = api.social.getGroups.useQuery();
+    const { data: tags } = api.tags.getAll.useQuery();
     const createNoteMutation = api.notes.create.useMutation();
+    const createTagMutation = api.tags.create.useMutation();
 
     const semesters = ["1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2", "5-1", "5-2"];
 
@@ -151,6 +159,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
             title: file.name.replace(/\.[^/.]+$/, ""),
             courseId: selectedCourseId,
             semester: selectedSemester,
+            tagIds: selectedTagIds,
             status: "pending" as const,
             progress: 0,
         }));
@@ -162,7 +171,8 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
             }
             return updated;
         });
-    }, [selectedCourseId, selectedSemester, selectedFileIndex]);
+    }, [selectedCourseId, selectedSemester, selectedTagIds, selectedFileIndex]);
+
 
     // Get the currently selected file
     const selectedFile = selectedFileIndex !== null ? queuedFiles[selectedFileIndex] : null;
@@ -199,6 +209,36 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
     const handleTitleChange = (title: string) => {
         if (selectedFileIndex !== null && queuedFiles[selectedFileIndex]?.status === "pending") {
             updateFileInQueue(selectedFileIndex, { title });
+        }
+    };
+
+    const handleTagToggle = (tagId: string) => {
+        setSelectedTagIds(prev => {
+            const newTags = prev.includes(tagId)
+                ? prev.filter(id => id !== tagId)
+                : [...prev, tagId];
+
+            // Update selected file's tags
+            if (selectedFileIndex !== null && queuedFiles[selectedFileIndex]?.status === "pending") {
+                updateFileInQueue(selectedFileIndex, { tagIds: newTags });
+            }
+            return newTags;
+        });
+    };
+
+    const handleAddCustomTag = async () => {
+        const trimmed = customTagInput.trim();
+        if (!trimmed) return;
+
+        try {
+            const newTag = await createTagMutation.mutateAsync({ name: trimmed });
+            setSelectedTagIds(prev => [...prev, newTag.id]);
+            setCustomTagInput("");
+            if (selectedFileIndex !== null && queuedFiles[selectedFileIndex]?.status === "pending") {
+                updateFileInQueue(selectedFileIndex, { tagIds: [...selectedTagIds, newTag.id] });
+            }
+        } catch (error) {
+            console.error("Failed to create tag:", error);
         }
     };
 
@@ -443,6 +483,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                         semester: qf.semester || undefined,
                         visibility,
                         groupIds: visibility === "GROUP" ? selectedGroupIds : undefined,
+                        tagIds: qf.tagIds.length > 0 ? qf.tagIds : undefined,
                     });
 
                     updateFileInQueue(i, { status: "complete", progress: 100 });
@@ -575,7 +616,131 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                     </div>
                 </div>
 
+                {/* Tags Selection */}
+                <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">
+                        Tags
+                    </label>
+                    <div className="space-y-3">
+                        {/* Selected Tags Display */}
+                        {selectedTagIds.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                                {selectedTagIds.map(tagId => {
+                                    const tag = tags?.find(t => t.id === tagId);
+                                    return tag ? (
+                                        <span
+                                            key={tagId}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-xl bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary dark:text-primary border border-primary/30 shadow-sm"
+                                        >
+                                            <Tag className="h-3 w-3" />
+                                            {tag.name}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleTagToggle(tagId)}
+                                                className="ml-0.5 hover:text-red-500 hover:scale-110 transition-all"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    ) : null;
+                                })}
+                            </div>
+                        )}
+
+
+                        {/* Tag Options */}
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+                                className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 text-sm text-gray-900 dark:text-white hover:border-primary/50 transition-colors"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Tag className="h-4 w-4 text-gray-400" />
+                                    {selectedTagIds.length > 0 ? `${selectedTagIds.length} tags selected` : "Select tags..."}
+                                </span>
+                                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isTagDropdownOpen ? "rotate-180" : ""}`} />
+                            </button>
+
+                            {isTagDropdownOpen && (
+                                <div className="absolute z-20 w-full mt-2 backdrop-blur-3xl bg-white/80 dark:bg-zinc-900/80 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.2)] border border-white/40 dark:border-white/10 max-h-72 overflow-y-auto">
+                                    {/* Decorative gradient blur */}
+                                    <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-full blur-[60px] pointer-events-none" />
+                                    <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-orange-400/20 to-pink-500/20 rounded-full blur-[60px] pointer-events-none" />
+
+                                    {/* Default Tags */}
+                                    <div className="relative p-3 border-b border-white/20 dark:border-white/10">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 px-1 py-1 mb-2">Default Tags</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {tags?.filter(t => t.isDefault).map(tag => (
+                                                <button
+                                                    key={tag.id}
+                                                    type="button"
+                                                    onClick={() => handleTagToggle(tag.id)}
+                                                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-300 ${selectedTagIds.includes(tag.id)
+                                                        ? "bg-gradient-to-r from-primary to-purple-500 text-white shadow-lg shadow-primary/30"
+                                                        : "backdrop-blur-xl bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
+                                                        }`}
+                                                >
+                                                    {tag.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Custom Tags */}
+                                    {tags?.some(t => !t.isDefault) && (
+                                        <div className="relative p-3 border-b border-white/20 dark:border-white/10">
+                                            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 px-1 py-1 mb-2">Custom Tags</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {tags?.filter(t => !t.isDefault).map(tag => (
+                                                    <button
+                                                        key={tag.id}
+                                                        type="button"
+                                                        onClick={() => handleTagToggle(tag.id)}
+                                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-300 ${selectedTagIds.includes(tag.id)
+                                                            ? "bg-gradient-to-r from-primary to-purple-500 text-white shadow-lg shadow-primary/30"
+                                                            : "backdrop-blur-xl bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
+                                                            }`}
+                                                    >
+                                                        {tag.name}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Add Custom Tag */}
+                                    <div className="relative p-3">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 px-1 py-1 mb-2">Add Custom Tag</p>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={customTagInput}
+                                                onChange={(e) => setCustomTagInput(e.target.value)}
+                                                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddCustomTag())}
+                                                placeholder="Type new tag..."
+                                                className="flex-1 px-4 py-2.5 rounded-xl backdrop-blur-xl bg-white/50 dark:bg-white/10 border border-white/40 dark:border-white/10 text-sm outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-all text-gray-900 dark:text-white placeholder:text-gray-400"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleAddCustomTag}
+                                                disabled={!customTagInput.trim() || createTagMutation.isPending}
+                                                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white text-sm font-semibold disabled:opacity-50 hover:shadow-lg hover:shadow-primary/30 hover:scale-105 transition-all duration-300"
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                </div>
+
                 {/* File Upload Zone */}
+
                 <div>
                     <div className="flex items-center justify-between mb-2">
                         <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">

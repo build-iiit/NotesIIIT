@@ -1,8 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { writeFile, mkdir, appendFile, rename, unlink, readFile } from "fs/promises";
+import { existsSync } from "fs";
 import path from "path";
 import { IncomingForm, File as FormidableFile, Fields, Files } from "formidable";
 import { auth } from "../../auth";
+import { uploadFileToS3 } from "@/lib/s3";
 
 // Disable default body parser to handle file uploads
 export const config = {
@@ -84,11 +86,22 @@ export default async function handler(
             const folder = isImage ? "thumbnails" : "uploads";
             const key = `${folder}/${newFilename}`;
 
+            console.log(`[Upload API] Preparing to upload file: ${key}`);
+            console.log(`[Upload API] File size: ${uploadedFile.size} bytes`);
+            console.log(`[Upload API] Content type: ${uploadedFile.mimetype}`);
+
             // Read file buffer
             const fileBuffer = await readFile(uploadedFile.filepath);
+            console.log(`[Upload API] Read buffer size: ${fileBuffer.length} bytes`);
 
             // Upload to S3
-            await uploadFileToS3(fileBuffer, key, uploadedFile.mimetype || "application/octet-stream");
+            try {
+                await uploadFileToS3(fileBuffer, key, uploadedFile.mimetype || "application/octet-stream");
+                console.log(`[Upload API] Successfully uploaded to S3: ${key}`);
+            } catch (s3Error) {
+                console.error(`[Upload API] S3 Upload FAILED for key ${key}:`, s3Error);
+                throw s3Error;
+            }
 
             // Clean up temp file
             await unlink(uploadedFile.filepath);
@@ -97,6 +110,7 @@ export default async function handler(
                 success: true,
                 key: key // Return the S3 key (e.g. "uploads/xyz.pdf")
             });
+
         }
 
         // --- Chunked Upload Logic ---
