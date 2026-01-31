@@ -64,7 +64,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                 {/* Header Section */}
                 <div className="relative pt-8 pb-12">
                     {/* Glassy Banner */}
-                    <div className={`absolute inset-x-0 top-0 h-48 rounded-3xl shadow-2xl overflow-hidden -z-10 bg-gradient-to-r from-[var(--brand-from)] via-[var(--brand-via)] to-[var(--brand-to)] opacity-90 ${themeStyle === 'monochrome' ? 'grayscale brightness-50 dark:brightness-[0.2]' : ''}`}>
+                    <div className={`absolute inset-x-0 top-0 h-48 rounded-3xl shadow-2xl overflow-hidden -z-10 bg-gradient-to-r from-[var(--brand-from)] via-[var(--brand-via)] to-[var(--brand-to)] opacity-90`}>
                         {user.backgroundImage && (
                             <Image
                                 src={user.backgroundImage}

@@ -8,7 +8,7 @@ import { TextNoteOverlay } from "./annotations/TextNoteOverlay";
 import { Point, Stroke, TextNote, PageAnnotations } from "./annotations/types";
 
 // Set worker URL to the CDN matching the installed version
-pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
+// pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface PdfViewerProps {
     url: string;
@@ -33,6 +33,15 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
     const [viewportDimensions, setViewportDimensions] = useState<{ width: number, height: number } | null>(null);
     const [annotations, setAnnotations] = useState<Record<number, Stroke[]>>({});
     const [textNotes, setTextNotes] = useState<Record<number, TextNote[]>>({});
+
+    // Initialize worker
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+            console.log(`[PdfViewer] Setting worker source to: ${workerSrc}`);
+            pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+        }
+    }, []);
 
     // Fetch saved annotations from tRPC
     const { data: savedAnnotations } = api.notes.getAnnotations.useQuery(
@@ -90,20 +99,51 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
 
     // 1. Load PDF Document
     useEffect(() => {
+        let loadingTask: { promise: Promise<pdfjsLib.PDFDocumentProxy>; destroy: () => Promise<void> } | null = null;
+        let isCancelled = false;
+
         const loadPdf = async () => {
             try {
+                if (!url) return;
+                console.log(`[PdfViewer] Starting load for URL: ${url}`);
                 setLoading(true);
-                const loadingTask = pdfjsLib.getDocument(url);
+                setError(null);
+
+                // Ensure worker is checked/set before loading
+                if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                    const workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+                    console.log(`[PdfViewer] Worker was unset, setting to: ${workerSrc}`);
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+                }
+
+                loadingTask = pdfjsLib.getDocument(url);
                 const doc = await loadingTask.promise;
-                setPdfDoc(doc);
-                setLoading(false);
+                console.log(`[PdfViewer] Document loaded successfully. Pages: ${doc.numPages}`);
+
+                if (!isCancelled) {
+                    setPdfDoc(doc);
+                    setLoading(false);
+                } else {
+                    console.log(`[PdfViewer] Load cancelled, destroying document.`);
+                    doc.destroy();
+                }
             } catch (err) {
-                console.error("Error loading PDF:", err);
-                setError("Failed to load PDF");
-                setLoading(false);
+                if (!isCancelled) {
+                    console.error("[PdfViewer] Error loading PDF:", err);
+                    setError("Failed to load PDF");
+                    setLoading(false);
+                }
             }
         };
-        if (url) loadPdf();
+
+        loadPdf();
+
+        return () => {
+            isCancelled = true;
+            if (loadingTask) {
+                loadingTask.destroy().catch(console.error);
+            }
+        };
     }, [url]);
 
     // 2. Handle Responsive Scaling
@@ -112,21 +152,45 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
         try {
             const page = await pdfDoc.getPage(pageNum);
             const viewport = page.getViewport({ scale: 1.0 });
-            const newScale = (availableWidth - 32) / viewport.width;
-            setScale(newScale);
+            // Add padding to prevent tight fit causing layout shifts
+            const newScale = (availableWidth - 40) / viewport.width;
+
+            // Debounce/Threshold check to prevent infinite loops (Site breaking issue)
+            // Increased threshold to 0.05 to be more forgiving of scrollbar toggles
+            setScale(prev => {
+                if (Math.abs(prev - newScale) < 0.05) return prev;
+                return newScale;
+            });
         } catch (e) { console.error(e); }
     }, [pdfDoc, pageNum]);
 
     useEffect(() => {
         if (!containerRef.current) return;
+
+        let timeoutId: NodeJS.Timeout;
+
         const resizeObserver = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-                if (entry.contentRect.width > 0) updateScale(entry.contentRect.width);
-            }
+            // Use requestAnimationFrame to avoid "ResizeObserver loop limit exceeded"
+            window.requestAnimationFrame(() => {
+                if (!Array.isArray(entries) || !entries.length) return;
+                const entry = entries[0];
+
+                // Add debounce to resize updates
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => {
+                    if (entry.contentRect.width > 0) {
+                        updateScale(entry.contentRect.width);
+                    }
+                }, 100);
+            });
         });
+
         resizeObserver.observe(containerRef.current);
-        return () => resizeObserver.disconnect();
-    }, [pdfDoc, pageNum, updateScale]);
+        return () => {
+            resizeObserver.disconnect();
+            clearTimeout(timeoutId);
+        };
+    }, [updateScale]);
 
     // 3. Render Page with proper cancellation handling (The Fixed Merge)
     useEffect(() => {

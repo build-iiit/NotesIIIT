@@ -24,9 +24,9 @@ export const metadata: Metadata = {
   description: "The ultimate platform for IIIT students to share lecture notes and collaborate",
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
   },
   appleWebApp: {
     capable: true,

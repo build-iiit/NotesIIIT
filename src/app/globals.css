@@ -90,6 +90,8 @@
     --button-gradient-from: #f97316;
     --button-gradient-via: #ec4899;
     --button-gradient-to: #ec4899;
+
+    --glow-color: rgba(251, 146, 60, 0.3);
   }
 
   .dark {
@@ -144,6 +146,8 @@
     --button-gradient-from: #f97316;
     --button-gradient-via: #ec4899;
     --button-gradient-to: #ec4899;
+
+    --glow-color: rgba(251, 146, 60, 0.3);
   }
 }
 
@@ -197,6 +201,8 @@
     --button-gradient-from: #000000;
     --button-gradient-via: #404040;
     --button-gradient-to: #000000;
+
+    --glow-color: rgba(0, 0, 0, 0.2);
   }
 
   .monochrome.dark {
@@ -239,6 +245,8 @@
     --button-gradient-from: #27272a;
     --button-gradient-via: #3f3f46;
     --button-gradient-to: #18181b;
+
+    --glow-color: rgba(255, 255, 255, 0.3);
   }
 }
 

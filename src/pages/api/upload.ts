@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { IncomingForm, File as FormidableFile, Fields, Files } from "formidable";
-import { auth } from "@/auth";
+import { auth } from "../../auth";
 
 // Disable default body parser to handle file uploads
 export const config = {

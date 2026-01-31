@@ -3,9 +3,19 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/app/_trpc/client";
-import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Github } from "lucide-react";
+import { Upload, FileText, X, CheckCircle, Loader2, Search, ChevronDown, Github, FolderOpen } from "lucide-react";
 
 type UploadStep = "idle" | "uploading" | "creating-record" | "complete";
+
+interface QueuedFile {
+    file: File;
+    title: string;
+    courseId: string;
+    semester: string;
+    status: "pending" | "uploading" | "complete" | "error";
+    progress: number;
+    error?: string;
+}
 
 // Helper to generate thumbnail (Keep this outside component or in a utils file ideally, but here for now)
 const generateThumbnail = async (pdfFile: File): Promise<File | null> => {
@@ -50,6 +60,33 @@ const generateThumbnail = async (pdfFile: File): Promise<File | null> => {
     }
 };
 
+// Helper to recursively extract PDF files from a dropped folder
+async function extractPdfsFromEntry(entry: FileSystemEntry): Promise<File[]> {
+    const files: File[] = [];
+
+    if (entry.isFile) {
+        const fileEntry = entry as FileSystemFileEntry;
+        const file = await new Promise<File>((resolve, reject) => {
+            fileEntry.file(resolve, reject);
+        });
+        if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+            files.push(file);
+        }
+    } else if (entry.isDirectory) {
+        const dirEntry = entry as FileSystemDirectoryEntry;
+        const reader = dirEntry.createReader();
+        const entries = await new Promise<FileSystemEntry[]>((resolve, reject) => {
+            reader.readEntries(resolve, reject);
+        });
+        for (const childEntry of entries) {
+            const childFiles = await extractPdfsFromEntry(childEntry);
+            files.push(...childFiles);
+        }
+    }
+
+    return files;
+}
+
 interface UploadFormProps {
     initialFolderId?: string | null;
     onSuccess?: (note: any) => void;
@@ -61,13 +98,13 @@ interface UploadFormProps {
 export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMode = false }: UploadFormProps) {
     const router = useRouter();
 
-    const [file, setFile] = useState<File | null>(null);
-    const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-    const [title, setTitle] = useState("");
+    // Multi-file state
+    const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
+    const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
     const [folderId, setFolderId] = useState<string | null>(initialFolderId);
     const [uploading, setUploading] = useState(false);
     const [uploadStep, setUploadStep] = useState<UploadStep>("idle");
-    const [uploadProgress, setUploadProgress] = useState(0);
+    const [overallProgress, setOverallProgress] = useState(0);
     const [dragActive, setDragActive] = useState(false);
 
     // Course & Semester State
@@ -108,13 +145,74 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const addFilesToQueue = useCallback((files: File[]) => {
+        const newQueued: QueuedFile[] = files.map((file) => ({
+            file,
+            title: file.name.replace(/\.[^/.]+$/, ""),
+            courseId: selectedCourseId,
+            semester: selectedSemester,
+            status: "pending" as const,
+            progress: 0,
+        }));
+        setQueuedFiles((prev) => {
+            const updated = [...prev, ...newQueued];
+            // Auto-select first file if none selected
+            if (selectedFileIndex === null && updated.length > 0) {
+                setSelectedFileIndex(0);
+            }
+            return updated;
+        });
+    }, [selectedCourseId, selectedSemester, selectedFileIndex]);
+
+    // Get the currently selected file
+    const selectedFile = selectedFileIndex !== null ? queuedFiles[selectedFileIndex] : null;
+
+    // When a file is selected, update the global controls to show its values
+    useEffect(() => {
+        if (selectedFile && selectedFile.status === "pending") {
+            setSelectedCourseId(selectedFile.courseId);
+            setSelectedSemester(selectedFile.semester);
+            // Update course search display
+            const course = courses?.find(c => c.id === selectedFile.courseId);
+            setCourseSearch(course ? `${course.code} - ${course.name}` : "");
+        }
+    }, [selectedFileIndex, courses]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // When global course/semester changes, update the selected file
+    const handleCourseSelect = (courseId: string, displayText: string) => {
+        setSelectedCourseId(courseId);
+        setCourseSearch(displayText);
+        setIsCourseDropdownOpen(false);
+        if (selectedFileIndex !== null && queuedFiles[selectedFileIndex]?.status === "pending") {
+            updateFileInQueue(selectedFileIndex, { courseId });
+        }
+    };
+
+    const handleSemesterSelect = (semester: string) => {
+        setSelectedSemester(semester);
+        setIsSemesterDropdownOpen(false);
+        if (selectedFileIndex !== null && queuedFiles[selectedFileIndex]?.status === "pending") {
+            updateFileInQueue(selectedFileIndex, { semester });
+        }
+    };
+
+    const handleTitleChange = (title: string) => {
+        if (selectedFileIndex !== null && queuedFiles[selectedFileIndex]?.status === "pending") {
+            updateFileInQueue(selectedFileIndex, { title });
+        }
+    };
+
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const selectedFile = e.target.files[0];
-            setFile(selectedFile);
-            setTitle(selectedFile.name.replace(/\.[^/.]+$/, ""));
-            const thumb = await generateThumbnail(selectedFile);
-            if (thumb) setThumbnailFile(thumb);
+        if (e.target.files && e.target.files.length > 0) {
+            const pdfFiles = Array.from(e.target.files).filter(
+                (f) => f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")
+            );
+            if (pdfFiles.length > 0) {
+                addFilesToQueue(pdfFiles);
+            } else {
+                alert("Please select PDF files only.");
+            }
         }
     };
 
@@ -127,16 +225,37 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
     const handleDrop = useCallback(async (e: React.DragEvent) => {
         e.preventDefault(); e.stopPropagation();
         setDragActive(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            const droppedFile = e.dataTransfer.files[0];
-            if (droppedFile.type === "application/pdf") {
-                setFile(droppedFile);
-                setTitle(droppedFile.name.replace(/\.[^/.]+$/, ""));
-                const thumb = await generateThumbnail(droppedFile);
-                if (thumb) setThumbnailFile(thumb);
-            } else alert("Please upload a PDF file");
+
+        const items = e.dataTransfer.items;
+        const allPdfs: File[] = [];
+
+        // Use webkitGetAsEntry for folder support
+        if (items && items.length > 0) {
+            for (let i = 0; i < items.length; i++) {
+                const entry = items[i].webkitGetAsEntry?.();
+                if (entry) {
+                    const pdfs = await extractPdfsFromEntry(entry);
+                    allPdfs.push(...pdfs);
+                }
+            }
         }
-    }, []);
+
+        // Fallback for browsers without webkitGetAsEntry
+        if (allPdfs.length === 0 && e.dataTransfer.files.length > 0) {
+            for (let i = 0; i < e.dataTransfer.files.length; i++) {
+                const file = e.dataTransfer.files[i];
+                if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+                    allPdfs.push(file);
+                }
+            }
+        }
+
+        if (allPdfs.length > 0) {
+            addFilesToQueue(allPdfs);
+        } else {
+            alert("No PDF files found. Please drop PDF files or folders containing PDFs.");
+        }
+    }, [addFilesToQueue]);
 
     // GitHub Import Handler
     const handleGithubImport = async () => {
@@ -155,11 +274,8 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                 throw new Error("The fetched file does not appear to be a PDF");
             }
             const importedFile = new File([blob], filename, { type: "application/pdf" });
-            setFile(importedFile);
-            setTitle(filename.replace(/\.[^/.]+$/, ""));
+            addFilesToQueue([importedFile]);
             setUploadMode("local");
-            const thumb = await generateThumbnail(importedFile);
-            if (thumb) setThumbnailFile(thumb);
         } catch (error) {
             console.error("GitHub import failed:", error);
             alert(`GitHub import failed: ${error instanceof Error ? error.message : "Check the URL and try again"}`);
@@ -168,7 +284,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
         }
     };
 
-    // Google Drive Import Handler
+    // Google Drive Import Handler (with multi-select)
     const triggerGoogleDrive = () => {
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
         const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -184,34 +300,34 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
             callback: async (tokenResponse: any) => {
                 if (tokenResponse && tokenResponse.access_token) {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const picker = new (window as any).google.picker.PickerBuilder()
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        .addView((window as any).google.picker.ViewId.PDFS)
+                    const google = (window as any).google;
+                    const picker = new google.picker.PickerBuilder()
+                        .addView(google.picker.ViewId.PDFS)
+                        .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
                         .setOAuthToken(tokenResponse.access_token)
                         .setDeveloperKey(apiKey)
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         .setCallback(async (data: any) => {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            if (data.action === (window as any).google.picker.Action.PICKED) {
-                                const doc = data.docs[0];
-                                const fileId = doc.id;
-                                const fileName = doc.name;
+                            if (data.action === google.picker.Action.PICKED) {
+                                const docs = data.docs;
                                 try {
                                     setUploading(true);
-                                    setDriveUploadProgress("Downloading from Google Drive...");
+                                    setDriveUploadProgress(`Downloading ${docs.length} file(s)...`);
                                     setDriveProgressPercent(10);
-                                    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                                        headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-                                    });
-                                    if (!res.ok) throw new Error("Failed to download from Google Drive");
-                                    setDriveProgressPercent(50);
-                                    const blob = await res.blob();
-                                    const file = new File([blob], fileName, { type: "application/pdf" });
-                                    setDriveProgressPercent(80);
-                                    setFile(file);
-                                    setTitle(fileName.replace(/\.[^/.]+$/, ""));
-                                    const thumb = await generateThumbnail(file);
-                                    if (thumb) setThumbnailFile(thumb);
+
+                                    const downloadedFiles: File[] = [];
+                                    for (let i = 0; i < docs.length; i++) {
+                                        const doc = docs[i];
+                                        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                                            headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                                        });
+                                        if (!res.ok) throw new Error(`Failed to download ${doc.name}`);
+                                        const blob = await res.blob();
+                                        downloadedFiles.push(new File([blob], doc.name, { type: "application/pdf" }));
+                                        setDriveProgressPercent(10 + Math.round((i + 1) / docs.length * 80));
+                                    }
+
+                                    addFilesToQueue(downloadedFiles);
                                     setDriveProgressPercent(100);
                                     setDriveUploadProgress("Ready!");
                                     setTimeout(() => { setDriveUploadProgress(""); setDriveProgressPercent(0); }, 1500);
@@ -264,70 +380,98 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
         course.code.toLowerCase().includes(courseSearch.toLowerCase())
     );
 
+    const updateFileInQueue = (index: number, updates: Partial<QueuedFile>) => {
+        setQueuedFiles((prev) => prev.map((f, i) => (i === index ? { ...f, ...updates } : f)));
+    };
+
+    const removeFileFromQueue = (index: number) => {
+        setQueuedFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!file) return;
+        if (queuedFiles.length === 0) return;
 
         try {
             setUploading(true);
             setUploadStep("uploading");
-            setUploadProgress(10);
-            let thumbnailKey: string | undefined;
+            setOverallProgress(0);
 
-            // 1. Upload PDF
-            const formData = new FormData();
-            formData.append("file", file);
-            const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
-            if (!uploadResponse.ok) {
-                const errorText = await uploadResponse.text();
-                console.error(`Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`, errorText);
-                throw new Error(`Upload failed (${uploadResponse.status}): ${errorText || uploadResponse.statusText}`);
-            }
-            const { key: pdfS3Key } = await uploadResponse.json();
-            setUploadProgress(40);
+            const totalFiles = queuedFiles.length;
+            let completedFiles = 0;
 
-            // 2. Upload Thumbnail
-            if (thumbnailFile) {
-                const thumbFormData = new FormData();
-                thumbFormData.append("file", thumbnailFile);
-                const thumbResponse = await fetch("/api/upload", { method: "POST", body: thumbFormData });
-                if (thumbResponse.ok) {
-                    const { key } = await thumbResponse.json();
-                    thumbnailKey = key;
+            for (let i = 0; i < queuedFiles.length; i++) {
+                const qf = queuedFiles[i];
+                updateFileInQueue(i, { status: "uploading", progress: 10 });
+
+                try {
+                    // 1. Generate Thumbnail
+                    const thumbnailFile = await generateThumbnail(qf.file);
+                    updateFileInQueue(i, { progress: 20 });
+
+                    // 2. Upload PDF
+                    const formData = new FormData();
+                    formData.append("file", qf.file);
+                    const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
+                    if (!uploadResponse.ok) {
+                        const errorText = await uploadResponse.text();
+                        throw new Error(`Upload failed: ${errorText || uploadResponse.statusText}`);
+                    }
+                    const { key: pdfS3Key } = await uploadResponse.json();
+                    updateFileInQueue(i, { progress: 50 });
+
+                    // 3. Upload Thumbnail
+                    let thumbnailKey: string | undefined;
+                    if (thumbnailFile) {
+                        const thumbFormData = new FormData();
+                        thumbFormData.append("file", thumbnailFile);
+                        const thumbResponse = await fetch("/api/upload", { method: "POST", body: thumbFormData });
+                        if (thumbResponse.ok) {
+                            const { key } = await thumbResponse.json();
+                            thumbnailKey = key;
+                        }
+                    }
+                    updateFileInQueue(i, { progress: 70 });
+
+                    // 4. Create Database Record
+                    const note = await createNoteMutation.mutateAsync({
+                        title: qf.title,
+                        s3Key: pdfS3Key,
+                        thumbnailS3Key: thumbnailKey,
+                        folderId: folderId || undefined,
+                        courseId: qf.courseId || undefined,
+                        semester: qf.semester || undefined,
+                        visibility,
+                        groupIds: visibility === "GROUP" ? selectedGroupIds : undefined,
+                    });
+
+                    updateFileInQueue(i, { status: "complete", progress: 100 });
+                    completedFiles++;
+                    setOverallProgress(Math.round((completedFiles / totalFiles) * 100));
+
+                    if (onSuccess && i === queuedFiles.length - 1) {
+                        onSuccess(note);
+                    }
+                } catch (error) {
+                    console.error(`Failed to upload ${qf.file.name}:`, error);
+                    updateFileInQueue(i, { status: "error", error: error instanceof Error ? error.message : "Unknown error" });
                 }
             }
-            setUploadProgress(70);
 
-            // 3. Create Database Record
-            setUploadStep("creating-record");
-            const note = await createNoteMutation.mutateAsync({
-                title,
-                s3Key: pdfS3Key,
-                thumbnailS3Key: thumbnailKey,
-                folderId: folderId || undefined,
-                courseId: selectedCourseId || undefined,
-                semester: selectedSemester || undefined,
-                visibility,
-                groupIds: visibility === "GROUP" ? selectedGroupIds : undefined,
-            });
-
-            setUploadProgress(100);
             setUploadStep("complete");
 
-            if (onSuccess) {
-                onSuccess(note);
-            } else if (!isFulfillmentMode) {
+            if (!isFulfillmentMode && !onSuccess) {
                 setTimeout(() => {
                     router.push("/");
                     router.refresh();
-                }, 800);
+                }, 1000);
             }
 
         } catch (error) {
             console.error("Upload failed:", error);
             alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
             setUploadStep("idle");
-            setUploadProgress(0);
+            setOverallProgress(0);
         } finally {
             setUploading(false);
         }
@@ -340,27 +484,18 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + ["Bytes", "KB", "MB", "GB"][i];
     };
 
+    const pendingCount = queuedFiles.filter(f => f.status === "pending").length;
+    const completedCount = queuedFiles.filter(f => f.status === "complete").length;
+
     return (
         <div className={isFulfillmentMode ? "" : "max-w-2xl mx-auto backdrop-blur-3xl bg-white/30 dark:bg-black/30 rounded-3xl shadow-xl border border-white/50 dark:border-white/10 p-8"}>
             {!isFulfillmentMode && (
                 <h1 className="text-3xl font-bold mb-8 bg-gradient-to-r from-[var(--brand-from)] via-[var(--brand-via)] to-[var(--brand-to)] bg-clip-text text-transparent">
-                    Upload Note
+                    Upload Notes
                 </h1>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Title</label>
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        required
-                        className="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-orange-500/50 outline-none transition-all text-gray-900 dark:text-white"
-                        placeholder="Enter note title"
-                    />
-                </div>
-
                 {/* Course & Semester Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="relative" ref={courseDropdownRef}>
@@ -383,7 +518,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                                     <button
                                         key={c.id}
                                         type="button"
-                                        onClick={() => { setSelectedCourseId(c.id); setCourseSearch(`${c.code} - ${c.name}`); setIsCourseDropdownOpen(false); }}
+                                        onClick={() => handleCourseSelect(c.id, `${c.code} - ${c.name}`)}
                                         className="w-full text-left px-4 py-3 hover:bg-orange-500/10 text-sm border-b border-gray-100 dark:border-white/5 last:border-0"
                                     >
                                         <span className="font-bold text-orange-600 dark:text-orange-400">{c.code}</span> — <span className="text-gray-600 dark:text-gray-300">{c.name}</span>
@@ -409,7 +544,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                                     <button
                                         key={sem}
                                         type="button"
-                                        onClick={() => { setSelectedSemester(sem); setIsSemesterDropdownOpen(false); }}
+                                        onClick={() => handleSemesterSelect(sem)}
                                         className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedSemester === sem ? "bg-orange-500/20 text-orange-600 font-bold" : "hover:bg-gray-100 dark:hover:bg-white/5"}`}
                                     >
                                         Semester {sem}
@@ -443,23 +578,30 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                 {/* File Upload Zone */}
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">PDF File</label>
-                        {!file && (
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            PDF Files {queuedFiles.length > 0 && <span className="text-primary">({queuedFiles.length})</span>}
+                        </label>
+                        {queuedFiles.length === 0 && (
                             <div className="flex bg-white/50 dark:bg-black/50 rounded-lg p-1 border border-white/20">
                                 <button type="button" onClick={() => setUploadMode("local")} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "local" ? "bg-white dark:bg-zinc-800 shadow text-primary" : "text-gray-500 hover:text-gray-700"}`}>Local</button>
                                 <button type="button" onClick={() => setUploadMode("github")} className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${uploadMode === "github" ? "bg-white dark:bg-zinc-800 shadow text-primary" : "text-gray-500 hover:text-gray-700"}`}>GitHub</button>
                             </div>
                         )}
                     </div>
-                    {!file ? (
+
+                    {queuedFiles.length === 0 ? (
                         uploadMode === "local" ? (
                             <div
                                 onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
                                 className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-primary bg-primary/10 scale-[1.02]" : "border-white/30 dark:border-white/10 bg-white/5 hover:border-primary/50 hover:bg-primary/5"}`}
                             >
-                                <input type="file" accept=".pdf" onChange={handleFileChange} required className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                                <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-                                <p className="text-gray-700 dark:text-gray-300 font-medium text-sm mb-4">Drop PDF here or click to browse</p>
+                                <input type="file" accept=".pdf" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                <div className="flex items-center justify-center gap-2 mb-3">
+                                    <Upload className="h-8 w-8 text-gray-400" />
+                                    <FolderOpen className="h-8 w-8 text-gray-400" />
+                                </div>
+                                <p className="text-gray-700 dark:text-gray-300 font-medium text-sm mb-1">Drop PDFs or folders here</p>
+                                <p className="text-gray-500 text-xs mb-4">or click to browse files</p>
                                 <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); triggerGoogleDrive(); }}
@@ -505,17 +647,91 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                             </div>
                         )
                     ) : (
-                        <div className="bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 rounded-2xl p-3 flex items-center gap-3">
-                            <div className="bg-orange-500/20 p-2 rounded-lg">
-                                <FileText className="h-6 w-6 text-orange-500" />
+                        <div className="space-y-3">
+                            {/* Title Input for Selected File */}
+                            {selectedFile && selectedFile.status === "pending" && (
+                                <div>
+                                    <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">
+                                        Title <span className="text-primary normal-case font-normal">(editing: {selectedFile.file.name})</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedFile.title}
+                                        onChange={(e) => handleTitleChange(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-orange-500/50 outline-none transition-all text-gray-900 dark:text-white text-sm"
+                                        placeholder="Enter a title for this note"
+                                    />
+                                </div>
+                            )}
+
+                            {/* File Queue */}
+                            <div className="max-h-64 overflow-y-auto pr-1 space-y-2">
+                                {queuedFiles.map((qf, index) => (
+                                    <div
+                                        key={index}
+                                        onClick={() => qf.status === "pending" && setSelectedFileIndex(index)}
+                                        className={`border rounded-xl p-3 transition-all cursor-pointer ${selectedFileIndex === index
+                                            ? "bg-primary/10 border-primary ring-2 ring-primary/30"
+                                            : qf.status === "complete" ? "bg-green-500/10 border-green-500/30"
+                                                : qf.status === "error" ? "bg-red-500/10 border-red-500/30"
+                                                    : qf.status === "uploading" ? "bg-orange-500/10 border-orange-500/30"
+                                                        : "bg-white/20 dark:bg-black/20 border-white/30 dark:border-white/10 hover:border-primary/50"
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-lg shrink-0 ${qf.status === "complete" ? "bg-green-500/20" :
+                                                qf.status === "error" ? "bg-red-500/20" :
+                                                    selectedFileIndex === index ? "bg-primary/20" : "bg-orange-500/20"
+                                                }`}>
+                                                {qf.status === "complete" ? (
+                                                    <CheckCircle className="h-5 w-5 text-green-500" />
+                                                ) : qf.status === "uploading" ? (
+                                                    <Loader2 className="h-5 w-5 text-orange-500 animate-spin" />
+                                                ) : (
+                                                    <FileText className={`h-5 w-5 ${selectedFileIndex === index ? "text-primary" : "text-orange-500"}`} />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`font-medium text-sm truncate ${selectedFileIndex === index ? "text-primary" : "text-gray-800 dark:text-white"}`}>
+                                                    {qf.title || qf.file.name}
+                                                </p>
+                                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                    <span>{formatFileSize(qf.file.size)}</span>
+                                                    {qf.courseId && courses && (
+                                                        <span className="text-orange-500">• {courses.find(c => c.id === qf.courseId)?.code}</span>
+                                                    )}
+                                                    {qf.semester && (
+                                                        <span className="text-blue-500">• Sem {qf.semester}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {qf.status === "pending" && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); removeFileFromQueue(index); if (selectedFileIndex === index) setSelectedFileIndex(queuedFiles.length > 1 ? 0 : null); }}
+                                                    className="p-1.5 rounded-lg hover:bg-red-500/20 shrink-0"
+                                                >
+                                                    <X className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        {qf.status === "uploading" && (
+                                            <div className="h-1 bg-white/20 dark:bg-black/20 rounded-full overflow-hidden mt-2">
+                                                <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${qf.progress}%` }} />
+                                            </div>
+                                        )}
+                                        {qf.error && <p className="text-red-500 text-xs mt-2">{qf.error}</p>}
+                                    </div>
+                                ))}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-gray-800 dark:text-white font-medium truncate text-sm">{file.name}</p>
-                                <p className="text-gray-500 text-xs">{formatFileSize(file.size)}</p>
+                            {/* Add more files button */}
+                            <div
+                                onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
+                                className={`relative border-2 border-dashed rounded-xl p-4 text-center transition-all duration-300 cursor-pointer ${dragActive ? "border-primary bg-primary/10" : "border-white/20 dark:border-white/10 hover:border-primary/50"}`}
+                            >
+                                <input type="file" accept=".pdf" multiple onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                                <p className="text-gray-500 text-xs font-medium">+ Add more PDFs or drop folder</p>
                             </div>
-                            <button type="button" onClick={() => { setFile(null); setThumbnailFile(null); }} disabled={uploading} className="p-1.5 rounded-lg hover:bg-red-500/20">
-                                <X className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                            </button>
                         </div>
                     )}
                 </div>
@@ -524,11 +740,11 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
                 {uploading && (
                     <div className="space-y-1">
                         <div className="flex justify-between text-xs text-gray-500">
-                            <span>{uploadStep === "uploading" ? "Uploading..." : "Saving..."}</span>
-                            <span>{uploadProgress}%</span>
+                            <span>Uploading {completedCount}/{queuedFiles.length} files...</span>
+                            <span>{overallProgress}%</span>
                         </div>
                         <div className="h-1.5 bg-white/20 dark:bg-black/20 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                            <div className="h-full bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] transition-all duration-300" style={{ width: `${overallProgress}%` }} />
                         </div>
                     </div>
                 )}
@@ -567,11 +783,11 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
 
                 <button
                     type="submit"
-                    disabled={uploading || !file || !title || (visibility === "GROUP" && selectedGroupIds.length === 0)}
+                    disabled={uploading || queuedFiles.length === 0 || (visibility === "GROUP" && selectedGroupIds.length === 0)}
                     className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[var(--button-gradient-from)] via-[var(--button-gradient-via)] to-[var(--button-gradient-to)] text-white font-bold shadow-lg hover:scale-[1.01] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                     {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    <span>{uploading ? "Uploading..." : "Upload Note"}</span>
+                    <span>{uploading ? `Uploading ${completedCount}/${queuedFiles.length}...` : `Upload ${queuedFiles.length} Note${queuedFiles.length !== 1 ? "s" : ""}`}</span>
                 </button>
             </form>
         </div>

@@ -113,9 +113,9 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
 
                 {/* Header Preview Section */}
                 <div className="relative h-32 bg-gray-100 dark:bg-zinc-800">
-                    {user.backgroundImage ? (
+                    {backgroundPreview ? (
                         <Image
-                            src={user.backgroundImage}
+                            src={backgroundPreview}
                             alt="Background Cover"
                             fill
                             className="object-cover"

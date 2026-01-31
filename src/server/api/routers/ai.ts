@@ -159,14 +159,14 @@ export const aiRouter = createTRPCRouter({
                 throw new TRPCError({ code: "UNAUTHORIZED", message: "You do not have access to this document" });
             }
 
-            try {
-                // Use selected model, default to 2.5-flash
-                const modelName = input.model || "gemini-2.5-flash";
 
-                console.log(`[AI Debug] Using model: ${modelName}`);
-                console.log(`[AI Debug] Using API Key: ${user.geminiApiKey?.substring(0, 8)}... (Length: ${user.geminiApiKey?.length})`);
+            // Use selected model, default to 2.5-flash
+            const modelName = input.model || "gemini-2.5-flash";
 
-                const model = genAI.getGenerativeModel({ model: modelName });
+            console.log(`[AI Debug] Using model: ${modelName}`);
+            console.log(`[AI Debug] Using API Key: ${user.geminiApiKey?.substring(0, 8)}... (Length: ${user.geminiApiKey?.length})`);
+
+            const model = genAI.getGenerativeModel({ model: modelName });
 
             const prompt = `You are an intelligent assistant helping a student understand a document.
 You are looking at page ${input.pageNumber} of a PDF document.
