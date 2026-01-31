@@ -43,9 +43,11 @@ export function ProfileImage({
                     fill={fill}
                     priority={priority}
                     className="object-cover"
+                    style={{ objectFit: "cover" }} // Force object-cover via inline style
                     unoptimized
                     {...props}
                 />
+
             ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                     <span className="font-medium text-sm">

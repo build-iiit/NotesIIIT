@@ -203,9 +203,8 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab = 'MEM
                                                     <ProfileImage
                                                         src={member.user.image}
                                                         alt={member.user.name || "Member"}
-                                                        width={40}
-                                                        height={40}
-                                                        className="object-cover"
+                                                        fill
+                                                        className="object-cover w-full h-full"
                                                     />
                                                 </div>
                                                 <div>

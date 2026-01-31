@@ -221,6 +221,21 @@ export const socialRouter = createTRPCRouter({
                     }
                 }
             });
+
+            if (group) {
+                // Resolve member images
+                await Promise.all(group.members.map(async (member) => {
+                    if (member.user.image && !member.user.image.startsWith("http")) {
+                        try {
+                            member.user.image = await getPresignedDownloadUrl(member.user.image);
+                        } catch (e) {
+                            console.error("Failed to resolve member image in getGroupDetails:", e);
+                        }
+                    }
+                    return member;
+                }));
+            }
+
             return group;
         }),
 
@@ -320,7 +335,7 @@ export const socialRouter = createTRPCRouter({
             });
             if (!membership) throw new TRPCError({ code: "FORBIDDEN", message: "Not a member" });
 
-            return ctx.prisma.note.findMany({
+            const files = await ctx.prisma.note.findMany({
                 where: {
                     sharedGroups: {
                         some: { id: input.groupId }
@@ -332,7 +347,21 @@ export const socialRouter = createTRPCRouter({
                 },
                 orderBy: { createdAt: "desc" }
             });
+
+            // Resolve author images
+            await Promise.all(files.map(async (file) => {
+                if (file.author?.image && !file.author.image.startsWith("http")) {
+                    try {
+                        file.author.image = await getPresignedDownloadUrl(file.author.image);
+                    } catch (e) {
+                        console.error("Failed to resolve author image in getGroupFiles:", e);
+                    }
+                }
+            }));
+
+            return files;
         }),
+
 
     /**
      * Remove a friend by deleting the accepted friend request between the users.

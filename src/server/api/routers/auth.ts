@@ -9,7 +9,20 @@ export const authRouter = createTRPCRouter({
      * Auth: Public (returns null if not logged in) or Protected
      */
     getMe: publicProcedure.query(async ({ ctx }) => {
-        const user = ctx.session?.user;
+        if (!ctx.session?.user?.id) return null;
+
+        // Fetch fresh user data from database
+        const user = await ctx.prisma.user.findUnique({
+            where: { id: ctx.session.user.id },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+                role: true,
+            }
+        });
+
         if (!user) return null;
 
         // Resolve S3 URL for profile image
@@ -26,8 +39,10 @@ export const authRouter = createTRPCRouter({
         return {
             ...user,
             image: imageUrl,
+            role: user.role as "USER" | "ADMIN", // Ensure role type matches NextAuth expects
         };
     }),
+
 
     /**
      * Get a public user profile by ID.
