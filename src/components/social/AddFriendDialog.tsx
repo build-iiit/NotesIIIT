@@ -68,7 +68,7 @@ export function AddFriendDialog({ isOpen, onClose }: AddFriendDialogProps) {
                                     <div className="flex items-center gap-3">
                                         <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100">
                                             <ProfileImage
-                                                src={null}
+                                                src={user.image}
                                                 alt={user.name || ""}
                                                 width={40}
                                                 height={40}

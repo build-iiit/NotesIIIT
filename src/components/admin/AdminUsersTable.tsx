@@ -370,7 +370,7 @@ export function AdminUsersTable() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-3">
                                                 <ProfileImage
-                                                    src={null}
+                                                    src={user.image}
                                                     alt={user.name || "User"}
                                                     width={40}
                                                     height={40}

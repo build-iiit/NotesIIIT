@@ -107,7 +107,7 @@ export function GroupsList() {
                                 {group.members.map(member => (
                                     <div key={member.id} className="relative inline-block w-8 h-8 rounded-full ring-2 ring-white dark:ring-zinc-900 overflow-hidden">
                                         <ProfileImage
-                                            src={null}
+                                            src={member.user.image}
                                             alt={member.user.name || "Member"}
                                             width={33}
                                             height={33}

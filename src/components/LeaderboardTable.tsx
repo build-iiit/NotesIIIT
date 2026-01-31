@@ -63,7 +63,7 @@ export function LeaderboardTable() {
                             className="flex items-center gap-4 p-3 rounded-xl bg-white/10 dark:bg-black/10 hover:bg-white/20 dark:hover:bg-white/5 transition-all group border border-transparent hover:border-orange-400/30"
                         >
                             <ProfileImage
-                                src={null}
+                                src={user.image}
                                 alt={user.name || "User avatar"}
                                 fallback={user.name || "User"}
                                 width={40}

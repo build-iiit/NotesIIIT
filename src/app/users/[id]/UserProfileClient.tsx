@@ -84,7 +84,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                             <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand-from)] to-[var(--brand-to)] rounded-full blur-2xl opacity-40 animate-pulse" />
                             <div className="relative w-32 h-32 rounded-full border-4 border-white/50 dark:border-zinc-900/50 shadow-2xl bg-white/20 backdrop-blur-xl overflow-hidden">
                                 <ProfileImage
-                                    src={null}
+                                    src={user.image}
                                     alt={user.name || "User"}
                                     fallback={user.name || "User"}
                                     width={120}

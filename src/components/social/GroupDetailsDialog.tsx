@@ -201,7 +201,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab = 'MEM
                                             <div className="flex items-center gap-3">
                                                 <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 dark:border-white/10">
                                                     <ProfileImage
-                                                        src={null} // Generic enforced
+                                                        src={member.user.image}
                                                         alt={member.user.name || "Member"}
                                                         width={40}
                                                         height={40}
@@ -329,7 +329,7 @@ function MemberSearch({ query, group, onAdd }: { query: string, group: any, onAd
                     <div key={user.id} className="flex items-center justify-between p-2 hover:bg-white dark:hover:bg-white/5 rounded-lg transition-colors">
                         <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-gray-200 overflow-hidden relative">
-                                <ProfileImage src={null} width={128} height={128} alt="" />
+                                <ProfileImage src={user.image} width={128} height={128} alt="" />
                             </div>
                             <span className="text-sm font-medium">{user.name}</span>
                         </div>

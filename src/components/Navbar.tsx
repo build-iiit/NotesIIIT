@@ -120,7 +120,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                                     aria-label="View Profile"
                                 >
                                     <ProfileImage
-                                        src={null}
+                                        src={user.image}
                                         alt={user.name || "Profile"}
                                         fallback={user.name || "User"}
                                         width={36}
