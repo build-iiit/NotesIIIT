@@ -88,25 +88,28 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
             // 1. Upload Background if changed
             if (backgroundFile) {
                 try {
-                    const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
-                        filename: backgroundFile.name,
-                        contentType: backgroundFile.type,
-                        type: "background",
-                    });
+                    const formData = new FormData();
+                    formData.append("file", backgroundFile);
 
-                    const uploadResponse = await fetch(url, {
-                        method: "PUT",
-                        body: backgroundFile,
-                        headers: { "Content-Type": backgroundFile.type },
+                    const uploadResponse = await fetch("/api/upload", {
+                        method: "POST",
+                        body: formData,
                     });
 
                     if (!uploadResponse.ok) {
                         const errorText = await uploadResponse.text();
                         console.error("Background upload failed:", uploadResponse.status, errorText);
-                        throw new Error(`Failed to upload background: ${uploadResponse.status} ${uploadResponse.statusText}`);
+                        throw new Error(`Failed to upload background: ${uploadResponse.statusText}`);
                     }
-                    newBackgroundKey = s3Key;
-                } catch {
+
+                    const data = await uploadResponse.json();
+                    if (!data.success) {
+                        throw new Error(data.error || "Failed to upload background");
+                    }
+
+                    newBackgroundKey = data.key;
+                } catch (err) {
+                    console.error(err);
                     setError('Failed to upload background image. Please try again.');
                     setIsSaving(false);
                     return;
@@ -116,25 +119,28 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
             // 2. Upload Avatar if changed
             if (avatarFile) {
                 try {
-                    const { url, s3Key } = await getUploadUrlMutation.mutateAsync({
-                        filename: avatarFile.name,
-                        contentType: avatarFile.type,
-                        type: "avatar",
-                    });
+                    const formData = new FormData();
+                    formData.append("file", avatarFile);
 
-                    const uploadResponse = await fetch(url, {
-                        method: "PUT",
-                        body: avatarFile,
-                        headers: { "Content-Type": avatarFile.type },
+                    const uploadResponse = await fetch("/api/upload", {
+                        method: "POST",
+                        body: formData,
                     });
 
                     if (!uploadResponse.ok) {
                         const errorText = await uploadResponse.text();
                         console.error("Avatar upload failed:", uploadResponse.status, errorText);
-                        throw new Error(`Failed to upload avatar: ${uploadResponse.status} ${uploadResponse.statusText}`);
+                        throw new Error(`Failed to upload avatar: ${uploadResponse.statusText}`);
                     }
-                    newAvatarKey = s3Key;
-                } catch {
+
+                    const data = await uploadResponse.json();
+                    if (!data.success) {
+                        throw new Error(data.error || "Failed to upload avatar");
+                    }
+
+                    newAvatarKey = data.key;
+                } catch (err) {
+                    console.error(err);
                     setError('Failed to upload profile image. Please try again.');
                     setIsSaving(false);
                     return;
