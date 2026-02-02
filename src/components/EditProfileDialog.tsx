@@ -31,7 +31,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
     const backgroundInputRef = useRef<HTMLInputElement>(null);
     const avatarInputRef = useRef<HTMLInputElement>(null);
 
-    const getUploadUrlMutation = api.auth.getProfileUploadUrl.useMutation();
+    // const getUploadUrlMutation = api.auth.getProfileUploadUrl.useMutation(); // Removed as we use /api/upload now
     const updateProfileMutation = api.auth.updateProfile.useMutation();
 
     const handleBackgroundChange = (e: React.ChangeEvent<HTMLInputElement>) => {
