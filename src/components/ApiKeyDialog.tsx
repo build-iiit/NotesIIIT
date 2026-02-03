@@ -74,7 +74,7 @@ export function ApiKeyDialog({ onClose, onSave }: ApiKeyDialogProps) {
                 <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                     <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/50 dark:border-blue-700/30">
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                            <strong className="text-blue-600 dark:text-blue-400">We respect your privacy.</strong> NotesIIIT uses AI to help you understand your documents. To ensure your questions and document contents stay completely private, you can use your own Gemini API key.
+                            <strong className="text-blue-600 dark:text-blue-400">We respect your privacy.</strong> iiitNotes uses AI to help you understand your documents. To ensure your questions and document contents stay completely private, you can use your own Gemini API key.
                         </p>
                     </div>
 

@@ -12,7 +12,7 @@ export default function SignIn() {
                     <div className="absolute inset-0 bg-orange-500/20 blur-xl rounded-full" />
                 </div>
                 <h1 className="text-center text-6xl font-extrabold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 bg-clip-text text-transparent drop-shadow-2xl tracking-tight">
-                    NotesIIIT
+                    iiitNotes
                 </h1>
                 <p className="mt-3 text-center text-lg text-white/90 font-medium drop-shadow-md">
                     Share notes, collaborate, and excel.
@@ -32,7 +32,7 @@ export default function SignIn() {
                     </div>
                 </div>
                 <p className="mt-6 text-center text-xs text-white/70 drop-shadow">
-                    &copy; {new Date().getFullYear()} NotesIIIT. All rights reserved.
+                    &copy; {new Date().getFullYear()} iiitNotes. All rights reserved.
                 </p>
                 <div className="mt-2 text-center">
                     <span className="inline-block px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-wider backdrop-blur-md">

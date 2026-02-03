@@ -58,7 +58,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
                             <div className={`absolute inset-0 blur-xl transition-all duration-300 rounded-full ${themeStyle === "monochrome" ? "bg-primary/20 group-hover:bg-primary/40" : "bg-orange-500/20 group-hover:bg-orange-500/40"}`} />
                         </div>
                         <span className={`text-xl font-bold bg-clip-text text-transparent drop-shadow hidden sm:block ${themeStyle === "monochrome" ? "bg-gradient-to-r from-gray-700 to-black dark:from-white dark:to-gray-300" : "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500"}`}>
-                            NotesIIIT
+                            iiitNotes
                         </span>
                     </Link>
 

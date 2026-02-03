@@ -1,6 +1,6 @@
-# NotesIIIT Platform 📚
+# iiitNotes Platform 📚
 
-**NotesIIIT** is a modern, full-featured notes sharing platform built with the T3 Stack.
+**iiitNotes** is a modern, full-featured notes sharing platform built with the T3 Stack.
 
 
 
@@ -83,12 +83,14 @@ flowchart TD
 - Node.js 18+
 - Docker & Docker Compose
 
-### 1. Clone & Install
-```bash
-git clone https://github.com/Entropy-rgb/NotesIIIT.git
-cd NotesIIIT
-npm install
-```
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Entropy-rgb/NotesIIIT.git
+   cd NotesIIIT
+   npm install
+   ```
 
 ### 2. Environment Setup
 Create a `.env` file in the root directory:

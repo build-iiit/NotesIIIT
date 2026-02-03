@@ -173,7 +173,7 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
     // Brand Name
     ctx.font = 'bold 28px sans-serif';
     ctx.fillStyle = '#334155'; // slate-700
-    ctx.fillText('NotesIIIT', PADDING_X + 45, footerY);
+    ctx.fillText('iiitNotes', PADDING_X + 45, footerY);
 
     // "Markdown Note" Badge
     const badgeText = 'MARKDOWN';

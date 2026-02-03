@@ -20,13 +20,13 @@ import { GoogleScripts } from "@/components/GoogleScripts";
 // });
 
 export const metadata: Metadata = {
-  title: "NotesIIIT - Share Notes, Ace Exams",
+  title: "iiitNotes - Share Notes, Ace Exams",
   description: "The ultimate platform for IIIT students to share lecture notes and collaborate",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "NotesIIIT",
+    title: "iiitNotes",
   },
 };
 
