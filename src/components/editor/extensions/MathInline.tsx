@@ -4,6 +4,7 @@ import type { ExtendedRegExpMatchArray } from '@tiptap/core';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { escapeHtml } from '@/lib/utils';
 
 /**
  * MathInline Extension
@@ -66,7 +67,7 @@ function MathInlineNodeView({ node, updateAttributes, selected }: NodeViewProps)
             displayMode: false,
         });
     } catch {
-        rendered = `<span class="math-error">${latexValue}</span>`;
+        rendered = `<span class="math-error">${escapeHtml(latexValue)}</span>`;
     }
 
     return (
