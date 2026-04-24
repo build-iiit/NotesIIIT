@@ -105,7 +105,6 @@ export const aiRouter = createTRPCRouter({
             }
 
             // Initialize Gemini with user's personal API key
-            console.log("DEBUG: Using API Key from DB:", user.geminiApiKey ? user.geminiApiKey.substring(0, 10) + "..." : "UNDEFINED");
             const genAI = new GoogleGenerativeAI(user.geminiApiKey);
 
             // Verify the version exists and user has access
@@ -172,7 +171,6 @@ Please answer the question based on what you can see in the image. Be concise an
                 // Fallback to gemini-1.5-flash-001 (stable) if we weren't already using it
                 const primaryModel = input.model || "gemini-2.0-flash";
                 if (!primaryModel.includes("1.5")) {
-                    console.log("DEBUG: Attempting fallback to gemini-1.5-flash-001");
                     try {
                         // Try stable flash version
                         const fallbackModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
@@ -194,7 +192,6 @@ Please answer the question based on what you can see in the image. Be concise an
                         console.error("AI Error (Fallback 1.5-Flash):", (fallbackError as Error).message);
 
                         // Try one last time with Pro if Flash failed
-                        console.log("DEBUG: Attempting second fallback to gemini-1.5-pro");
                         try {
                             const proModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
                             const proResult = await proModel.generateContent([
