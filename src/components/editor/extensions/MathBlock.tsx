@@ -3,6 +3,7 @@ import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewProps } from '@tiptap/r
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { escapeHtml } from '@/lib/utils';
 
 /**
  * MathBlock Extension
@@ -68,7 +69,7 @@ function MathBlockNodeView({ node, updateAttributes, selected }: NodeViewProps) 
             displayMode: true,
         });
     } catch {
-        rendered = `<span class="math-error">${latexValue}</span>`;
+        rendered = `<span class="math-error">${escapeHtml(latexValue)}</span>`;
     }
 
     return (
