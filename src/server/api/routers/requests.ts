@@ -198,13 +198,35 @@ export const requestsRouter = createTRPCRouter({
                 await ctx.prisma.requestUpvote.delete({ where: { id: existing.id } });
                 return { added: false };
             } else {
-                await ctx.prisma.requestUpvote.create({
+                const upvote = await ctx.prisma.requestUpvote.create({
                     data: {
                         userId: ctx.session.user.id,
                         requestId: input.requestId,
+                    },
+                    include: {
+                        request: {
+                            select: {
+                                userId: true,
+                                title: true,
+                            }
+                        }
                     }
                 });
-                // TODO: Notification here
+
+                if (upvote.request.userId !== ctx.session.user.id) {
+                    await ctx.prisma.notification.create({
+                        data: {
+                            userId: upvote.request.userId,
+                            actorId: ctx.session.user.id,
+                            type: "REQUEST_UPVOTED" as any,
+                            data: {
+                                requestId: input.requestId,
+                                requestTitle: upvote.request.title,
+                            }
+                        }
+                    });
+                }
+
                 return { added: true };
             }
         }),
