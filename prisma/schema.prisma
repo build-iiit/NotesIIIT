@@ -540,6 +540,7 @@ enum NotificationType {
   REQUEST_FULFILLED
   REQUEST_COMMENT
   FULFILLMENT_ACCEPTED
+  REQUEST_UPVOTED
 }
 
 // ---------------------------------------------------------

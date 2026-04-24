@@ -44,7 +44,12 @@ function getNotificationIcon(type: string) {
         case "REPLY_TO_COMMENT":
             return <MessageSquare className="h-4 w-4" />;
         case "VOTES_ON_NOTE":
+        case "REQUEST_UPVOTED":
             return <ThumbsUp className="h-4 w-4" />;
+        case "REQUEST_FULFILLED":
+            return <FileText className="h-4 w-4" />;
+        case "REQUEST_COMMENT":
+            return <MessageSquare className="h-4 w-4" />;
         case "GROUP_INVITE":
         case "NOTE_SHARED_TO_GROUP":
             return <Users className="h-4 w-4" />;
@@ -63,7 +68,12 @@ function getNotificationColor(type: string) {
         case "REPLY_TO_COMMENT":
             return "bg-purple-500/10 text-purple-500";
         case "VOTES_ON_NOTE":
+        case "REQUEST_UPVOTED":
             return "bg-orange-500/10 text-orange-500";
+        case "REQUEST_FULFILLED":
+            return "bg-green-500/10 text-green-500";
+        case "REQUEST_COMMENT":
+            return "bg-purple-500/10 text-purple-500";
         case "GROUP_INVITE":
             return "bg-green-500/10 text-green-500";
         default:
@@ -91,6 +101,12 @@ function getNotificationMessage(notification: NotificationData): string {
                 return `${actorName} liked "${data?.noteTitle || "your note"}"`;
             }
             return `${voteCount} people liked "${data?.noteTitle || "your note"}"`;
+        case "REQUEST_UPVOTED":
+            return `${actorName} upvoted your request "${data?.requestTitle || "Untitled"}"`;
+        case "REQUEST_FULFILLED":
+            return `${actorName} fulfilled your request "${data?.requestTitle || "Untitled"}"`;
+        case "REQUEST_COMMENT":
+            return `${actorName} commented on your request "${data?.requestTitle || "Untitled"}"`;
         case "GROUP_INVITE":
             return `${actorName} added you to "${data?.groupName || "a group"}"`;
         case "NOTE_SHARED_TO_GROUP":
@@ -110,6 +126,10 @@ function getNotificationLink(notification: NotificationData): string {
         case "REPLY_TO_COMMENT":
         case "VOTES_ON_NOTE":
             return data?.noteId ? `/notes/${data.noteId}` : "#";
+        case "REQUEST_UPVOTED":
+        case "REQUEST_FULFILLED":
+        case "REQUEST_COMMENT":
+            return data?.requestId ? `/requests/${data.requestId}` : "#";
         case "GROUP_INVITE":
         case "NOTE_SHARED_TO_GROUP":
             return `/social`;
