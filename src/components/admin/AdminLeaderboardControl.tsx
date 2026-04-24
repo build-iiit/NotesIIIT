@@ -38,17 +38,21 @@ export function AdminLeaderboardControl() {
 
     const handleUnfeatureAll = async () => {
         if (!featured) return;
-        for (const note of featured) {
-            await featureMutation.mutateAsync({ noteId: note.id, featured: false });
-        }
+        await Promise.all(
+            featured.map((note) =>
+                featureMutation.mutateAsync({ noteId: note.id, featured: false })
+            )
+        );
         setConfirmDialog({ isOpen: false, action: null });
     };
 
     const handleUnpinAll = async () => {
         if (!pinned) return;
-        for (const note of pinned) {
-            await pinMutation.mutateAsync({ noteId: note.id, pinned: false });
-        }
+        await Promise.all(
+            pinned.map((note) =>
+                pinMutation.mutateAsync({ noteId: note.id, pinned: false })
+            )
+        );
         setConfirmDialog({ isOpen: false, action: null });
     };
 
