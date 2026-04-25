@@ -7,6 +7,8 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Maximize2, Eye } from "lucide-react";
 import { ReportButton } from "@/components/ReportButton";
+import { AddToGuideButton } from "@/components/survival-guides/AddToGuideButton";
+import { AddToProjectButton } from "@/components/AddToProjectButton";
 
 // Dynamically import PDF components with SSR disabled to avoid "DOMMatrix is not defined" error
 const PdfViewer = dynamic(() => import("@/components/PdfViewer").then(mod => mod.PdfViewer), {
@@ -80,6 +82,8 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
                             {note.description && <p className="mt-2 text-lg">{note.description}</p>}
                         </div>
                         <div className="flex items-center gap-2">
+                            <AddToProjectButton noteId={note.id} />
+                            {note.courseId && <AddToGuideButton noteId={note.id} courseId={note.courseId} />}
                             {/* Report button - visible to non-authors */}
                             <ReportButton
                                 noteId={note.id}
