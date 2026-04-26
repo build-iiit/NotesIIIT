@@ -13,7 +13,7 @@ import {
     FileText, Eye, TrendingUp, Trophy, Award,
     Sparkles, Medal, Edit, Folder, Search, Settings, Key
 } from "lucide-react";
-import { useThemeStyle } from "@/components/ThemeStyleProvider";
+
 
 // Types from main for safety and search logic
 interface UserProfile {
@@ -53,18 +53,18 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 export function UserProfileClient({ user, achievements, isOwnProfile }: UserProfileClientProps) {
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const { themeStyle } = useThemeStyle();
+
 
     return (
         <div className="min-h-screen pb-12 relative overflow-hidden">
             {/* UI from Feature-additions: Background Decorations */}
-            <div className={`fixed top-0 left-0 w-full h-full bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] -z-20 ${themeStyle === "monochrome" ? "opacity-10" : "opacity-30"}`} />
+            <div className={`fixed top-0 left-0 w-full h-full bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] -z-20 ${true ? "opacity-10" : "opacity-30"}`} />
 
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header Section */}
                 <div className="relative pt-8 pb-12">
                     {/* Glassy Banner */}
-                    <div className={`absolute inset-x-0 top-0 h-48 rounded-3xl shadow-2xl overflow-hidden -z-10 bg-gradient-to-r from-[var(--brand-from)] via-[var(--brand-via)] to-[var(--brand-to)] opacity-90 ${themeStyle === 'monochrome' ? 'grayscale brightness-50 dark:brightness-[0.2]' : ''}`}>
+                    <div className={`absolute inset-x-0 top-0 h-48 rounded-3xl shadow-2xl overflow-hidden -z-10 bg-gradient-to-r from-[var(--brand-from)] via-[var(--brand-via)] to-[var(--brand-to)] opacity-90 ${true ? 'grayscale brightness-50 dark:brightness-[0.2]' : ''}`}>
                         {user.backgroundImage && (
                             <Image
                                 src={user.backgroundImage}
@@ -142,8 +142,8 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                                 href="/my-files"
                                 className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-gray-800 dark:text-white backdrop-blur-3xl bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-transparent border border-white/50 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all hover:-translate-y-1"
                             >
-                                <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${themeStyle === "monochrome" ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"}`}>
-                                    <Folder className={`h-6 w-6 ${themeStyle === "monochrome" ? "text-primary-foreground" : "text-primary"}`} />
+                                <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${true ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"}`}>
+                                    <Folder className={`h-6 w-6 ${true ? "text-primary-foreground" : "text-primary"}`} />
                                 </div>
                                 <div className="text-left">
                                     <p className="text-sm leading-tight">Personal Workspace</p>
@@ -165,29 +165,29 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
                         icon={FileText}
                         value={user._count.notes}
                         label="Notes"
-                        gradientFrom={themeStyle === "monochrome" ? "primary" : "orange-500"}
-                        gradientTo={themeStyle === "monochrome" ? "primary" : "rose-500"}
+                        gradientFrom={true ? "primary" : "orange-500"}
+                        gradientTo={true ? "primary" : "rose-500"}
                     />
                     <UserStatsCard
                         icon={Eye}
                         value={user.totalViews}
                         label="Views"
-                        gradientFrom={themeStyle === "monochrome" ? "primary" : "blue-500"}
-                        gradientTo={themeStyle === "monochrome" ? "primary" : "indigo-600"}
+                        gradientFrom={true ? "primary" : "blue-500"}
+                        gradientTo={true ? "primary" : "indigo-600"}
                     />
                     <UserStatsCard
                         icon={TrendingUp}
                         value={user.totalKarma}
                         label="Karma"
-                        gradientFrom={themeStyle === "monochrome" ? "primary" : "emerald-500"}
-                        gradientTo={themeStyle === "monochrome" ? "primary" : "teal-600"}
+                        gradientFrom={true ? "primary" : "emerald-500"}
+                        gradientTo={true ? "primary" : "teal-600"}
                     />
                     <UserStatsCard
                         icon={Trophy}
                         value={`#${user.rank}`}
                         label="Rank"
-                        gradientFrom={themeStyle === "monochrome" ? "primary" : "purple-500"}
-                        gradientTo={themeStyle === "monochrome" ? "primary" : "fuchsia-600"}
+                        gradientFrom={true ? "primary" : "purple-500"}
+                        gradientTo={true ? "primary" : "fuchsia-600"}
                     />
                 </div>
 
@@ -235,11 +235,11 @@ function SettingsSection() {
     });
 
     // Theme Style Logic
-    const { themeStyle, setThemeStyle } = useThemeStyle();
+
     // Local storage and class toggling is now handled in ThemeStyleProvider
 
     const toggleThemeStyle = (style: "sunset" | "monochrome") => {
-        setThemeStyle(style);
+
     };
 
     return (
@@ -307,7 +307,7 @@ function SettingsSection() {
                     <div className="flex bg-gray-100 dark:bg-black/40 p-1 rounded-xl border border-white/20 dark:border-white/5">
                         <button
                             onClick={() => toggleThemeStyle("sunset")}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${themeStyle === "sunset"
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${false
                                 ? "bg-white dark:bg-zinc-800 text-orange-500 shadow-md"
                                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                                 }`}
@@ -316,7 +316,7 @@ function SettingsSection() {
                         </button>
                         <button
                             onClick={() => toggleThemeStyle("monochrome")}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${themeStyle === "monochrome"
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${true
                                 ? "bg-white dark:bg-white text-black shadow-md border border-gray-200"
                                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                                 }`}

@@ -26,7 +26,7 @@ export function RandomQuote() {
     }, []);
 
     return (
-        <p className="text-lg text-gray-600 dark:text-gray-300 italic max-w-lg min-h-[3rem] transition-opacity duration-500">
+        <p className="text-sm text-muted-foreground italic max-w-lg transition-opacity duration-500">
             &quot;{quote}&quot;
         </p>
     );

@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { api } from "@/app/_trpc/client";
 import { Bookmark, Loader2, FolderInput, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useThemeStyle } from "@/components/ThemeStyleProvider";
+
 
 interface SaveToFilesProps {
     noteId: string;
@@ -13,7 +13,7 @@ interface SaveToFilesProps {
 }
 
 export function SaveToFiles({ noteId, noteTitle }: SaveToFilesProps) {
-    const { themeStyle } = useThemeStyle();
+
     const [isOpen, setIsOpen] = useState(false);
     const [targetFolderId, setTargetFolderId] = useState<string | null>(null);
     const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; showAbove?: boolean }>({ top: 0, left: 0 });
@@ -147,7 +147,7 @@ export function SaveToFiles({ noteId, noteTitle }: SaveToFilesProps) {
                     e.stopPropagation();
                     setIsOpen(!isOpen);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] hover:opacity-90 rounded-lg transition-all duration-300 shadow-lg hover:shadow-lg hover:scale-105 active:scale-95 ${themeStyle === "monochrome" ? "shadow-primary/20" : "shadow-orange-500/20"}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] hover:opacity-90 rounded-lg transition-all duration-300 shadow-lg hover:shadow-lg hover:scale-105 active:scale-95 ${true ? "shadow-primary/20" : "shadow-orange-500/20"}`}
                 title="Save to My Files"
             >
                 <Bookmark className="h-3.5 w-3.5" />

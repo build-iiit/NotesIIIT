@@ -5,10 +5,10 @@ import { api } from "@/app/_trpc/client";
 import { Plus, Users } from "lucide-react";
 import { ProfileImage } from "../ProfileImage";
 import { GroupDetailsDialog } from "./GroupDetailsDialog";
-import { useThemeStyle } from "@/components/ThemeStyleProvider";
+
 
 export function GroupsList() {
-    const { themeStyle } = useThemeStyle();
+
     const { data: groups, isLoading, refetch } = api.social.getGroups.useQuery();
     const createGroupMutation = api.social.createGroup.useMutation({
         onSuccess: () => {
@@ -33,7 +33,7 @@ export function GroupsList() {
             {/* Header / Actions */}
             <div className="flex justify-between items-center bg-white/40 dark:bg-black/40 backdrop-blur-xl p-4 rounded-3xl border border-white/40 dark:border-white/10 shadow-lg">
                 <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl text-white shadow-lg ${themeStyle === "monochrome" ? "bg-primary text-primary-foreground shadow-primary/30" : "bg-gradient-to-tr from-purple-500 to-pink-500 shadow-purple-500/30"}`}>
+                    <div className={`p-2 rounded-xl text-white shadow-lg ${true ? "bg-primary text-primary-foreground shadow-primary/30" : "bg-gradient-to-tr from-purple-500 to-pink-500 shadow-purple-500/30"}`}>
                         <Users className="w-5 h-5" />
                     </div>
                     <h2 className="text-lg font-bold text-gray-800 dark:text-white hidden sm:block">Your Groups</h2>
@@ -66,7 +66,7 @@ export function GroupsList() {
                 ) : (
                     <button
                         onClick={() => setIsCreating(true)}
-                        className={`flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-transform ${themeStyle === "monochrome" ? "bg-gradient-to-tr from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-primary/30" : "bg-gradient-to-tr from-purple-600 to-pink-600 shadow-purple-500/30"}`}
+                        className={`flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-transform ${true ? "bg-gradient-to-tr from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-primary/30" : "bg-gradient-to-tr from-purple-600 to-pink-600 shadow-purple-500/30"}`}
                     >
                         <Plus className="w-4 h-4" />
                         <span>Create Group</span>
@@ -90,10 +90,10 @@ export function GroupsList() {
                             onClick={() => setFilesDialogGroup(group.id)}
                             className="group relative bg-white/50 dark:bg-black/50 backdrop-blur-xl rounded-3xl p-6 border border-white/40 dark:border-white/10 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer">
                             {/* Decorative bg blob */}
-                            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -z-10 transition-all ${themeStyle === "monochrome" ? "bg-primary/5 group-hover:bg-primary/10" : "bg-purple-500/10 group-hover:bg-purple-500/20"}`} />
+                            <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -z-10 transition-all ${true ? "bg-primary/5 group-hover:bg-primary/10" : "bg-purple-500/10 group-hover:bg-purple-500/20"}`} />
 
                             <div className="flex justify-between items-start mb-4">
-                                <div className={`p-3 rounded-2xl ${themeStyle === "monochrome" ? "bg-primary/10 text-primary" : "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300"}`}>
+                                <div className={`p-3 rounded-2xl ${true ? "bg-primary/10 text-primary" : "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300"}`}>
                                     <Users className="w-6 h-6" />
                                 </div>
                                 <span className="text-xs font-bold px-2 py-1 bg-white/50 dark:bg-black/50 rounded-lg text-gray-500">
@@ -122,7 +122,7 @@ export function GroupsList() {
                                 )}
                             </div>
 
-                            <button className={`w-full py-2.5 rounded-xl transition-colors text-sm font-bold ${themeStyle === "monochrome" ? "bg-white/50 dark:bg-white/5 hover:bg-primary hover:text-primary-foreground text-gray-600 dark:text-gray-300" : "bg-white/50 dark:bg-white/5 hover:bg-purple-500 hover:text-white dark:hover:bg-purple-600 text-gray-600 dark:text-gray-300"}`}>
+                            <button className={`w-full py-2.5 rounded-xl transition-colors text-sm font-bold ${true ? "bg-white/50 dark:bg-white/5 hover:bg-primary hover:text-primary-foreground text-gray-600 dark:text-gray-300" : "bg-white/50 dark:bg-white/5 hover:bg-purple-500 hover:text-white dark:hover:bg-purple-600 text-gray-600 dark:text-gray-300"}`}>
                                 View Details
                             </button>
                         </div>
