@@ -30,24 +30,24 @@ export async function GET() {
             { code: "HS8.101", name: "Making of the Contemporary World", branch: "Humanities Core" },
         ];
 
-        let count = 0;
-        for (const course of courses) {
-            await prisma.course.upsert({
-                where: { code: course.code },
-                update: {},
-                create: {
-                    code: course.code,
-                    name: course.name,
-                    branch: course.branch,
-                    description: `Notes and resources for ${course.name} (${course.code})`
-                },
-            });
-            count++;
-        }
+        const results = await Promise.all(
+            courses.map(course =>
+                prisma.course.upsert({
+                    where: { code: course.code },
+                    update: {},
+                    create: {
+                        code: course.code,
+                        name: course.name,
+                        branch: course.branch,
+                        description: `Notes and resources for ${course.name} (${course.code})`
+                    },
+                })
+            )
+        );
 
         return NextResponse.json({
             success: true,
-            message: `Successfully seeded ${count} courses.`,
+            message: `Successfully seeded ${results.length} courses.`,
             courses: courses
         });
     } catch (error: unknown) {
