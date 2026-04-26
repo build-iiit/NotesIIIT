@@ -35,6 +35,7 @@ export function Navbar({ user, onSignOut }: NavbarProps) {
         // { href: "/search", label: "Search", icon: Search },
         { href: "/upload", label: "Upload", icon: Upload, authRequired: true },
         { href: "/my-files", label: "Folders", icon: Folder, authRequired: true },
+        { href: "/projects", label: "Workspaces", icon: Folder, authRequired: true },
         { href: "/requests", label: "Requests", icon: Hand },
         { href: "/social", label: "Social", icon: Users },
         ...(user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: Shield, adminOnly: true }] : []),

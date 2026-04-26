@@ -236,5 +236,80 @@ Please answer the question based on what you can see in the image. Be concise an
                     cause: error
                 });
             }
+        }),
+
+    /**
+     * Cross-Document Synthesis
+     * Synthesize knowledge across multiple documents in a research project.
+     * Since we do not have a persistent vector store in this app, we will
+     * fetch text context from notes (this assumes text is pre-extracted or we accept context chunks)
+     * For now, this takes a list of pre-extracted contexts from the frontend and synthesizes them.
+     */
+    crossDocumentSynthesis: protectedProcedure
+        .input(z.object({
+            projectId: z.string(),
+            query: z.string().min(1),
+            documentsContext: z.array(z.object({
+                title: z.string(),
+                text: z.string()
+            })),
+            model: z.string().optional().default("gemini-2.0-flash"),
+        }))
+        .mutation(async ({ ctx, input }) => {
+             // Get user's personal API key from database
+             const user = await ctx.prisma.user.findUnique({
+                where: { id: ctx.session.user.id },
+                select: { geminiApiKey: true }
+            });
+
+            // Require user to have their own API key for privacy
+            if (!user?.geminiApiKey) {
+                throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message: "API_KEY_REQUIRED"
+                });
+            }
+
+            const genAI = new GoogleGenerativeAI(user.geminiApiKey);
+
+            // Verify the project exists and user has access
+            const project = await ctx.prisma.researchProject.findUnique({
+                where: { id: input.projectId }
+            });
+
+            if (!project || project.userId !== ctx.session.user.id) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "Project not found or you do not have access." });
+            }
+
+            const modelName = input.model || "gemini-2.0-flash";
+            const model = genAI.getGenerativeModel({ model: modelName });
+
+            let compiledContext = "";
+            input.documentsContext.forEach((doc, idx) => {
+                compiledContext += `\n\n--- Document ${idx + 1}: ${doc.title} ---\n${doc.text}\n`;
+            });
+
+            const prompt = `You are an expert academic researcher and synthesis engine.
+You are given excerpts from multiple documents belonging to a research project.
+Analyze the provided excerpts and synthesize a comprehensive answer to the user's query.
+Cite the documents by their title or Document Number when you draw information from them.
+
+User Query: ${input.query}
+
+Context from Documents:${compiledContext}`;
+
+            try {
+                const result = await model.generateContent(prompt);
+                return {
+                    answer: result.response.text(),
+                };
+            } catch (error) {
+                console.error("Cross-Document AI Error:", (error as Error).message);
+                throw new TRPCError({
+                    code: "INTERNAL_SERVER_ERROR",
+                    message: "Failed to synthesize documents with AI.",
+                    cause: error
+                });
+            }
         })
 });

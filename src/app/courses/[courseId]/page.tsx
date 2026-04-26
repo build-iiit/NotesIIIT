@@ -4,6 +4,7 @@ import { api } from "@/app/_trpc/client";
 import { UserNotesGrid } from "@/components/UserNotesGrid";
 import { Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
+import { SurvivalGuidesList } from "@/components/survival-guides/SurvivalGuidesList";
 
 export default function CourseDetailsPage() {
     const params = useParams();
@@ -59,6 +60,10 @@ export default function CourseDetailsPage() {
 
                 {/* Background Decoration */}
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
+            </div>
+
+            <div className="mb-12">
+                <SurvivalGuidesList courseId={course.id} />
             </div>
 
             <CourseNotesList courseId={course.id} />
