@@ -61,7 +61,7 @@ export function AddToProjectButton({ noteId }: { noteId: string }) {
             </p>
           ) : (
             <div className="space-y-2">
-                {projects.map((project: any) => (
+                {projects.map((project) => (
                     <div key={project.id} className="flex justify-between items-center p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                         <span className="font-medium text-sm truncate pr-4">{project.title}</span>
                         <Button

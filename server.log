@@ -128,3 +128,47 @@ Please make sure your database server is running at `localhost:5432`.
     at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
     at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
  GET /api/auth/session 500 in 12ms (compile: 3ms, render: 9ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/edge/chunks/97170_@auth_core_7dc8ed36._.js:513:16)
+    at Auth (/app/.next/dev/server/edge/chunks/97170_@auth_core_7dc8ed36._.js:5331:242)
+ GET /projects 200 in 930ms (compile: 100ms, proxy.ts: 293ms, render: 538ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 678ms (compile: 618ms, render: 60ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
+    at runNextTicks (node:internal/process/task_queues:64:5)
+    at process.processTimers (node:internal/timers:518:9)
+ GET /api/trpc/auth.getMe?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%2C%22meta%22%3A%7B%22values%22%3A%5B%22undefined%22%5D%2C%22v%22%3A1%7D%7D%7D 200 in 1085ms (compile: 485ms, render: 600ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 45ms (compile: 18ms, render: 27ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
+ GET /api/trpc/auth.getMe?batch=1&input=%7B%220%22%3A%7B%22json%22%3Anull%2C%22meta%22%3A%7B%22values%22%3A%5B%22undefined%22%5D%2C%22v%22%3A1%7D%7D%7D 200 in 66ms (compile: 41ms, render: 25ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 8ms (compile: 3ms, render: 4ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 28ms (compile: 8ms, render: 19ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 15ms (compile: 6ms, render: 9ms)
+[31m[auth][error][0m MissingSecret: Please define a `secret`. Read more at https://errors.authjs.dev#missingsecret
+    at assertConfig (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:513:16)
+    at Auth (/app/.next/dev/server/chunks/97170_@auth_core_9d8c5509._.js:5330:236)
+    at async AppRouteRouteModule.do (/app/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.dev.js:5:37866)
+ GET /api/auth/session 500 in 8ms (compile: 3ms, render: 5ms)
