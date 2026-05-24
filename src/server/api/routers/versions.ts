@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 
 export const versionsRouter = createTRPCRouter({
     /**
@@ -16,10 +17,10 @@ export const versionsRouter = createTRPCRouter({
         )
         .mutation(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({ where: { id: input.noteId } });
-            if (!note) throw new Error("Note not found");
+            if (!note) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
 
             if (note.authorId !== ctx.session.user.id && ctx.session.user.role !== "ADMIN") {
-                throw new Error("UNAUTHORIZED");
+                throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authorized" });
             }
 
             // Determine next version number

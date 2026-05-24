@@ -64,7 +64,6 @@ export const markdownNotesRouter = createTRPCRouter({
                         courseId: input.courseId ?? undefined,
                         semester: input.semester ?? undefined,
                         visibility: input.visibility,
-                        isPublic: input.visibility === "PUBLIC",
                         // Create initial markdown version
                         markdownVersions: {
                             create: {
@@ -265,7 +264,6 @@ export const markdownNotesRouter = createTRPCRouter({
 
             if (input.visibility !== undefined) {
                 updateData.visibility = input.visibility;
-                updateData.isPublic = input.visibility === "PUBLIC";
             }
 
             // Handle groups

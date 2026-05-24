@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { createTRPCRouter, superAdminProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { AuditCategory } from "@prisma/client";
 
 export const auditRouter = createTRPCRouter({
@@ -158,7 +159,7 @@ export const auditRouter = createTRPCRouter({
             });
 
             if (!log) {
-                throw new Error("Audit log entry not found");
+                throw new TRPCError({ code: "NOT_FOUND", message: "Audit log entry not found" });
             }
 
             return log;

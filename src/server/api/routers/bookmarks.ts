@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 
 export const bookmarksRouter = createTRPCRouter({
     /**
@@ -96,7 +97,7 @@ export const bookmarksRouter = createTRPCRouter({
             });
 
             if (!bookmark || bookmark.userId !== ctx.session.user.id) {
-                throw new Error("Bookmark not found or unauthorized");
+                throw new TRPCError({ code: "NOT_FOUND", message: "Bookmark not found or unauthorized" });
             }
 
             return ctx.prisma.bookmark.delete({

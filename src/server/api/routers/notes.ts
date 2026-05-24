@@ -96,8 +96,8 @@ export const notesRouter = createTRPCRouter({
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const whereClause: any = {
-                // Search implies public notes usually, but we can respect visibility too
-                isPublic: true,
+                // Only show public notes in search/browse
+                visibility: "PUBLIC",
                 semester: input.semester,
             };
 
@@ -167,7 +167,7 @@ export const notesRouter = createTRPCRouter({
         .query(async ({ ctx }) => {
             const items = await ctx.prisma.note.findMany({
                 take: 6,
-                where: { isPublic: true },
+                where: { visibility: "PUBLIC" },
                 orderBy: { viewCount: "desc" },
                 include: {
                     author: true,
@@ -419,7 +419,6 @@ export const notesRouter = createTRPCRouter({
                         courseId: input.courseId ?? undefined,
                         semester: input.semester ?? undefined,
                         visibility: input.visibility,
-                        isPublic: input.visibility === "PUBLIC",
                         thumbnailS3Key: input.thumbnailS3Key,
                         versions: {
                             create: {
@@ -467,8 +466,8 @@ export const notesRouter = createTRPCRouter({
         }))
         .mutation(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
-            if (!note) throw new Error("Note not found");
-            if (note.authorId !== ctx.session.user.id) throw new Error("UNAUTHORIZED");
+            if (!note) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
+            if (note.authorId !== ctx.session.user.id) throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authorized to edit this note" });
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const updateData: any = {
@@ -478,7 +477,6 @@ export const notesRouter = createTRPCRouter({
                 semester: input.semester,
                 // Add visibility logic
                 visibility: input.visibility,
-                isPublic: input.visibility === "PUBLIC", // Update legacy field
             };
 
             // Handle Groups
@@ -500,7 +498,7 @@ export const notesRouter = createTRPCRouter({
                 if (input.folderId !== null) {
                     const folder = await ctx.prisma.folder.findUnique({ where: { id: input.folderId } });
                     if (!folder || folder.userId !== ctx.session.user.id) {
-                        throw new Error("Folder not found or unauthorized");
+                        throw new TRPCError({ code: "FORBIDDEN", message: "Folder not found or unauthorized" });
                     }
                 }
                 updateData.folderId = input.folderId;
@@ -522,11 +520,11 @@ export const notesRouter = createTRPCRouter({
         }))
         .mutation(async ({ ctx, input }) => {
             const note = await ctx.prisma.note.findUnique({ where: { id: input.noteId } });
-            if (!note || note.authorId !== ctx.session.user.id) throw new Error("UNAUTHORIZED");
+            if (!note || note.authorId !== ctx.session.user.id) throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authorized" });
 
             if (input.folderId) {
                 const folder = await ctx.prisma.folder.findUnique({ where: { id: input.folderId } });
-                if (!folder || folder.userId !== ctx.session.user.id) throw new Error("UNAUTHORIZED");
+                if (!folder || folder.userId !== ctx.session.user.id) throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authorized" });
             }
 
             return ctx.prisma.note.update({
@@ -604,7 +602,7 @@ export const notesRouter = createTRPCRouter({
         .mutation(async ({ ctx, input }) => {
             const userId = ctx.session?.user?.id;
             const note = await ctx.prisma.note.findUnique({ where: { id: input.noteId } });
-            if (!note) throw new Error("Note not found");
+            if (!note) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
 
             if (userId === note.authorId) return { success: false };
 
@@ -635,7 +633,7 @@ export const notesRouter = createTRPCRouter({
             const note = await ctx.prisma.note.findUnique({ where: { id: input.id } });
             if (!note) return null;
             if (note.authorId !== ctx.session.user.id && ctx.session.user.role !== "ADMIN") {
-                throw new Error("UNAUTHORIZED");
+                throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authorized to delete this note" });
             }
             return ctx.prisma.note.delete({ where: { id: input.id } });
         }),

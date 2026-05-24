@@ -59,7 +59,7 @@ export const authRouter = createTRPCRouter({
                     backgroundImage: true,
                     createdAt: true,
                     notes: {
-                        where: { isPublic: true },
+                        where: { visibility: "PUBLIC" },
                         orderBy: { createdAt: "desc" },
                         take: 12,
                         include: {
@@ -88,7 +88,7 @@ export const authRouter = createTRPCRouter({
             const stats = await ctx.prisma.note.aggregate({
                 where: {
                     authorId: input.userId,
-                    isPublic: true,
+                    visibility: "PUBLIC",
                 },
                 _sum: {
                     viewCount: true,

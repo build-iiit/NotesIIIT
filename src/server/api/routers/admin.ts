@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, adminProcedure, superAdminProcedure, createRoleProcedure, canActOnRole } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import { getPresignedDownloadUrl } from "@/lib/s3";
 import { AuditCategory, Role, UserStatus } from "@prisma/client";
 
@@ -240,7 +241,7 @@ export const adminRouter = createTRPCRouter({
         .mutation(async ({ ctx, input }) => {
             // Prevent self-demotion
             if (input.userId === ctx.session.user.id && input.role === "USER") {
-                throw new Error("Cannot demote yourself");
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot demote yourself" });
             }
 
             // Check if the current admin can assign this role
@@ -249,17 +250,17 @@ export const adminRouter = createTRPCRouter({
                 select: { role: true },
             });
 
-            if (!targetUser) throw new Error("User not found");
+            if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
 
             // Prevent assigning higher or equal role than your own
             const actorRole = ctx.session.user.role as Role;
             if (!canActOnRole(actorRole, targetUser.role as Role)) {
-                throw new Error("Cannot modify a user with equal or higher privileges");
+                throw new TRPCError({ code: "FORBIDDEN", message: "Cannot modify a user with equal or higher privileges" });
             }
 
             // Only SUPER_ADMIN can assign SUPER_ADMIN or ADMIN roles
             if ((input.role === "SUPER_ADMIN" || input.role === "ADMIN") && actorRole !== "SUPER_ADMIN") {
-                throw new Error("Only SUPER_ADMIN can assign admin roles");
+                throw new TRPCError({ code: "FORBIDDEN", message: "Only SUPER_ADMIN can assign admin roles" });
             }
 
             // Audit log
@@ -291,7 +292,19 @@ export const adminRouter = createTRPCRouter({
         .mutation(async ({ ctx, input }) => {
             // Prevent self-deletion
             if (input.userId === ctx.session.user.id) {
-                throw new Error("Cannot delete yourself");
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot delete yourself" });
+            }
+
+            // Check privilege hierarchy
+            const targetUser = await ctx.prisma.user.findUnique({
+                where: { id: input.userId },
+                select: { role: true },
+            });
+
+            if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+
+            if (!canActOnRole(ctx.session.user.role as Role, targetUser.role as Role)) {
+                throw new TRPCError({ code: "FORBIDDEN", message: "Cannot delete a user with equal or higher privileges" });
             }
 
             return ctx.prisma.user.delete({
@@ -317,12 +330,12 @@ export const adminRouter = createTRPCRouter({
             const cursor = input?.cursor;
 
             const where: {
-                isPublic?: boolean;
+                visibility?: string;
                 OR?: { title: { contains: string; mode: "insensitive" } }[];
             } = {};
 
             if (input?.isPublic !== undefined) {
-                where.isPublic = input.isPublic;
+                where.visibility = input.isPublic ? "PUBLIC" : "PRIVATE";
             }
 
             if (input?.search) {
@@ -403,7 +416,6 @@ export const adminRouter = createTRPCRouter({
                 where: { id: input.noteId },
                 data: {
                     visibility: input.visibility,
-                    isPublic: input.visibility === "PUBLIC",
                 },
             });
         }),
@@ -428,13 +440,31 @@ export const adminRouter = createTRPCRouter({
         .input(
             z.object({
                 userIds: z.array(z.string()),
-                role: z.enum(["USER", "ADMIN"]),
+                role: z.nativeEnum(Role),
             })
         )
         .mutation(async ({ ctx, input }) => {
             // Prevent self-demotion
             if (input.userIds.includes(ctx.session.user.id) && input.role === "USER") {
-                throw new Error("Cannot demote yourself");
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot demote yourself" });
+            }
+
+            // Verify actor can assign this role
+            const actorRole = ctx.session.user.role as Role;
+            if ((input.role === "SUPER_ADMIN" || input.role === "ADMIN") && actorRole !== "SUPER_ADMIN") {
+                throw new TRPCError({ code: "FORBIDDEN", message: "Only SUPER_ADMIN can assign admin roles" });
+            }
+
+            // Check all targets have lower privilege
+            const targets = await ctx.prisma.user.findMany({
+                where: { id: { in: input.userIds } },
+                select: { id: true, role: true },
+            });
+
+            for (const target of targets) {
+                if (!canActOnRole(actorRole, target.role as Role)) {
+                    throw new TRPCError({ code: "FORBIDDEN", message: `Cannot modify user with role ${target.role}` });
+                }
             }
 
             return ctx.prisma.user.updateMany({
@@ -452,7 +482,20 @@ export const adminRouter = createTRPCRouter({
         .mutation(async ({ ctx, input }) => {
             // Prevent self-deletion
             if (input.userIds.includes(ctx.session.user.id)) {
-                throw new Error("Cannot delete yourself");
+                throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot delete yourself" });
+            }
+
+            // Check all targets have lower privilege
+            const actorRole = ctx.session.user.role as Role;
+            const targets = await ctx.prisma.user.findMany({
+                where: { id: { in: input.userIds } },
+                select: { id: true, role: true },
+            });
+
+            for (const target of targets) {
+                if (!canActOnRole(actorRole, target.role as Role)) {
+                    throw new TRPCError({ code: "FORBIDDEN", message: `Cannot delete user with role ${target.role}` });
+                }
             }
 
             return ctx.prisma.user.deleteMany({
@@ -481,11 +524,11 @@ export const adminRouter = createTRPCRouter({
                 where: { id: input.userId },
             });
 
-            if (!targetUser) throw new Error("User not found");
+            if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
 
             // Cannot suspend admins unless super admin
             if (!canActOnRole(ctx.session.user.role as string, targetUser.role as string)) {
-                throw new Error("Cannot suspend a user with equal or higher privileges");
+                throw new TRPCError({ code: "FORBIDDEN", message: "Cannot suspend a user with equal or higher privileges" });
             }
 
             const suspendedUntil = input.durationDays
@@ -539,10 +582,10 @@ export const adminRouter = createTRPCRouter({
                 where: { id: input.userId },
             });
 
-            if (!targetUser) throw new Error("User not found");
+            if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
 
             if (!canActOnRole(ctx.session.user.role as string, targetUser.role as string)) {
-                throw new Error("Cannot ban a user with equal or higher privileges");
+                throw new TRPCError({ code: "FORBIDDEN", message: "Cannot ban a user with equal or higher privileges" });
             }
 
             const updated = await ctx.prisma.user.update({
@@ -588,10 +631,10 @@ export const adminRouter = createTRPCRouter({
                 where: { id: input.userId },
             });
 
-            if (!targetUser) throw new Error("User not found");
+            if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
 
             if (!canActOnRole(ctx.session.user.role as string, targetUser.role as string)) {
-                throw new Error("Cannot shadow ban a user with equal or higher privileges");
+                throw new TRPCError({ code: "FORBIDDEN", message: "Cannot shadow ban a user with equal or higher privileges" });
             }
 
             const updated = await ctx.prisma.user.update({
@@ -630,7 +673,7 @@ export const adminRouter = createTRPCRouter({
                 where: { id: input.userId },
             });
 
-            if (!targetUser) throw new Error("User not found");
+            if (!targetUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
 
             const updated = await ctx.prisma.user.update({
                 where: { id: input.userId },
@@ -684,7 +727,7 @@ export const adminRouter = createTRPCRouter({
                 },
             });
 
-            if (!user) throw new Error("User not found");
+            if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
 
             // Get karma (total vote score on user's notes)
             const noteStats = await ctx.prisma.note.aggregate({
@@ -845,7 +888,7 @@ export const adminRouter = createTRPCRouter({
             });
 
             if (existing) {
-                throw new Error(`Course with code ${input.code} already exists`);
+                throw new TRPCError({ code: "CONFLICT", message: `Course with code ${input.code} already exists` });
             }
 
             return ctx.prisma.course.create({
@@ -882,7 +925,7 @@ export const adminRouter = createTRPCRouter({
                 });
 
                 if (existing && existing.id !== id) {
-                    throw new Error(`Course with code ${data.code} already exists`);
+                    throw new TRPCError({ code: "CONFLICT", message: `Course with code ${data.code} already exists` });
                 }
             }
 
@@ -996,7 +1039,7 @@ export const adminRouter = createTRPCRouter({
                 select: { id: true, title: true, moderationStatus: true },
             });
 
-            if (!note) throw new Error("Note not found");
+            if (!note) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
 
             const updated = await ctx.prisma.note.update({
                 where: { id: input.noteId },
@@ -1042,7 +1085,7 @@ export const adminRouter = createTRPCRouter({
                 select: { id: true, title: true, isLocked: true },
             });
 
-            if (!note) throw new Error("Note not found");
+            if (!note) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
 
             const updated = await ctx.prisma.note.update({
                 where: { id: input.noteId },
@@ -1087,7 +1130,7 @@ export const adminRouter = createTRPCRouter({
                 select: { id: true, title: true, isFeatured: true },
             });
 
-            if (!note) throw new Error("Note not found");
+            if (!note) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
 
             const updated = await ctx.prisma.note.update({
                 where: { id: input.noteId },
@@ -1128,7 +1171,7 @@ export const adminRouter = createTRPCRouter({
                 select: { id: true, title: true, isPinned: true },
             });
 
-            if (!note) throw new Error("Note not found");
+            if (!note) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
 
             const updated = await ctx.prisma.note.update({
                 where: { id: input.noteId },
@@ -1164,7 +1207,7 @@ export const adminRouter = createTRPCRouter({
                 select: { id: true, title: true, moderationStatus: true },
             });
 
-            if (!note) throw new Error("Note not found");
+            if (!note) throw new TRPCError({ code: "NOT_FOUND", message: "Note not found" });
 
             const updated = await ctx.prisma.note.update({
                 where: { id: input.noteId },

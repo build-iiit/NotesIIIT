@@ -31,7 +31,7 @@ export const aiRouter = createTRPCRouter({
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error("[AI Router] Gemini API Error:", { status: response.status, statusText: response.statusText, body: errorText });
+                    console.error("[AI Router] Gemini API Error:", response.status, response.statusText);
                     throw new Error(`Failed to fetch models: ${response.status} ${response.statusText} - ${errorText}`);
                 }
 

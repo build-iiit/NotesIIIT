@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { createTRPCRouter, adminProcedure, createRoleProcedure } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import {
     invalidateSettingsCache,
     seedDefaultSettings,
@@ -99,7 +100,7 @@ export const settingsRouter = createTRPCRouter({
             });
 
             if (!current) {
-                throw new Error(`Setting "${input.key}" not found`);
+                throw new TRPCError({ code: "NOT_FOUND", message: `Setting "${input.key}" not found` });
             }
 
             // Update setting

@@ -12,6 +12,7 @@ import {
     moderatorProcedure,
     adminProcedure,
 } from "@/server/api/trpc";
+import { TRPCError } from "@trpc/server";
 import {
     ReportTargetType,
     ReportReason,
@@ -49,7 +50,7 @@ export const reportsRouter = createTRPCRouter({
             });
 
             if (existing) {
-                throw new Error("You have already reported this content");
+                throw new TRPCError({ code: "CONFLICT", message: "You have already reported this content" });
             }
 
             // Validate target exists
@@ -59,7 +60,7 @@ export const reportsRouter = createTRPCRouter({
                 input.targetId
             );
             if (!targetExists) {
-                throw new Error("The reported content does not exist");
+                throw new TRPCError({ code: "NOT_FOUND", message: "The reported content does not exist" });
             }
 
             const report = await ctx.prisma.report.create({
@@ -206,7 +207,7 @@ export const reportsRouter = createTRPCRouter({
             });
 
             if (!report) {
-                throw new Error("Report not found");
+                throw new TRPCError({ code: "NOT_FOUND", message: "Report not found" });
             }
 
             // Fetch target details based on type
@@ -280,7 +281,7 @@ export const reportsRouter = createTRPCRouter({
             });
 
             if (!report) {
-                throw new Error("Report not found");
+                throw new TRPCError({ code: "NOT_FOUND", message: "Report not found" });
             }
 
             const updated = await ctx.prisma.report.update({
@@ -323,7 +324,7 @@ export const reportsRouter = createTRPCRouter({
             });
 
             if (!report) {
-                throw new Error("Report not found");
+                throw new TRPCError({ code: "NOT_FOUND", message: "Report not found" });
             }
 
             const updated = await ctx.prisma.report.update({

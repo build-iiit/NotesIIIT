@@ -1,1 +1,0 @@
-src/server/api/routers/folders.ts(94,23): error TS7022: 'folder' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
