@@ -123,7 +123,7 @@ export const MathInline = Node.create({
  return [
  new InputRule({
  find: inputRegex,
- handler: ({ state, range, match, chain }) => {
+ handler: ({ state: _state, range, match, chain }) => {
  const latex = match[1];
  if (!latex) return;
 

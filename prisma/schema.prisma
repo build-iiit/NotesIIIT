@@ -31,6 +31,9 @@ model User {
   folders       Folder[]
   bookmarks     Bookmark[]
   annotations   Annotation[]
+  researchProjects ResearchProject[] @relation("UserResearchProjects")
+  survivalGuides   SurvivalGuide[]   @relation("AuthoredGuides")
+  guideUpvotes     GuideUpvote[]
 
   role          Role      @default(USER)
   
@@ -173,6 +176,9 @@ model Note {
   course        Course?   @relation(fields: [courseId], references: [id])
   semester      String? // e.g., "1-1", "1-2", "2-1"...
 
+  projectNotes     ProjectNote[]
+  guideNotes       GuideNote[]
+
   // Social & Media
   isPublic      Boolean   @default(true) // Legacy, use visibility
   visibility    NoteVisibility @default(PRIVATE)
@@ -204,11 +210,10 @@ model Note {
 model Tag {
   id        String   @id @default(cuid())
   name      String   @unique
-  isDefault Boolean  @default(false)  // Predefined tags like Assignments, PYQs
+  isDefault Boolean  @default(false)  // Predefined tags like Assignments, PYQs  notes       Note[]
+  survivalGuides SurvivalGuide[]
   
-  notes     Note[]
-  
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
   
   @@index([name])
 }
@@ -223,11 +228,10 @@ model Folder {
   
   parentId  String?
   parent    Folder?  @relation("ParentChild", fields: [parentId], references: [id], onDelete: Cascade)
-  children  Folder[] @relation("ParentChild")
+  children  Folder[] @relation("ParentChild")  notes       Note[]
+  survivalGuides SurvivalGuide[]
   
-  notes     Note[]
-
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, parentId, name]) // Unique folder names within the same parent/root
@@ -244,6 +248,7 @@ model Course {
   description String?
   
   notes       Note[]
+  survivalGuides SurvivalGuide[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -554,6 +559,7 @@ enum NotificationType {
   REQUEST_FULFILLED
   REQUEST_COMMENT
   FULFILLMENT_ACCEPTED
+  REQUEST_UPVOTED
 }
 
 // ---------------------------------------------------------
@@ -758,10 +764,99 @@ model AuditLog {
   @@index([category])
 }
 
-enum AuditCategory {
-  USER_MANAGEMENT
-  CONTENT_MODERATION
-  SETTINGS
-  SYSTEM
-  REPORTS
+"enum AuditCategory {\n  USER_MANAGEMENT\n  CONTENT_MODERATION\n  SETTINGS\n  SYSTEM\n  REPORTS\n}\n\n// ---------------------------------------------------------\n// 5.5 Research Workspace\n// ---------------------------------------------------------\n\nmodel ResearchProject {\n  id          String   @id @default(cuid())\n  title       String\n  description String?\n\n  // Owner\n  userId      String\n  user        User     @relation(\"UserResearchProjects\", fields: [userId], references: [id], onDelete: Cascade)\n\n  // Notes added to this project workspace\n  projectNotes ProjectNote[]\n\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  @@index([userId])\n}\n\nmodel ProjectNote {\n  id              String   @id @default(cuid())\n\n  researchProjectId String\n  researchProject   ResearchProject @relation(fields: [researchProjectId], references: [id], onDelete: Cascade)\n\n  noteId          String\n  note            Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)\n\n  addedAt         DateTime @default(now())\n\n  @@unique([researchProjectId, noteId])\n  @@index([researchProjectId])\n  @@index([noteId])\n}\n\n// ---------------------------------------------------------\n// 5.6 Course Survival Guides\n// ---------------------------------------------------------\n\nmodel SurvivalGuide {\n  id          String   @id @default(cuid())\n  title       String\n  description String?  // The \"wisdom\" or tips for the course\n\n  courseId    String\n  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)\n\n  authorId    String\n  author      User     @relation(\"AuthoredGuides\", fields: [authorId], references: [id], onDelete: Cascade)\n\n  guideNotes  GuideNote[]\n  upvotes     GuideUpvote[]\n\n  createdAt   DateTime @default(now())\n  updatedAt   DateTime @updatedAt\n\n  @@index([courseId])\n  @@index([authorId])\n}\n\nmodel GuideNote {\n  id              String   @id @default(cuid())\n\n  survivalGuideId String\n  survivalGuide   S
+<truncated 797 bytes>
+
+// ---------------------------------------------------------
+// 5.5 Research Workspace
+// ---------------------------------------------------------
+
+model ResearchProject {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+
+  // Owner
+  userId      String
+  user        User     @relation("UserResearchProjects", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Notes added to this project workspace
+  projectNotes ProjectNote[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model ProjectNote {
+  id              String   @id @default(cuid())
+
+  researchProjectId String
+  researchProject   ResearchProject @relation(fields: [researchProjectId], references: [id], onDelete: Cascade)
+
+  noteId          String
+  note            Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  addedAt         DateTime @default(now())
+
+  @@unique([researchProjectId, noteId])
+  @@index([researchProjectId])
+  @@index([noteId])
+}
+
+// ---------------------------------------------------------
+// 5.6 Course Survival Guides
+// ---------------------------------------------------------
+
+model SurvivalGuide {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  // The "wisdom" or tips for the course
+
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  authorId    String
+  author      User     @relation("AuthoredGuides", fields: [authorId], references: [id], onDelete: Cascade)
+
+  guideNotes  GuideNote[]
+  upvotes     GuideUpvote[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+  @@index([authorId])
+}
+
+model GuideNote {
+  id              String   @id @default(cuid())
+
+  survivalGuideId String
+  survivalGuide   SurvivalGuide @relation(fields: [survivalGuideId], references: [id], onDelete: Cascade)
+
+  noteId          String
+  note            Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  addedAt         DateTime @default(now())
+
+  @@unique([survivalGuideId, noteId])
+  @@index([survivalGuideId])
+  @@index([noteId])
+}
+
+model GuideUpvote {
+  id              String   @id @default(cuid())
+
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  survivalGuideId String
+  survivalGuide   SurvivalGuide @relation(fields: [survivalGuideId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+
+  @@unique([userId, survivalGuideId])
+  @@index([survivalGuideId])
 }

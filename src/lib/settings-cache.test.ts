@@ -4,14 +4,14 @@ import assert from "node:assert";
 describe("Settings Cache Invalidation", () => {
     describe("invalidateSettingsCache", () => {
         beforeEach(async () => {
-            const { invalidateSettingsCache } = await import("./settings-cache.ts");
+            const { invalidateSettingsCache } = await import("./settings-cache");
             invalidateSettingsCache(); // Clear before each test
             mock.restoreAll();
         });
 
         it("should clear the entire cache when no key is provided", async () => {
-            const { invalidateSettingsCache, getSetting } = await import("./settings-cache.ts");
-            const { prisma } = await import("./prisma.ts");
+            const { invalidateSettingsCache, getSetting } = await import("./settings-cache");
+            const { prisma } = await import("./prisma");
 
             // Override prisma method directly with a mock function
             const mockFindUnique = mock.fn(async () => ({ value: "mocked-value" }));
@@ -40,8 +40,8 @@ describe("Settings Cache Invalidation", () => {
         });
 
         it("should clear only the specific key when a key is provided", async () => {
-            const { invalidateSettingsCache, getSetting } = await import("./settings-cache.ts");
-            const { prisma } = await import("./prisma.ts");
+            const { invalidateSettingsCache, getSetting } = await import("./settings-cache");
+            const { prisma } = await import("./prisma");
 
             const mockFindUnique = mock.fn(async () => ({ value: "mocked-value" }));
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

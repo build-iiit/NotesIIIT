@@ -42,7 +42,7 @@ export function AdminAuditLogs() {
  const [dateRange, setDateRange] = useState<{ from?: string; to?: string }>({});
  const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
- const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+ const { data, isLoading, refetch: _refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
  api.audit.getLogs.useInfiniteQuery(
  {
  category: categoryFilter ==="ALL" ? undefined : categoryFilter,

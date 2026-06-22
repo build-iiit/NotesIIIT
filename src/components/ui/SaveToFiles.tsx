@@ -12,10 +12,10 @@ interface SaveToFilesProps {
  noteTitle: string;
 }
 
-export function SaveToFiles({ noteId, noteTitle }: SaveToFilesProps) {
+export function SaveToFiles({ noteId, noteTitle: _noteTitle }: SaveToFilesProps) {
 
  const [isOpen, setIsOpen] = useState(false);
- const [targetFolderId, setTargetFolderId] = useState<string | null>(null);
+ const [_targetFolderId, setTargetFolderId] = useState<string | null>(null);
  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; showAbove?: boolean }>({ top: 0, left: 0 });
  const buttonRef = useRef<HTMLButtonElement>(null);
  const router = useRouter();

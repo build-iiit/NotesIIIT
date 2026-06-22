@@ -7,7 +7,7 @@ import {
     getPermissionsForRole,
     isAdminRole,
     createAdminUserContext
-} from "./permissions.ts";
+} from "./permissions";
 
 describe("Permissions System", () => {
     describe("hasMinimumRole", () => {

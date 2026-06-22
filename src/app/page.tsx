@@ -11,7 +11,6 @@ import { RandomQuote } from"@/components/ui/RandomQuote";
 
 export default async function Home() {
  const session = await auth();
- const session = await auth();
 
 
  // Fetch user's folders if logged in
@@ -30,55 +29,7 @@ export default async function Home() {
  }
  })
  : [];
- // Fetch user's folders if logged in
- const userFolders = session?.user?.id
- ? await db.folder.findMany({
- where: { userId: session.user.id, parentId: null },
- orderBy: { createdAt:'desc' },
- take: 10,
- select: {
- id: true,
- name: true,
- userId: true,
- _count: {
- select: { notes: true }
- }
- }
- })
- : [];
 
- // Fetch user's groups if logged in
- const userGroups = session?.user?.id
- ? await db.group.findMany({
- where: {
- members: {
- some: { userId: session.user.id }
- }
- },
- orderBy: { createdAt:'desc' },
- take: 10,
- select: {
- id: true,
- name: true,
- _count: {
- select: { members: true }
- },
- members: {
- take: 4,
- select: {
- id: true,
- user: {
- select: {
- id: true,
- name: true,
- image: true
- }
- }
- }
- }
- }
- })
- : [];
  // Fetch user's groups if logged in
  const userGroups = session?.user?.id
  ? await db.group.findMany({
@@ -130,12 +81,6 @@ export default async function Home() {
  </div>
  )}
 
- {/* Folder Grid */}
- {userFolders.length > 0 && (
- <div className="w-full max-w-6xl mb-8">
- <HomeFolderGrid folders={userFolders} />
- </div>
- )}
  {/* Folder Grid */}
  {userFolders.length > 0 && (
  <div className="w-full max-w-6xl mb-8">

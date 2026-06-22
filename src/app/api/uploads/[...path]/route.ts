@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from"next/server";
-import fs from"fs";
-import path from"path";
-import { promisify } from"util";
+import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
 // Define mime types manually to avoid external dependency issues if not installed
 const MIME_TYPES: Record<string, string> = {

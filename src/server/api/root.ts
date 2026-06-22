@@ -14,7 +14,10 @@ import { markdownNotesRouter } from "@/server/api/routers/markdownNotes";
 import { settingsRouter } from "@/server/api/routers/settings";
 import { reportsRouter } from "@/server/api/routers/reports";
 import { auditRouter } from "@/server/api/routers/audit";
-import { interactionsRouter } from "@/server/api/routers/interactions";
+import { interactionsRouter, bookmarksRouter, votesRouter, commentsRouter } from "@/server/api/routers/interactions";
+import { tagsRouter } from "@/server/api/routers/tags";
+import { researchProjectRouter } from "@/server/api/routers/researchProject";
+import { survivalGuideRouter } from "@/server/api/routers/survivalGuide";
 
 export const appRouter = createTRPCRouter({
   notes: notesRouter,
@@ -33,6 +36,12 @@ export const appRouter = createTRPCRouter({
   reports: reportsRouter,
   audit: auditRouter,
   interactions: interactionsRouter,
+  researchProject: researchProjectRouter,
+  survivalGuide: survivalGuideRouter,
+  bookmarks: bookmarksRouter,
+  tags: tagsRouter,
+  votes: votesRouter,
+  comments: commentsRouter,
 });
 
 export type AppRouter = typeof appRouter;

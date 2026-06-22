@@ -170,6 +170,21 @@ export function NotionEditor({
  }, [editor, content]);
 
  // Handle keyboard shortcuts
+ const handleUndo = useCallback(() => {
+ if (history.length === 0) return;
+ const previousState = history[history.length - 1];
+ setFuture(prev => [...prev, annotations]);
+ setHistory(prev => prev.slice(0, -1));
+ setAnnotations(previousState);
+ }, [history, annotations]);
+
+ const handleRedo = useCallback(() => {
+ if (future.length === 0) return;
+ const nextState = future[future.length - 1];
+ setHistory(prev => [...prev, annotations]);
+ setFuture(prev => prev.slice(0, -1));
+ setAnnotations(nextState);
+ }, [future, annotations]);
  const handleKeyDown = useCallback(
  (event: React.KeyboardEvent) => {
  // Cmd/Ctrl + B for bold
@@ -204,7 +219,7 @@ export function NotionEditor({
  useEffect(() => {
  if (!containerRef.current) return;
  const resizeObserver = new ResizeObserver(entries => {
- for (let entry of entries) {
+ for (const entry of entries) {
  const { width, height } = entry.contentRect;
  setCanvasSize({ width, height });
  if (canvasRef.current) {
@@ -257,21 +272,6 @@ export function NotionEditor({
  setFuture([]);
  }, [annotations]);
 
- const handleUndo = useCallback(() => {
- if (history.length === 0) return;
- const previousState = history[history.length - 1];
- setFuture(prev => [...prev, annotations]);
- setHistory(prev => prev.slice(0, -1));
- setAnnotations(previousState);
- }, [history, annotations]);
-
- const handleRedo = useCallback(() => {
- if (future.length === 0) return;
- const nextState = future[future.length - 1];
- setHistory(prev => [...prev, annotations]);
- setFuture(prev => prev.slice(0, -1));
- setAnnotations(nextState);
- }, [future, annotations]);
 
  // Pointer Handlers
  const getPoint = (e: React.PointerEvent): Point | null => {

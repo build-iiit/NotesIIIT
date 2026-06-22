@@ -1,9 +1,7 @@
+import { TRPCError } from "@trpc/server";
 import { z } from"zod";
-import { createTRPCRouter, adminProcedure, superAdminProcedure, createRoleProcedure, canActOnRole } from"@/server/api/trpc";
-import { TRPCError } from"@trpc/server";
-import { getPresignedDownloadUrl } from"@/lib/storage";
-import { AuditCategory, Role, UserStatus } from"@prisma/client";
-
+import { createTRPCRouter, adminProcedure, createRoleProcedure, canActOnRole } from"@/server/api/trpc";
+import { getPresignedDownloadUrl } from "@/lib/storage";
 import { AuditCategory, Role, UserStatus, NoteVisibility } from"@prisma/client";
 export const adminRouter = createTRPCRouter({
  /**
@@ -17,7 +15,7 @@ export const adminRouter = createTRPCRouter({
  const previousWeek = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
  // Core counts
- const [totalUsers, totalNotes, totalViews, totalVotes, totalCourses, totalComments] = await Promise.all([
+ const [totalUsers, totalNotes, _totalViews, totalVotes, totalCourses, totalComments] = await Promise.all([
  ctx.prisma.user.count(),
  ctx.prisma.note.count(),
  ctx.prisma.view.count(),

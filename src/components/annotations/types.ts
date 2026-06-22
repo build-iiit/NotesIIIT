@@ -1,6 +1,7 @@
 export interface Point {
     x: number; // 0-1 relative to page width
     y: number; // 0-1 relative to page height
+    pressure?: number;
 }
 
 export type ShapeType = "freehand" | "line" | "rect" | "circle" | "arrow";

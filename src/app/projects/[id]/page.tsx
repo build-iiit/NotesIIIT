@@ -36,12 +36,12 @@ export default function ProjectWorkspace() {
     },
   });
 
-  const synthesizeMutation = api.ai.crossDocumentSynthesis.useMutation({
-    onSuccess: (data) => {
+  const synthesizeMutation = (api.ai.askDocumentWithImage.useMutation as any)({
+    onSuccess: (data: { answer: string }) => {
       setSynthesisResult(data.answer);
       setIsSynthesizing(false);
     },
-    onError: (err) => {
+    onError: (err: any) => {
       toast.error(`Synthesis failed: ${err.message}`);
       setIsSynthesizing(false);
     },

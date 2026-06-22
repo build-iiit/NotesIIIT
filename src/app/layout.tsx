@@ -8,83 +8,63 @@ import { SessionProviderWrapper } from"@/components/layout/SessionProviderWrappe
 import { GoogleScripts } from"@/components/layout/GoogleScripts";
 
 export const metadata: Metadata = {
- title:"NotesIIIT - Share Notes, Ace Exams",
- description:"The ultimate platform for IIIT students to share lecture notes and collaborate",
- manifest:"/manifest.json",
- icons: {
- icon:"/favicon.ico",
- shortcut:"/favicon.ico",
- apple:"/apple-icon.png",
- },
- appleWebApp: {
- capable: true,
- statusBarStyle:"black-translucent",
- title:"NotesIIIT",
- },
- title:"NotesIIIT - Share Notes, Ace Exams",
- description:"The ultimate platform for IIIT students to share lecture notes and collaborate",
- manifest:"/manifest.json",
- icons: {
- icon:"/favicon.ico",
- shortcut:"/favicon.ico",
- apple:"/apple-icon.png",
- },
- appleWebApp: {
- capable: true,
- statusBarStyle:"black-translucent",
- title:"NotesIIIT",
- },
+  title: "NotesIIIT - Share Notes, Ace Exams",
+  description: "The ultimate platform for IIIT students to share lecture notes and collaborate",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "NotesIIIT",
+  },
 };
 
 export const viewport: Viewport = {
- themeColor:"#5c4033",
- width:"device-width",
- initialScale: 1,
- maximumScale: 1,
- userScalable: false,
+  themeColor: "#5c4033",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
- children,
- children,
+  children,
 }: Readonly<{
- children: React.ReactNode;
- children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
- return (
- <html lang="en" suppressHydrationWarning>
- <body
- className={`antialiased min-h-screen relative overflow-x-hidden`}
- suppressHydrationWarning
- >
- {/* Clean background */}
- <div className="fixed inset-0 -z-10">
- <div className="absolute inset-0 bg-background transition-colors duration-300" />
- </div>
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`antialiased min-h-screen relative overflow-x-hidden`}
+        suppressHydrationWarning
+      >
+        {/* Clean background */}
+        <div className="fixed inset-0 -z-10">
+          <div className="absolute inset-0 bg-background transition-colors duration-300" />
+        </div>
 
- <ThemeProvider
- attribute="class"
- defaultTheme="dark"
- enableSystem={false}
- disableTransitionOnChange
- >
- <SessionProviderWrapper>
- <TRPCReactProvider>
- <Navbar />
- <main className="pt-16">{children}</main>
- <Toaster richColors position="bottom-right" />
- </TRPCReactProvider>
- </SessionProviderWrapper>
- </ThemeProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          disableTransitionOnChange
+        >
+          <SessionProviderWrapper>
+            <TRPCReactProvider>
+              <Navbar />
+              <main className="pt-16">{children}</main>
+              <Toaster richColors position="bottom-right" />
+            </TRPCReactProvider>
+          </SessionProviderWrapper>
+        </ThemeProvider>
 
- {/* Google API Scripts */}
- <GoogleScripts />
- </body>
- </html>
- );
- {/* Google API Scripts */}
- <GoogleScripts />
- </body>
- </html>
- );
+        {/* Google API Scripts */}
+        <GoogleScripts />
+      </body>
+    </html>
+  );
 }

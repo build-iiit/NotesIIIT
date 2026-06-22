@@ -1,9 +1,8 @@
 import { NextApiRequest, NextApiResponse } from"next";
-import { writeFile, mkdir, appendFile, rename, unlink, readFile } from"fs/promises";
+import { writeFile, mkdir, appendFile, unlink, readFile } from"fs/promises";
 import { existsSync } from"fs";
 import path from"path";
-import { IncomingForm, File as FormidableFile, Fields, Files } from"formidable";
-import { auth } from"../../auth";
+import { IncomingForm, Fields, Files } from"formidable";
 import { uploadFileToS3 } from"@/lib/storage";
 
 // Disable default body parser to handle file uploads
@@ -139,7 +138,7 @@ export default async function handler(
  // Clean up the formidable chunk file
  try {
  await unlink(uploadedChunk.filepath);
- } catch (e) { }
+ } catch (_e) { }
 
  // If last chunk, finalize
  if (chunkIndex === totalChunks - 1) {

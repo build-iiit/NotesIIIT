@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from"react";
-import { LeaderboardTable } from"@/components/LeaderboardTable";import { FriendsList } from"@/components/social/FriendsList";
-import { GroupsList } from"@/components/social/GroupsList";
-import { Users, UserPlus, Trophy, Folder } from"lucide-react";
+import { LeaderboardTable } from "@/components/features/LeaderboardTable";
+import { FriendsList } from "@/components/social/FriendsList";
+import { GroupsList } from "@/components/social/GroupsList";
+import { Users, Trophy, Folder } from"lucide-react";
 
 export default function SocialPage() {
  const [activeTab, setActiveTab] = useState<"friends" |"groups" |"leaderboard">("friends");

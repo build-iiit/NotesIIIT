@@ -3,7 +3,8 @@
 import { useState } from"react";
 import { api } from"@/app/_trpc/client";
 import { Plus, Users } from"lucide-react";
-import { ProfileImage } from"../ProfileImage";import { GroupDetailsDialog } from"./GroupDetailsDialog";
+import { ProfileImage } from "../ui/ProfileImage";
+import { GroupDetailsDialog } from "./GroupDetailsDialog";
 export function GroupsList() {
  const { data: groups, isLoading, refetch } = api.social.getGroups.useQuery();
  const createGroupMutation = api.social.createGroup.useMutation({

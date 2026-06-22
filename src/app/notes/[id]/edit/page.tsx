@@ -3,7 +3,8 @@
 import { use, useState, useRef, useEffect } from"react";
 import { api } from"@/app/_trpc/client";
 import { useRouter } from"next/navigation";
-import DeleteNoteButton from"@/components/DeleteNoteButton";import { Folder, Tag, Plus } from"lucide-react";
+import DeleteNoteButton from "@/components/ui/DeleteNoteButton";
+import { Folder, Tag, Plus } from "lucide-react";
 import { Search, X, ChevronDown, CheckCircle } from"lucide-react";
 
 export default function EditNotePage({ params }: { params: Promise<{ id: string }> }) {

@@ -5,7 +5,7 @@ import { RequestCard } from"@/components/requests/RequestCard";
 import { CreateRequestDialog } from"@/components/requests/CreateRequestDialog";
 import { useState, useEffect } from"react";
 import { useInView } from"react-intersection-observer";
-import { Search, Sparkles, Filter, Loader2, ArrowUpRight } from"lucide-react";
+import { Search, Sparkles, Filter, Loader2 } from"lucide-react";
 
 export default function RequestsPage() {
  const [filter, setFilter] = useState<"new" |"top">("new");

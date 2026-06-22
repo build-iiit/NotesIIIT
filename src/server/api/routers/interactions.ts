@@ -3,7 +3,7 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from"@/server/a
 import { TRPCError } from"@trpc/server";
 import { getPresignedDownloadUrl } from"@/lib/storage";
 
-const votesRouter = createTRPCRouter({
+export const votesRouter = createTRPCRouter({
  /**
  * Retrieves the up/down vote statistics for a specific page of a note version.
  * Includes the current user's vote if authenticated.
@@ -140,7 +140,7 @@ const votesRouter = createTRPCRouter({
  }),
 });
 
-const commentsRouter = createTRPCRouter({
+export const commentsRouter = createTRPCRouter({
  /**
  * Fetches all top-level comments and their nested replies for a specific page.
  * Includes resolved user avatars via presigned S3 URLs.
@@ -267,7 +267,7 @@ const commentsRouter = createTRPCRouter({
  }),
 });
 
-const bookmarksRouter = createTRPCRouter({
+export const bookmarksRouter = createTRPCRouter({
  /**
  * Toggles a bookmark for a specific page of a note.
  * Creates a new bookmark if none exists, or removes the existing one.

@@ -2,15 +2,15 @@
 
 import Link from"next/link";
 import { usePathname } from"next/navigation";
-import { ThemeToggle } from"./theme-toggle";
+import { ThemeToggle } from"@/components/ui/ThemeToggle";
 import {
  BookOpen, Menu, X, Upload, Trophy,
  User, LogOut, Home, Shield, Search,
  Bookmark, Folder, Users, Hand, PenSquare
 } from"lucide-react";
 import { useState } from"react";
-import { ProfileImage } from"./ProfileImage";
-import { NotificationBell } from"./NotificationBell";
+import { ProfileImage } from"@/components/ui/ProfileImage";
+import { NotificationBell } from"@/components/NotificationBell";
 
 
 interface NavbarProps {

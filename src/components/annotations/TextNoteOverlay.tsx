@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from"react";
-import { ChevronDown, ChevronUp, X, StickyNote } from"lucide-react";
+import { ChevronUp, X, StickyNote } from"lucide-react";
 import { TextNote } from"./types";
 
 interface TextNoteOverlayProps {

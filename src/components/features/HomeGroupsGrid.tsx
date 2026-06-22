@@ -3,9 +3,8 @@
 import { useState } from"react";
 import { api } from"@/app/_trpc/client";
 import { Users, ChevronRight } from"lucide-react";
-import Image from"next/image";
-import { ProfileImage } from"./ProfileImage";
-import { GroupDetailsDialog } from"./social/GroupDetailsDialog";
+import { ProfileImage } from "../ui/ProfileImage";
+import { GroupDetailsDialog } from "../social/GroupDetailsDialog";
 
 
 export function HomeGroupsGrid() {

@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from"@/app/_trpc/client";
-import { BookOpen, Folder, Loader2, Search } from"lucide-react";
+import { BookOpen, Folder, Search } from"lucide-react";
 import Link from"next/link";
 import { useState } from"react";
 

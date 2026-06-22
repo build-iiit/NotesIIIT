@@ -1,9 +1,9 @@
 "use client";
 
 import { api } from"@/app/_trpc/client";
-import { ArrowBigUp, Calendar, CheckCircle2, MessageSquare, Tag, User, Clock, Trash2, MoreVertical, Heart, Reply, X, ChevronLeft, Share2 } from"lucide-react";
+import { ArrowBigUp, CheckCircle2, MessageSquare, Tag, Clock, Trash2, Heart, Reply, X, ChevronLeft, Share2 } from"lucide-react";
 import { useParams, useRouter } from"next/navigation";
-import { ProfileImage } from"@/components/ProfileImage";
+import { ProfileImage } from "@/components/ui/ProfileImage";
 import { useState } from"react";
 import { cn } from"@/lib/utils";
 import Link from"next/link";

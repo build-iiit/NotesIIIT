@@ -5,7 +5,7 @@ import { useRouter } from"next/navigation";
 import { api } from"@/app/_trpc/client";
 import { Camera, Image as ImageIcon, Loader2 } from"lucide-react";
 import Image from"next/image";
-import { ProfileImage } from"@/components/ProfileImage";
+import { ProfileImage } from"@/components/ui/ProfileImage";
 
 interface EditProfileDialogProps {
  user: {

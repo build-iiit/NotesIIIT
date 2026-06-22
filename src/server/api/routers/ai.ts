@@ -166,8 +166,6 @@ export const aiRouter = createTRPCRouter({
 
  const model = genAI.getGenerativeModel({ model: modelName });
 
- const prompt = `You are an intelligent assistant helping a student understand a document.
-You are looking at page ${input.pageNumber} of a PDF document.
  const prompt = `Context: You are a helpful academic AI assistant analyzing page ${input.pageNumber} of a document.
 User Question: ${input.question}
 

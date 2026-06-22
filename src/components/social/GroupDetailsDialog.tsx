@@ -5,7 +5,7 @@ import { api } from"@/app/_trpc/client";
 import { X, Search, Users, Trophy, FileText } from"lucide-react";
 import Image from"next/image";
 import Link from"next/link";
-import { ProfileImage } from"../ProfileImage";
+import { ProfileImage } from "../ui/ProfileImage";
 
 interface GroupDetailsDialogProps {
  isOpen: boolean;

@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect } from"react";
+import { useState } from"react";
 import Image from"next/image"; // Keep Image for background checks if needed, but we used it for background too
 import Link from"next/link";
-import { ProfileImage } from"@/components/ProfileImage";
-import { UserStatsCard } from"@/components/UserStatsCard";
-import { UserNotesGrid, type Note } from"@/components/UserNotesGrid";
-import { EditProfileDialog } from"@/components/EditProfileDialog";
-import { FileExplorer } from"@/components/FileExplorer"; // Features from mainimport { api } from"@/app/_trpc/client";
+import { ProfileImage } from"@/components/ui/ProfileImage";
+import { UserStatsCard } from"@/components/features/UserStatsCard";
+import { UserNotesGrid, type Note } from"@/components/features/UserNotesGrid";
+import { EditProfileDialog } from"@/components/ui/EditProfileDialog";
+import { FileExplorer } from "@/components/features/FileExplorer";
+import { api } from "@/app/_trpc/client";
 import {
  FileText, Eye, TrendingUp, Trophy, Award,
  Sparkles, Medal, Edit, Folder, Search, Settings, Key
 } from"lucide-react";
-import { useThemeStyle } from"@/components/ThemeStyleProvider";
+import { useThemeStyle } from"@/components/ui/ThemeStyleProvider";
 // Types from main for safety and search logic
 interface UserProfile {
  id: string;
@@ -209,7 +210,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
  );
 }
 
-import { ApiKeyDialog } from"@/components/ApiKeyDialog";
+import { ApiKeyDialog } from "@/components/ui/ApiKeyDialog";
 // ...
 
 // Settings Section Component
