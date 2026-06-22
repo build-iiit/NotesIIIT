@@ -23,7 +23,7 @@ This platform addresses the fragmentation of study materials by providing a unif
 | Styling | Tailwind CSS v4 | Utility-first styling |
 | Database | PostgreSQL | Relational data |
 | ORM | Prisma | Type-safe database access |
-| Storage | MinIO (S3 Compatible) | Secure object storage |
+| Storage | Azure Blob Storage | Secure object storage |
 | API | tRPC | End-to-end typesafe APIs |
 | Auth | NextAuth.js v5 | Authentication sessions |
 | PDF Engine | PDF.js | Client-side PDF rendering |
@@ -37,7 +37,7 @@ This platform addresses the fragmentation of study materials by providing a unif
 flowchart TD
     Client[Next.js Client] <-->|tRPC Typed API| Server[Next.js / API Routes]
     Server <-->|Prisma ORM| DB[(PostgreSQL)]
-    Server <-->|AWS SDK| Storage[(MinIO / S3)]
+    Server <-->|Azure SDK| Storage[(Azure Blob Storage)]
     Client <-->|NextAuth| Auth[Auth Provider]
 ```
 
@@ -75,12 +75,9 @@ Follow these instructions to set up the project locally.
    AUTH_GITHUB_ID="your-github-client-id"
    AUTH_GITHUB_SECRET="your-github-client-secret"
 
-   # Storage (MinIO)
-   S3_ENDPOINT="http://localhost:9000"
-   S3_ACCESS_KEY="minioadmin"
-   S3_SECRET_KEY="minioadmin"
-   S3_BUCKET_NAME="notes-bucket"
-   S3_REGION="us-east-1"
+   # Azure Blob Storage (Azurite local emulator)
+   AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+   AZURE_STORAGE_CONTAINER_NAME="notes-bucket"
 
    # AI Configuration
    GOOGLE_GEMINI_API_KEY="your-gemini-server-key"
