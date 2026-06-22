@@ -1,204 +1,204 @@
 
-import { type Folder } from "@prisma/client";
-import { z } from "zod";
+import { type Folder } from"@prisma/client";
+import { z } from"zod";
 import {
-    createTRPCRouter,
-    protectedProcedure,
-} from "@/server/api/trpc";
-import { getPresignedDownloadUrl } from "@/lib/s3";
-import { TRPCError } from "@trpc/server";
+ createTRPCRouter,
+ protectedProcedure,
+} from"@/server/api/trpc";
+import { getPresignedDownloadUrl } from"@/lib/s3";
+import { TRPCError } from"@trpc/server";
 
 export const foldersRouter = createTRPCRouter({
-    create: protectedProcedure
-        .input(z.object({
-            name: z.string().min(1),
-            parentId: z.string().optional(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            // Check if folder with same name exists in same parent
-            const duplicate = await ctx.prisma.folder.findFirst({
-                where: {
-                    userId: ctx.session.user.id,
-                    name: input.name,
-                    parentId: input.parentId ?? null,
-                }
-            });
+ create: protectedProcedure
+ .input(z.object({
+ name: z.string().min(1),
+ parentId: z.string().optional(),
+ }))
+ .mutation(async ({ ctx, input }) => {
+ // Check if folder with same name exists in same parent
+ const duplicate = await ctx.prisma.folder.findFirst({
+ where: {
+ userId: ctx.session.user.id,
+ name: input.name,
+ parentId: input.parentId ?? null,
+ }
+ });
 
-            if (duplicate) {
-                throw new TRPCError({
-                    code: "CONFLICT",
-                    message: "A folder with this name already exists in this location",
-                });
-            }
+ if (duplicate) {
+ throw new TRPCError({
+ code:"CONFLICT",
+ message:"A folder with this name already exists in this location",
+ });
+ }
 
-            return ctx.prisma.folder.create({
-                data: {
-                    name: input.name,
-                    userId: ctx.session.user.id,
-                    parentId: input.parentId ?? null,
-                },
-            });
-        }),
+ return ctx.prisma.folder.create({
+ data: {
+ name: input.name,
+ userId: ctx.session.user.id,
+ parentId: input.parentId ?? null,
+ },
+ });
+ }),
 
-    getAll: protectedProcedure
-        .input(z.object({
-            parentId: z.string().optional().nullable(),
-        }).optional())
-        .query(async ({ ctx, input }) => {
-            // Fetch folders and notes in the specified parentId (or root if null/undefined)
-            const parentId = input?.parentId ?? null;
+ getAll: protectedProcedure
+ .input(z.object({
+ parentId: z.string().optional().nullable(),
+ }).optional())
+ .query(async ({ ctx, input }) => {
+ // Fetch folders and notes in the specified parentId (or root if null/undefined)
+ const parentId = input?.parentId ?? null;
 
-            const folders = await ctx.prisma.folder.findMany({
-                where: {
-                    userId: ctx.session.user.id,
-                    parentId,
-                },
-                orderBy: {
-                    name: 'asc'
-                }
-            });
+ const folders = await ctx.prisma.folder.findMany({
+ where: {
+ userId: ctx.session.user.id,
+ parentId,
+ },
+ orderBy: {
+ name:'asc'
+ }
+ });
 
-            const notes = await ctx.prisma.note.findMany({
-                where: {
-                    authorId: ctx.session.user.id,
-                    folderId: parentId
-                },
-                orderBy: {
-                    createdAt: 'desc'
-                },
-                include: {
-                    versions: {
-                        take: 1,
-                        orderBy: { version: 'desc' },
-                        select: { thumbnailKey: true }
-                    }
-                }
-            });
+ const notes = await ctx.prisma.note.findMany({
+ where: {
+ authorId: ctx.session.user.id,
+ folderId: parentId
+ },
+ orderBy: {
+ createdAt:'desc'
+ },
+ include: {
+ versions: {
+ take: 1,
+ orderBy: { version:'desc' },
+ select: { thumbnailKey: true }
+ }
+ }
+ });
 
-            // Resolve thumbnails
-            const notesWithThumbnails = await Promise.all(notes.map(async (note) => {
-                let thumbnailUrl = "";
-                const key = note.thumbnailS3Key || note.versions[0]?.thumbnailKey;
+ // Resolve thumbnails
+ const notesWithThumbnails = await Promise.all(notes.map(async (note) => {
+ let thumbnailUrl ="";
+ const key = note.thumbnailS3Key || note.versions[0]?.thumbnailKey;
 
-                if (key) {
-                    try {
-                        thumbnailUrl = await getPresignedDownloadUrl(key);
-                    } catch (e) {
-                        console.error("Failed to generate presigned URL for note", note.id, e);
-                    }
-                }
-                return { ...note, thumbnailUrl };
-            }));
+ if (key) {
+ try {
+ thumbnailUrl = await getPresignedDownloadUrl(key);
+ } catch (e) {
+ console.error("Failed to generate presigned URL for note", note.id, e);
+ }
+ }
+ return { ...note, thumbnailUrl };
+ }));
 
-            return {
-                folders,
-                notes: notesWithThumbnails
-            };
-        }),
+ return {
+ folders,
+ notes: notesWithThumbnails
+ };
+ }),
 
-    getAllFlat: protectedProcedure
-        .query(async ({ ctx }) => {
-            return ctx.prisma.folder.findMany({
-                where: {
-                    userId: ctx.session.user.id,
-                },
-                orderBy: {
-                    name: 'asc'
-                }
-            });
-        }),
+ getAllFlat: protectedProcedure
+ .query(async ({ ctx }) => {
+ return ctx.prisma.folder.findMany({
+ where: {
+ userId: ctx.session.user.id,
+ },
+ orderBy: {
+ name:'asc'
+ }
+ });
+ }),
 
-    getBreadcrumbs: protectedProcedure
-        .input(z.object({ folderId: z.string() }))
-        .query(async ({ ctx, input }) => {
-            const breadcrumbs = [];
-            let currentId: string | null = input.folderId;
+ getBreadcrumbs: protectedProcedure
+ .input(z.object({ folderId: z.string() }))
+ .query(async ({ ctx, input }) => {
+ const breadcrumbs = [];
+ let currentId: string | null = input.folderId;
 
-            while (currentId) {
-                const currentFolder: Folder | null = await ctx.prisma.folder.findUnique({
-                    where: { id: currentId }
-                });
+ while (currentId) {
+ const currentFolder: Folder | null = await ctx.prisma.folder.findUnique({
+ where: { id: currentId }
+ });
 
-                if (!currentFolder) break;
-                if (currentFolder.userId !== ctx.session.user.id) break; // Security check
+ if (!currentFolder) break;
+ if (currentFolder.userId !== ctx.session.user.id) break; // Security check
 
-                breadcrumbs.unshift(currentFolder);
-                currentId = currentFolder.parentId;
-            }
+ breadcrumbs.unshift(currentFolder);
+ currentId = currentFolder.parentId;
+ }
 
-            return breadcrumbs;
-        }),
+ return breadcrumbs;
+ }),
 
-    move: protectedProcedure
-        .input(z.object({
-            id: z.string(),
-            parentId: z.string().nullable(),
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const folder = await ctx.prisma.folder.findUnique({
-                where: { id: input.id },
-            });
+ move: protectedProcedure
+ .input(z.object({
+ id: z.string(),
+ parentId: z.string().nullable(),
+ }))
+ .mutation(async ({ ctx, input }) => {
+ const folder = await ctx.prisma.folder.findUnique({
+ where: { id: input.id },
+ });
 
-            if (!folder || folder.userId !== ctx.session.user.id) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Folder not found",
-                });
-            }
+ if (!folder || folder.userId !== ctx.session.user.id) {
+ throw new TRPCError({
+ code:"NOT_FOUND",
+ message:"Folder not found",
+ });
+ }
 
-            // Prevent moving folder into itself
-            if (input.parentId === input.id) {
-                throw new TRPCError({
-                    code: "BAD_REQUEST",
-                    message: "Cannot move folder into itself",
-                });
-            }
+ // Prevent moving folder into itself
+ if (input.parentId === input.id) {
+ throw new TRPCError({
+ code:"BAD_REQUEST",
+ message:"Cannot move folder into itself",
+ });
+ }
 
-            // Check for circular dependency (moving parent into child)
-            if (input.parentId) {
-                let currentParentId: string | null = input.parentId;
-                while (currentParentId) {
-                    if (currentParentId === input.id) {
-                        throw new TRPCError({
-                            code: "BAD_REQUEST",
-                            message: "Cannot move folder into its own child",
-                        });
-                    }
+ // Check for circular dependency (moving parent into child)
+ if (input.parentId) {
+ let currentParentId: string | null = input.parentId;
+ while (currentParentId) {
+ if (currentParentId === input.id) {
+ throw new TRPCError({
+ code:"BAD_REQUEST",
+ message:"Cannot move folder into its own child",
+ });
+ }
 
-                    const parent: { parentId: string | null; id: string } | null = await ctx.prisma.folder.findUnique({
-                        where: { id: currentParentId },
-                        select: { parentId: true, id: true }
-                    });
+ const parent: { parentId: string | null; id: string } | null = await ctx.prisma.folder.findUnique({
+ where: { id: currentParentId },
+ select: { parentId: true, id: true }
+ });
 
-                    if (!parent) break;
-                    currentParentId = parent.parentId;
-                }
-            }
+ if (!parent) break;
+ currentParentId = parent.parentId;
+ }
+ }
 
-            return ctx.prisma.folder.update({
-                where: { id: input.id },
-                data: {
-                    parentId: input.parentId,
-                },
-            });
-        }),
+ return ctx.prisma.folder.update({
+ where: { id: input.id },
+ data: {
+ parentId: input.parentId,
+ },
+ });
+ }),
 
-    delete: protectedProcedure
-        .input(z.object({ id: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            const folder = await ctx.prisma.folder.findUnique({
-                where: { id: input.id },
-            });
+ delete: protectedProcedure
+ .input(z.object({ id: z.string() }))
+ .mutation(async ({ ctx, input }) => {
+ const folder = await ctx.prisma.folder.findUnique({
+ where: { id: input.id },
+ });
 
-            if (!folder || folder.userId !== ctx.session.user.id) {
-                throw new TRPCError({
-                    code: "NOT_FOUND",
-                    message: "Folder not found",
-                });
-            }
+ if (!folder || folder.userId !== ctx.session.user.id) {
+ throw new TRPCError({
+ code:"NOT_FOUND",
+ message:"Folder not found",
+ });
+ }
 
-            return ctx.prisma.folder.delete({
-                where: { id: input.id },
-            });
-        }),
+ return ctx.prisma.folder.delete({
+ where: { id: input.id },
+ });
+ }),
 });

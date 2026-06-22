@@ -1,140 +1,140 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument } from'pdf-lib';
 
 // Polyfill for DOMMatrix in Node.js environment for pdfjs-dist
-if (typeof Promise.withResolvers === 'undefined') {
-    // @ts-expect-error This is a polyfill
-    Promise.withResolvers = function () {
-        let resolve, reject;
-        const promise = new Promise((res, rej) => {
-            resolve = res;
-            reject = rej;
-        });
-        return { promise, resolve, reject };
-    };
+if (typeof Promise.withResolvers ==='undefined') {
+ // @ts-expect-error This is a polyfill
+ Promise.withResolvers = function () {
+ let resolve, reject;
+ const promise = new Promise((res, rej) => {
+ resolve = res;
+ reject = rej;
+ });
+ return { promise, resolve, reject };
+ };
 }
 
-if (typeof DOMMatrix === 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (global as any).DOMMatrix = class DOMMatrix {
-        constructor() {
-            // Minimal implementation needed for pdfjs-dist to load
-        }
-    };
+if (typeof DOMMatrix ==='undefined') {
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ (global as any).DOMMatrix = class DOMMatrix {
+ constructor() {
+ // Minimal implementation needed for pdfjs-dist to load
+ }
+ };
 }
 
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { createCanvas } from 'canvas';
+import * as pdfjsLib from'pdfjs-dist/legacy/build/pdf.mjs';
+import { createCanvas } from'canvas';
 
 // Helper for canvas factory needed by pdfjs-dist in Node
 interface CanvasAndContext {
-    canvas: ReturnType<typeof createCanvas>;
-    context: ReturnType<ReturnType<typeof createCanvas>['getContext']>;
+ canvas: ReturnType<typeof createCanvas>;
+ context: ReturnType<ReturnType<typeof createCanvas>['getContext']>;
 }
 
 class NodeCanvasFactory {
-    create(width: number, height: number): CanvasAndContext {
-        const canvas = createCanvas(width, height);
-        return {
-            canvas,
-            context: canvas.getContext('2d'),
-        };
-    }
+ create(width: number, height: number): CanvasAndContext {
+ const canvas = createCanvas(width, height);
+ return {
+ canvas,
+ context: canvas.getContext('2d'),
+ };
+ }
 
-    reset(canvasAndContext: CanvasAndContext, width: number, height: number) {
-        canvasAndContext.canvas.width = width;
-        canvasAndContext.canvas.height = height;
-    }
+ reset(canvasAndContext: CanvasAndContext, width: number, height: number) {
+ canvasAndContext.canvas.width = width;
+ canvasAndContext.canvas.height = height;
+ }
 
-    destroy(canvasAndContext: CanvasAndContext) {
-        canvasAndContext.canvas.width = 0;
-        canvasAndContext.canvas.height = 0;
-    }
+ destroy(canvasAndContext: CanvasAndContext) {
+ canvasAndContext.canvas.width = 0;
+ canvasAndContext.canvas.height = 0;
+ }
 }
 
 /**
  * Extract page count from PDF buffer
  */
 export async function getPageCount(pdfBuffer: Buffer): Promise<number> {
-    const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
-    return pdfDoc.getPageCount();
+ const pdfDoc = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
+ return pdfDoc.getPageCount();
 }
 
 /**
  * Generate a JPEG thumbnail of the first page
  */
 export async function generateThumbnail(pdfBuffer: Buffer): Promise<Buffer> {
-    const data = new Uint8Array(pdfBuffer);
-    const loadingTask = pdfjsLib.getDocument({
-        data,
-        canvasFactory: new NodeCanvasFactory()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+ const data = new Uint8Array(pdfBuffer);
+ const loadingTask = pdfjsLib.getDocument({
+ data,
+ canvasFactory: new NodeCanvasFactory()
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ } as any);
 
-    const doc = await loadingTask.promise;
-    const page = await doc.getPage(1);
+ const doc = await loadingTask.promise;
+ const page = await doc.getPage(1);
 
-    const viewport = page.getViewport({ scale: 1.0 });
-    const canvas = createCanvas(viewport.width, viewport.height);
-    const context = canvas.getContext('2d');
+ const viewport = page.getViewport({ scale: 1.0 });
+ const canvas = createCanvas(viewport.width, viewport.height);
+ const context = canvas.getContext('2d');
 
-    await page.render({
-        canvasContext: context as unknown as CanvasRenderingContext2D,
-        viewport,
-        canvas: canvas as unknown as HTMLCanvasElement
-    }).promise;
+ await page.render({
+ canvasContext: context as unknown as CanvasRenderingContext2D,
+ viewport,
+ canvas: canvas as unknown as HTMLCanvasElement
+ }).promise;
 
-    return canvas.toBuffer('image/jpeg');
+ return canvas.toBuffer('image/jpeg');
 }
 
 /**
  * Create a single-page PDF up from an image buffer
  */
-export async function imageToPdf(imageBuffer: Buffer, mimeType: 'image/png' | 'image/jpeg'): Promise<Buffer> {
-    const pdfDoc = await PDFDocument.create();
+export async function imageToPdf(imageBuffer: Buffer, mimeType:'image/png' |'image/jpeg'): Promise<Buffer> {
+ const pdfDoc = await PDFDocument.create();
 
-    let image;
-    if (mimeType === 'image/png') {
-        image = await pdfDoc.embedPng(imageBuffer);
-    } else {
-        image = await pdfDoc.embedJpg(imageBuffer);
-    }
+ let image;
+ if (mimeType ==='image/png') {
+ image = await pdfDoc.embedPng(imageBuffer);
+ } else {
+ image = await pdfDoc.embedJpg(imageBuffer);
+ }
 
-    const page = pdfDoc.addPage([image.width, image.height]);
-    page.drawImage(image, {
-        x: 0,
-        y: 0,
-        width: image.width,
-        height: image.height,
-    });
+ const page = pdfDoc.addPage([image.width, image.height]);
+ page.drawImage(image, {
+ x: 0,
+ y: 0,
+ width: image.width,
+ height: image.height,
+ });
 
-    const pdfBytes = await pdfDoc.save();
-    return Buffer.from(pdfBytes);
+ const pdfBytes = await pdfDoc.save();
+ return Buffer.from(pdfBytes);
 }
 
 /**
  * Replace a specific page in a PDF with content from another PDF (single page)
  */
 export async function replacePage(
-    originalPdfBuffer: Buffer,
-    replacementPdfBuffer: Buffer,
-    pageIndex: number // 0-indexed
+ originalPdfBuffer: Buffer,
+ replacementPdfBuffer: Buffer,
+ pageIndex: number // 0-indexed
 ): Promise<Buffer> {
-    const originalDoc = await PDFDocument.load(originalPdfBuffer);
-    const replacementDoc = await PDFDocument.load(replacementPdfBuffer);
+ const originalDoc = await PDFDocument.load(originalPdfBuffer);
+ const replacementDoc = await PDFDocument.load(replacementPdfBuffer);
 
-    // Create a new document to hold the result (safest way to avoid corruption)
-    // Actually pdf-lib allows in-place modification which is faster
+ // Create a new document to hold the result (safest way to avoid corruption)
+ // Actually pdf-lib allows in-place modification which is faster
 
-    // 1. Remove the old page
-    // Note: removing page shifts indices.
-    originalDoc.removePage(pageIndex);
+ // 1. Remove the old page
+ // Note: removing page shifts indices.
+ originalDoc.removePage(pageIndex);
 
-    // 2. Copy the replacement page
-    const [newPage] = await originalDoc.copyPages(replacementDoc, [0]);
+ // 2. Copy the replacement page
+ const [newPage] = await originalDoc.copyPages(replacementDoc, [0]);
 
-    // 3. Insert at the same index
-    originalDoc.insertPage(pageIndex, newPage);
+ // 3. Insert at the same index
+ originalDoc.insertPage(pageIndex, newPage);
 
-    const savedBytes = await originalDoc.save();
-    return Buffer.from(savedBytes);
+ const savedBytes = await originalDoc.save();
+ return Buffer.from(savedBytes);
 }
