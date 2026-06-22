@@ -1,275 +1,275 @@
-import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, ChevronUp, X, StickyNote } from "lucide-react";
-import { TextNote } from "./types";
+import React, { useState, useRef, useEffect } from"react";
+import { ChevronDown, ChevronUp, X, StickyNote } from"lucide-react";
+import { TextNote } from"./types";
 
 interface TextNoteOverlayProps {
-    note: TextNote;
-    viewportDimensions: { width: number; height: number };
-    isEditing: boolean;
-    onSave: (id: string, content: string) => void;
-    onUpdate: (id: string, updates: Partial<TextNote>) => void;
-    onCancel: (id: string) => void;
-    onClick: (id: string) => void;
-    onDelete: (id: string) => void;
-    onToggleCollapse: (id: string) => void;
-    readOnly?: boolean;
+ note: TextNote;
+ viewportDimensions: { width: number; height: number };
+ isEditing: boolean;
+ onSave: (id: string, content: string) => void;
+ onUpdate: (id: string, updates: Partial<TextNote>) => void;
+ onCancel: (id: string) => void;
+ onClick: (id: string) => void;
+ onDelete: (id: string) => void;
+ onToggleCollapse: (id: string) => void;
+ readOnly?: boolean;
 }
 
 export const TextNoteOverlay = ({
-    note,
-    viewportDimensions,
-    isEditing,
-    onSave,
-    onUpdate,
-    onCancel,
-    onClick,
-    onDelete,
-    onToggleCollapse,
-    readOnly = false
+ note,
+ viewportDimensions,
+ isEditing,
+ onSave,
+ onUpdate,
+ onCancel,
+ onClick,
+ onDelete,
+ onToggleCollapse,
+ readOnly = false
 }: TextNoteOverlayProps) => {
-    const [editContent, setEditContent] = useState(note.content);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [isResizing, setIsResizing] = useState(false);
-    const hasDragged = useRef(false);
-    const dragStartPos = useRef({ x: 0, y: 0 });
-    const noteStartPos = useRef({ x: note.x, y: note.y });
-    const noteStartWidth = useRef(note.width || 0.2);
+ const [editContent, setEditContent] = useState(note.content);
+ const textareaRef = useRef<HTMLTextAreaElement>(null);
+ const [isDragging, setIsDragging] = useState(false);
+ const [isResizing, setIsResizing] = useState(false);
+ const hasDragged = useRef(false);
+ const dragStartPos = useRef({ x: 0, y: 0 });
+ const noteStartPos = useRef({ x: note.x, y: note.y });
+ const noteStartWidth = useRef(note.width || 0.2);
 
-    useEffect(() => {
-        if (isEditing && textareaRef.current) {
-            textareaRef.current.focus();
-            // Auto-resize on open
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-        }
-    }, [isEditing]);
+ useEffect(() => {
+ if (isEditing && textareaRef.current) {
+ textareaRef.current.focus();
+ // Auto-resize on open
+ textareaRef.current.style.height ='auto';
+ textareaRef.current.style.height = textareaRef.current.scrollHeight +'px';
+ }
+ }, [isEditing]);
 
-    const handleSave = () => {
-        onSave(note.id, editContent);
-    };
+ const handleSave = () => {
+ onSave(note.id, editContent);
+ };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            handleSave();
-        } else if (e.key === 'Escape') {
-            onCancel(note.id);
-        }
-    };
+ const handleKeyDown = (e: React.KeyboardEvent) => {
+ if (e.key ==='Enter' && (e.ctrlKey || e.metaKey)) {
+ handleSave();
+ } else if (e.key ==='Escape') {
+ onCancel(note.id);
+ }
+ };
 
-    // Move logic
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (readOnly || isEditing) return;
-        e.stopPropagation();
-        setIsDragging(true);
-        hasDragged.current = false; // Reset drag state
-        dragStartPos.current = { x: e.clientX, y: e.clientY };
-        noteStartPos.current = { x: note.x, y: note.y };
-    };
+ // Move logic
+ const handleMouseDown = (e: React.MouseEvent) => {
+ if (readOnly || isEditing) return;
+ e.stopPropagation();
+ setIsDragging(true);
+ hasDragged.current = false; // Reset drag state
+ dragStartPos.current = { x: e.clientX, y: e.clientY };
+ noteStartPos.current = { x: note.x, y: note.y };
+ };
 
-    // Resize logic
-    const handleResizeMouseDown = (e: React.MouseEvent) => {
-        if (readOnly || isEditing) return;
-        e.stopPropagation();
-        setIsResizing(true);
-        dragStartPos.current = { x: e.clientX, y: e.clientY };
-        noteStartWidth.current = note.width || 0.2;
-    };
+ // Resize logic
+ const handleResizeMouseDown = (e: React.MouseEvent) => {
+ if (readOnly || isEditing) return;
+ e.stopPropagation();
+ setIsResizing(true);
+ dragStartPos.current = { x: e.clientX, y: e.clientY };
+ noteStartWidth.current = note.width || 0.2;
+ };
 
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isDragging) {
-                const dx = (e.clientX - dragStartPos.current.x);
-                const dy = (e.clientY - dragStartPos.current.y);
+ useEffect(() => {
+ const handleMouseMove = (e: MouseEvent) => {
+ if (isDragging) {
+ const dx = (e.clientX - dragStartPos.current.x);
+ const dy = (e.clientY - dragStartPos.current.y);
 
-                // If moved reasonably, mark as dragged
-                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-                    hasDragged.current = true;
-                }
+ // If moved reasonably, mark as dragged
+ if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+ hasDragged.current = true;
+ }
 
-                const dxRel = dx / viewportDimensions.width;
-                const dyRel = dy / viewportDimensions.height;
-                const newX = Math.max(0, Math.min(1, noteStartPos.current.x + dxRel));
-                const newY = Math.max(0, Math.min(1, noteStartPos.current.y + dyRel));
-                onUpdate(note.id, { x: newX, y: newY });
-            } else if (isResizing) {
-                const dx = (e.clientX - dragStartPos.current.x) / viewportDimensions.width;
-                const newWidth = Math.max(0.05, Math.min(1 - note.x, noteStartWidth.current + dx));
-                onUpdate(note.id, { width: newWidth });
-            }
-        };
+ const dxRel = dx / viewportDimensions.width;
+ const dyRel = dy / viewportDimensions.height;
+ const newX = Math.max(0, Math.min(1, noteStartPos.current.x + dxRel));
+ const newY = Math.max(0, Math.min(1, noteStartPos.current.y + dyRel));
+ onUpdate(note.id, { x: newX, y: newY });
+ } else if (isResizing) {
+ const dx = (e.clientX - dragStartPos.current.x) / viewportDimensions.width;
+ const newWidth = Math.max(0.05, Math.min(1 - note.x, noteStartWidth.current + dx));
+ onUpdate(note.id, { width: newWidth });
+ }
+ };
 
-        const handleMouseUp = () => {
-            setIsDragging(false);
-            setIsResizing(false);
-        };
+ const handleMouseUp = () => {
+ setIsDragging(false);
+ setIsResizing(false);
+ };
 
-        if (isDragging || isResizing) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, isResizing, note, onUpdate, viewportDimensions]);
+ if (isDragging || isResizing) {
+ window.addEventListener('mousemove', handleMouseMove);
+ window.addEventListener('mouseup', handleMouseUp);
+ }
+ return () => {
+ window.removeEventListener('mousemove', handleMouseMove);
+ window.removeEventListener('mouseup', handleMouseUp);
+ };
+ }, [isDragging, isResizing, note, onUpdate, viewportDimensions]);
 
-    const left = note.x * viewportDimensions.width;
-    const top = note.y * viewportDimensions.height;
-    const width = (note.width || 0.2) * viewportDimensions.width;
+ const left = note.x * viewportDimensions.width;
+ const top = note.y * viewportDimensions.height;
+ const width = (note.width || 0.2) * viewportDimensions.width;
 
-    // Determine current display mode (handle legacy data)
-    const effectiveMode = note.displayMode || (note.collapsed ? 'collapsed-icon' : 'open');
-    const isExpanded = effectiveMode === 'open';
-    const isLineMode = effectiveMode === 'collapsed-line';
-    const isIconMode = effectiveMode === 'collapsed-icon';
+ // Determine current display mode (handle legacy data)
+ const effectiveMode = note.displayMode || (note.collapsed ?'collapsed-icon' :'open');
+ const isExpanded = effectiveMode ==='open';
+ const isLineMode = effectiveMode ==='collapsed-line';
+ const isIconMode = effectiveMode ==='collapsed-icon';
 
-    // UI Helpers based on note color
-    const noteColor = note.color || '#F59E0B';
-    const bgColor = `${noteColor}0D`; // ~5% opacity for extreme transparency (highlight effect)
-    const borderColor = `${noteColor}33`; // ~20% opacity for delicate border
+ // UI Helpers based on note color
+ const noteColor = note.color ||'#F59E0B';
+ const bgColor = `${noteColor}0D`; // ~5% opacity for extreme transparency (highlight effect)
+ const borderColor = `${noteColor}33`; // ~20% opacity for delicate border
 
-    return (
-        <div
-            className="absolute z-20 group"
-            style={{
-                left,
-                top,
-                width: (isIconMode || isLineMode) ? 'auto' : width,
-                transform: 'translate(-50%, -50%)',
-            }}
-            onMouseDown={handleMouseDown}
-        >
-            <div
-                className={`transition-all duration-300 rounded-2xl ${isIconMode
-                    ? 'p-2 hover:scale-110 cursor-pointer drop-shadow-lg'
-                    : `backdrop-blur-[2px] backdrop-saturate-150 border p-3 shadow-lg ${isEditing ? 'ring-2 ring-orange-400 z-30 scale-105' : !readOnly ? 'hover:scale-[1.01] cursor-move select-none hover:shadow-xl' : ''}`
-                    }`}
-                style={{
-                    backgroundColor: (isIconMode || isLineMode) ? 'transparent' : bgColor,
-                    borderColor: (isIconMode || isLineMode) ? 'transparent' : borderColor,
-                    minWidth: isIconMode ? 'auto' : isLineMode ? '100px' : '150px',
-                    maxWidth: isLineMode ? '250px' : 'none',
-                }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isEditing && !readOnly) {
-                        if (hasDragged.current) {
-                            hasDragged.current = false; // Clear for next time
-                            return; // Don't trigger mode change after drag
-                        }
-                        if (!isExpanded) onToggleCollapse(note.id);
-                        else onClick(note.id);
-                    }
-                }}
-            >
-                {/* Icons bar (Only when not icon mode AND not editing) */}
-                {!readOnly && !isIconMode && !isEditing && (
-                    <div className="absolute -top-3 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-40 delay-75">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onToggleCollapse(note.id); }}
-                            className="p-1.5 bg-white text-gray-700 rounded-full hover:bg-gray-100 shadow-md border border-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:border-white/10"
-                            title={isExpanded ? "Collapse to Line" : "Collapse to Icon"}
-                        >
-                            <ChevronUp className={`w-3 h-3 transition-transform ${isLineMode ? 'rotate-180' : ''}`} />
-                        </button>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
-                            className="p-1.5 bg-white text-red-500 rounded-full hover:bg-red-50 shadow-md border border-red-200 dark:bg-zinc-800 dark:text-red-400 dark:border-red-900/30"
-                            title="Delete"
-                        >
-                            <X className="w-3 h-3" />
-                        </button>
-                    </div>
-                )}
+ return (
+ <div
+ className="absolute z-20 group"
+ style={{
+ left,
+ top,
+ width: (isIconMode || isLineMode) ?'auto' : width,
+ transform:'translate(-50%, -50%)',
+ }}
+ onMouseDown={handleMouseDown}
+ >
+ <div
+ className={`transition-all duration-300 rounded-2xl ${isIconMode
+ ?'p-2 hover:scale-110 cursor-pointer drop-shadow-lg'
+ : `-[2px] backdrop-saturate-150 border p-3 shadow-lg ${isEditing ?'ring-2 ring-primary z-30 scale-105' : !readOnly ?'hover:scale-[1.01] cursor-move select-none hover:shadow-xl' :''}`
+ }`}
+ style={{
+ backgroundColor: (isIconMode || isLineMode) ?'transparent' : bgColor,
+ borderColor: (isIconMode || isLineMode) ?'transparent' : borderColor,
+ minWidth: isIconMode ?'auto' : isLineMode ?'100px' :'150px',
+ maxWidth: isLineMode ?'250px' :'none',
+ }}
+ onClick={(e) => {
+ e.stopPropagation();
+ if (!isEditing && !readOnly) {
+ if (hasDragged.current) {
+ hasDragged.current = false; // Clear for next time
+ return; // Don't trigger mode change after drag
+ }
+ if (!isExpanded) onToggleCollapse(note.id);
+ else onClick(note.id);
+ }
+ }}
+ >
+ {/* Icons bar (Only when not icon mode AND not editing) */}
+ {!readOnly && !isIconMode && !isEditing && (
+ <div className="absolute -top-3 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-40 delay-75">
+ <button
+ onClick={(e) => { e.stopPropagation(); onToggleCollapse(note.id); }}
+ className="p-1.5 bg-white text-gray-700 rounded-full hover:bg-gray-100 shadow-md border border-gray-200 dark:bg-zinc-800 dark:text-gray-300 dark:border-white/10"
+ title={isExpanded ?"Collapse to Line" :"Collapse to Icon"}
+ >
+ <ChevronUp className={`w-3 h-3 transition-transform ${isLineMode ?'rotate-180' :''}`} />
+ </button>
+ <button
+ onClick={(e) => { e.stopPropagation(); onDelete(note.id); }}
+ className="p-1.5 bg-white text-red-500 rounded-full hover:bg-red-50 shadow-md border border-red-200 dark:bg-zinc-800 dark:text-red-400 dark:border-red-900/30"
+ title="Delete"
+ >
+ <X className="w-3 h-3" />
+ </button>
+ </div>
+ )}
 
-                {isEditing ? (
-                    <div className="flex flex-col gap-2">
-                        <textarea
-                            ref={textareaRef}
-                            value={editContent}
-                            onChange={(e) => {
-                                setEditContent(e.target.value);
-                                e.target.style.height = 'auto';
-                                e.target.style.height = e.target.scrollHeight + 'px';
-                            }}
-                            onKeyDown={handleKeyDown}
-                            className="w-full bg-transparent border-none p-1 text-sm focus:outline-none resize-none text-gray-900 dark:text-gray-100 placeholder-gray-500 overflow-hidden"
-                            placeholder="Type a note..."
-                            style={{
-                                minHeight: '60px',
-                                color: note.color || '#000000',
-                                fontWeight: note.bold ? 'bold' : 'normal',
-                                fontStyle: note.italic ? 'italic' : 'normal',
-                                textDecoration: note.underline ? 'underline' : 'none',
-                                fontSize: `${note.fontSize}px`,
-                                lineHeight: '1.4',
-                            }}
-                        />
-                        <div className="flex justify-end gap-2 pt-2 border-t border-black/5 dark:border-white/5">
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onCancel(note.id); }}
-                                className="px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleSave(); }}
-                                className="px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600 rounded-lg shadow-md"
-                            >
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                ) : isIconMode ? (
-                    /* Sticky Note Icon Mode */
-                    <div className="relative group">
-                        <StickyNote
-                            className="w-8 h-8 drop-shadow-md transition-transform group-hover:scale-110"
-                            style={{ color: noteColor, fill: `${noteColor}20` }}
-                        />
-                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-500 rounded-full ring-2 ring-white dark:ring-black animate-pulse" />
-                    </div>
-                ) : isLineMode ? (
-                    /* Collapsed Line Mode - Now matching theme */
-                    <div
-                        className="truncate text-xs font-semibold px-2 py-1.5 rounded-xl border-l-[4px] shadow-sm backdrop-blur-md"
-                        style={{
-                            color: noteColor,
-                            backgroundColor: bgColor,
-                            borderColor: borderColor,
-                            borderLeftColor: noteColor,
-                        }}
-                    >
-                        {note.content.split('\n')[0] || <span className="text-gray-400 italic">Empty note</span>}
-                    </div>
-                ) : (
-                    /* Full Expanded Mode */
-                    <div
-                        className="overflow-hidden whitespace-pre-wrap relative px-1 min-h-[1.5em]"
-                        style={{
-                            color: note.color || '#000000',
-                            fontWeight: note.bold ? 'bold' : 'normal',
-                            fontStyle: note.italic ? 'italic' : 'normal',
-                            textDecoration: note.underline ? 'underline' : 'none',
-                            fontSize: `${note.fontSize}px`,
-                            lineHeight: '1.4',
-                        }}
-                    >
-                        {note.content || <span className="text-gray-400 italic">Empty note</span>}
+ {isEditing ? (
+ <div className="flex flex-col gap-2">
+ <textarea
+ ref={textareaRef}
+ value={editContent}
+ onChange={(e) => {
+ setEditContent(e.target.value);
+ e.target.style.height ='auto';
+ e.target.style.height = e.target.scrollHeight +'px';
+ }}
+ onKeyDown={handleKeyDown}
+ className="w-full bg-transparent border-none p-1 text-sm focus:outline-none resize-none text-gray-900 dark:text-gray-100 placeholder-gray-500 overflow-hidden"
+ placeholder="Type a note..."
+ style={{
+ minHeight:'60px',
+ color: note.color ||'#000000',
+ fontWeight: note.bold ?'bold' :'normal',
+ fontStyle: note.italic ?'italic' :'normal',
+ textDecoration: note.underline ?'underline' :'none',
+ fontSize: `${note.fontSize}px`,
+ lineHeight:'1.4',
+ }}
+ />
+ <div className="flex justify-end gap-2 pt-2 border-t border-black/5 dark:border-white/5">
+ <button
+ onClick={(e) => { e.stopPropagation(); onCancel(note.id); }}
+ className="px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+ >
+ Cancel
+ </button>
+ <button
+ onClick={(e) => { e.stopPropagation(); handleSave(); }}
+ className="px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] text-white hover:bg-primary/90 rounded-lg shadow-md"
+ >
+ Save
+ </button>
+ </div>
+ </div>
+ ) : isIconMode ? (
+ /* Sticky Note Icon Mode */
+ <div className="relative group">
+ <StickyNote
+ className="w-8 h-8 drop-shadow-md transition-transform group-hover:scale-110"
+ style={{ color: noteColor, fill: `${noteColor}20` }}
+ />
+ <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full ring-2 ring-white dark:ring-black animate-pulse" />
+ </div>
+ ) : isLineMode ? (
+ /* Collapsed Line Mode - Now matching theme */
+ <div
+ className="truncate text-xs font-semibold px-2 py-1.5 rounded-xl border-l-[4px] shadow-sm"
+ style={{
+ color: noteColor,
+ backgroundColor: bgColor,
+ borderColor: borderColor,
+ borderLeftColor: noteColor,
+ }}
+ >
+ {note.content.split('\n')[0] || <span className="text-gray-400 italic">Empty note</span>}
+ </div>
+ ) : (
+ /* Full Expanded Mode */
+ <div
+ className="overflow-hidden whitespace-pre-wrap relative px-1 min-h-[1.5em]"
+ style={{
+ color: note.color ||'#000000',
+ fontWeight: note.bold ?'bold' :'normal',
+ fontStyle: note.italic ?'italic' :'normal',
+ textDecoration: note.underline ?'underline' :'none',
+ fontSize: `${note.fontSize}px`,
+ lineHeight:'1.4',
+ }}
+ >
+ {note.content || <span className="text-gray-400 italic">Empty note</span>}
 
-                        {/* Resize handle */}
-                        {!readOnly && (
-                            <div
-                                className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                                onMouseDown={handleResizeMouseDown}
-                            >
-                                <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-gray-400/50 rounded-full hover:bg-orange-500 transition-colors" />
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+ {/* Resize handle */}
+ {!readOnly && (
+ <div
+ className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
+ onMouseDown={handleResizeMouseDown}
+ >
+ <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-gray-400/50 rounded-full hover:bg-primary transition-colors" />
+ </div>
+ )}
+ </div>
+ )}
+ </div>
+ </div>
+ );
 };

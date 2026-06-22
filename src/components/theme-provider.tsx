@@ -1,23 +1,23 @@
 "use client"
 
-import * as React from "react"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
+import * as React from"react"
+import { ThemeProvider as NextThemesProvider } from"next-themes"
 
 export function ThemeProvider({
-    children,
-    ...props
+ children,
+ ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
-    const [mounted, setMounted] = React.useState(false)
+ const [mounted, setMounted] = React.useState(false)
 
-    // Prevent server-side rendering to avoid hydration mismatch
-    React.useEffect(() => {
-        setMounted(true)
-    }, [])
+ // Prevent server-side rendering to avoid hydration mismatch
+ React.useEffect(() => {
+ setMounted(true)
+ }, [])
 
-    if (!mounted) {
-        // Return children without theme provider on server
-        return <>{children}</>
-    }
+ if (!mounted) {
+ // Return children without theme provider on server
+ return <>{children}</>
+ }
 
-    return <NextThemesProvider {...props}>{children}</NextThemesProvider>
+ return <NextThemesProvider {...props}>{children}</NextThemesProvider>
 }

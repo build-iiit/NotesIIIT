@@ -1,361 +1,390 @@
-import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { TRPCError } from "@trpc/server";
-import { getPresignedDownloadUrl } from "@/lib/s3";
+import { z } from"zod";
+import { createTRPCRouter, protectedProcedure } from"@/server/api/trpc";
+import { TRPCError } from"@trpc/server";
+import { getPresignedDownloadUrl } from"@/lib/s3";
 
 export const socialRouter = createTRPCRouter({
-    // --- 1. User Search & Friends ---
+ // --- 1. User Search & Friends ---
 
-    searchUsers: protectedProcedure
-        .input(z.object({ query: z.string().min(1) }))
-        .query(async ({ ctx, input }) => {
-            const users = await ctx.prisma.user.findMany({
-                where: {
-                    OR: [
-                        { name: { contains: input.query, mode: "insensitive" } },
-                        { email: { contains: input.query, mode: "insensitive" } }
-                    ],
-                    NOT: { id: ctx.session.user.id }
-                },
-                take: 10,
-                select: {
-                    id: true,
-                    name: true,
-                    image: true,
-                    email: true
-                }
-            });
+ searchUsers: protectedProcedure
+ .input(z.object({ query: z.string().min(1) }))
+ .query(async ({ ctx, input }) => {
+ const users = await ctx.prisma.user.findMany({
+ where: {
+ OR: [
+ { name: { contains: input.query, mode:"insensitive" } },
+ { email: { contains: input.query, mode:"insensitive" } }
+ ],
+ NOT: { id: ctx.session.user.id }
+ },
+ take: 10,
+ select: {
+ id: true,
+ name: true,
+ image: true,
+ email: true
+ }
+ });
 
-            // Resolve images
-            return await Promise.all(users.map(async (user) => {
-                if (user.image && !user.image.startsWith("http")) {
-                    user.image = await getPresignedDownloadUrl(user.image);
-                }
-                return user;
-            }));
-        }),
+ // Resolve images
+ return await Promise.all(users.map(async (user) => {
+ if (user.image && !user.image.startsWith("http")) {
+ user.image = await getPresignedDownloadUrl(user.image);
+ }
+ return user;
+ }));
+ }),
 
-    sendFriendRequest: protectedProcedure
-        .input(z.object({ userId: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            const existing = await ctx.prisma.friendRequest.findFirst({
-                where: {
-                    OR: [
-                        { senderId: ctx.session.user.id, receiverId: input.userId },
-                        { senderId: input.userId, receiverId: ctx.session.user.id }
-                    ]
-                }
-            });
+ sendFriendRequest: protectedProcedure
+ .input(z.object({ userId: z.string() }))
+ .mutation(async ({ ctx, input }) => {
+ const existing = await ctx.prisma.friendRequest.findFirst({
+ where: {
+ OR: [
+ { senderId: ctx.session.user.id, receiverId: input.userId },
+ { senderId: input.userId, receiverId: ctx.session.user.id }
+ ]
+ }
+ });
 
-            if (existing) {
-                if (existing.status === "PENDING") throw new TRPCError({ code: "CONFLICT", message: "Request pending" });
-                if (existing.status === "ACCEPTED") throw new TRPCError({ code: "CONFLICT", message: "Already friends" });
-                // If REJECTED, maybe allow re-request? For now block.
-                throw new TRPCError({ code: "CONFLICT", message: "Request exists" });
-            }
+ if (existing) {
+ if (existing.status ==="PENDING") throw new TRPCError({ code:"CONFLICT", message:"Request pending" });
+ if (existing.status ==="ACCEPTED") throw new TRPCError({ code:"CONFLICT", message:"Already friends" });
+ // If REJECTED, maybe allow re-request? For now block.
+ throw new TRPCError({ code:"CONFLICT", message:"Request exists" });
+ }
 
-            const friendRequest = await ctx.prisma.friendRequest.create({
-                data: {
-                    senderId: ctx.session.user.id,
-                    receiverId: input.userId,
-                }
-            });
+ const friendRequest = await ctx.prisma.friendRequest.create({
+ data: {
+ senderId: ctx.session.user.id,
+ receiverId: input.userId,
+ }
+ });
 
-            // Create notification for the receiver
-            await ctx.prisma.notification.create({
-                data: {
-                    userId: input.userId,
-                    actorId: ctx.session.user.id,
-                    type: "FRIEND_REQUEST_RECEIVED",
-                    data: { requestId: friendRequest.id }
-                }
-            });
+ // Create notification for the receiver
+ await ctx.prisma.notification.create({
+ data: {
+ userId: input.userId,
+ actorId: ctx.session.user.id,
+ type:"FRIEND_REQUEST_RECEIVED",
+ data: { requestId: friendRequest.id }
+ }
+ });
 
-            return friendRequest;
-        }),
+ return friendRequest;
+ }),
 
-    getFriendRequests: protectedProcedure
-        .query(async ({ ctx }) => {
-            const requests = await ctx.prisma.friendRequest.findMany({
-                where: {
-                    receiverId: ctx.session.user.id,
-                    status: "PENDING"
-                },
-                include: {
-                    sender: {
-                        select: { id: true, name: true, image: true }
-                    }
-                }
-            });
+ getFriendRequests: protectedProcedure
+ .query(async ({ ctx }) => {
+ const requests = await ctx.prisma.friendRequest.findMany({
+ where: {
+ receiverId: ctx.session.user.id,
+ status:"PENDING"
+ },
+ include: {
+ sender: {
+ select: { id: true, name: true, image: true }
+ }
+ }
+ });
 
-            // Resolve images
-            return await Promise.all(requests.map(async (req) => {
-                if (req.sender.image && !req.sender.image.startsWith("http")) {
-                    req.sender.image = await getPresignedDownloadUrl(req.sender.image);
-                }
-                return req;
-            }));
-        }),
+ // Resolve images
+ return await Promise.all(requests.map(async (req) => {
+ if (req.sender.image && !req.sender.image.startsWith("http")) {
+ req.sender.image = await getPresignedDownloadUrl(req.sender.image);
+ }
+ return req;
+ }));
+ }),
 
-    respondToRequest: protectedProcedure
-        .input(z.object({ requestId: z.string(), status: z.enum(["ACCEPTED", "REJECTED"]) }))
-        .mutation(async ({ ctx, input }) => {
-            const request = await ctx.prisma.friendRequest.findUnique({
-                where: { id: input.requestId }
-            });
+ respondToRequest: protectedProcedure
+ .input(z.object({ requestId: z.string(), status: z.enum(["ACCEPTED","REJECTED"]) }))
+ .mutation(async ({ ctx, input }) => {
+ const request = await ctx.prisma.friendRequest.findUnique({
+ where: { id: input.requestId }
+ });
 
-            if (!request || request.receiverId !== ctx.session.user.id) {
-                throw new TRPCError({ code: "NOT_FOUND", message: "Request not found" });
-            }
+ if (!request || request.receiverId !== ctx.session.user.id) {
+ throw new TRPCError({ code:"NOT_FOUND", message:"Request not found" });
+ }
 
-            if (input.status === "REJECTED") {
-                return ctx.prisma.friendRequest.delete({ where: { id: input.requestId } });
-            }
+ if (input.status ==="REJECTED") {
+ return ctx.prisma.friendRequest.delete({ where: { id: input.requestId } });
+ }
 
-            const updatedRequest = await ctx.prisma.friendRequest.update({
-                where: { id: input.requestId },
-                data: { status: "ACCEPTED" }
-            });
+ const updatedRequest = await ctx.prisma.friendRequest.update({
+ where: { id: input.requestId },
+ data: { status:"ACCEPTED" }
+ });
 
-            // Create notification for the original sender that their request was accepted
-            await ctx.prisma.notification.create({
-                data: {
-                    userId: request.senderId,
-                    actorId: ctx.session.user.id,
-                    type: "FRIEND_REQUEST_ACCEPTED",
-                    data: { requestId: request.id }
-                }
-            });
+ // Create notification for the original sender that their request was accepted
+ await ctx.prisma.notification.create({
+ data: {
+ userId: request.senderId,
+ actorId: ctx.session.user.id,
+ type:"FRIEND_REQUEST_ACCEPTED",
+ data: { requestId: request.id }
+ }
+ });
 
-            return updatedRequest;
-        }),
+ return updatedRequest;
+ }),
 
-    getFriends: protectedProcedure
-        .query(async ({ ctx }) => {
-            const userId = ctx.session.user.id;
-            const requests = await ctx.prisma.friendRequest.findMany({
-                where: {
-                    status: "ACCEPTED",
-                    OR: [
-                        { senderId: userId },
-                        { receiverId: userId }
-                    ]
-                },
-                include: {
-                    sender: { select: { id: true, name: true, image: true } },
-                    receiver: { select: { id: true, name: true, image: true } }
-                }
-            });
+ getFriends: protectedProcedure
+ .query(async ({ ctx }) => {
+ const userId = ctx.session.user.id;
+ const requests = await ctx.prisma.friendRequest.findMany({
+ where: {
+ status:"ACCEPTED",
+ OR: [
+ { senderId: userId },
+ { receiverId: userId }
+ ]
+ },
+ include: {
+ sender: { select: { id: true, name: true, image: true } },
+ receiver: { select: { id: true, name: true, image: true } }
+ }
+ });
 
-            return await Promise.all(requests.map(async (req) => {
-                const friend = req.senderId === userId ? req.receiver : req.sender;
-                if (friend.image && !friend.image.startsWith("http")) {
-                    friend.image = await getPresignedDownloadUrl(friend.image);
-                }
-                return friend;
-            }));
-        }),
+ return await Promise.all(requests.map(async (req) => {
+ const friend = req.senderId === userId ? req.receiver : req.sender;
+ if (friend.image && !friend.image.startsWith("http")) {
+ friend.image = await getPresignedDownloadUrl(friend.image);
+ }
+ return friend;
+ }));
+ }),
 
-    // --- 2. Groups ---
+ // --- 2. Groups ---
 
-    createGroup: protectedProcedure
-        .input(z.object({ name: z.string().min(1) }))
-        .mutation(async ({ ctx, input }) => {
-            const group = await ctx.prisma.group.create({
-                data: {
-                    name: input.name,
-                    creatorId: ctx.session.user.id,
-                    members: {
-                        create: {
-                            userId: ctx.session.user.id,
-                            role: "ADMIN"
-                        }
-                    }
-                }
-            });
-            return group;
-        }),
+ createGroup: protectedProcedure
+ .input(z.object({ name: z.string().min(1) }))
+ .mutation(async ({ ctx, input }) => {
+ const group = await ctx.prisma.group.create({
+ data: {
+ name: input.name,
+ creatorId: ctx.session.user.id,
+ members: {
+ create: {
+ userId: ctx.session.user.id,
+ role:"ADMIN"
+ }
+ }
+ }
+ });
+ return group;
+ }),
 
-    getGroups: protectedProcedure
-        .query(async ({ ctx }) => {
-            const memberships = await ctx.prisma.groupMember.findMany({
-                where: { userId: ctx.session.user.id },
-                include: {
-                    group: {
-                        include: {
-                            _count: { select: { members: true } },
-                            members: {
-                                take: 3,
-                                include: { user: { select: { image: true, name: true, id: true } } }
-                            }
-                        }
-                    }
-                }
-            });
+ getGroups: protectedProcedure
+ .query(async ({ ctx }) => {
+ const memberships = await ctx.prisma.groupMember.findMany({
+ where: { userId: ctx.session.user.id },
+ include: {
+ group: {
+ include: {
+ _count: { select: { members: true } },
+ members: {
+ take: 3,
+ include: { user: { select: { image: true, name: true, id: true } } }
+ }
+ }
+ }
+ }
+ });
 
-            // Resolve images
-            const groups = await Promise.all(memberships.map(async (m) => {
-                const group = m.group;
-                const membersWithImages = await Promise.all(group.members.map(async (gm) => {
-                    if (gm.user.image && !gm.user.image.startsWith("http")) {
-                        gm.user.image = await getPresignedDownloadUrl(gm.user.image);
-                    }
-                    return gm;
-                }));
-                return { ...group, members: membersWithImages };
-            }));
+ // Resolve images
+ const groups = await Promise.all(memberships.map(async (m) => {
+ const group = m.group;
+ const membersWithImages = await Promise.all(group.members.map(async (gm) => {
+ if (gm.user.image && !gm.user.image.startsWith("http")) {
+ gm.user.image = await getPresignedDownloadUrl(gm.user.image);
+ }
+ return gm;
+ }));
+ return { ...group, members: membersWithImages };
+ }));
 
-            return groups;
-        }),
+ return groups;
+ }),
 
-    getGroupDetails: protectedProcedure
-        .input(z.object({ groupId: z.string() }))
-        .query(async ({ ctx, input }) => {
-            const group = await ctx.prisma.group.findUnique({
-                where: { id: input.groupId },
-                include: {
-                    members: {
-                        include: {
-                            user: { select: { id: true, name: true, image: true } }
-                        }
-                    }
-                }
-            });
-            return group;
-        }),
+ getGroupDetails: protectedProcedure
+ .input(z.object({ groupId: z.string() }))
+ .query(async ({ ctx, input }) => {
+ const group = await ctx.prisma.group.findUnique({
+ where: { id: input.groupId },
+ include: {
+ members: {
+ include: {
+ user: { select: { id: true, name: true, image: true } }
+ }
+ }
+ }
+ });
 
-    addGroupMember: protectedProcedure
-        .input(z.object({ groupId: z.string(), userId: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            // Check if user is admin of group
-            const membership = await ctx.prisma.groupMember.findUnique({
-                where: {
-                    userId_groupId: {
-                        userId: ctx.session.user.id,
-                        groupId: input.groupId
-                    }
-                }
-            });
+ if (group) {
+ // Resolve member images
+ await Promise.all(group.members.map(async (member) => {
+ if (member.user.image && !member.user.image.startsWith("http")) {
+ try {
+ member.user.image = await getPresignedDownloadUrl(member.user.image);
+ } catch (e) {
+ console.error("Failed to resolve member image in getGroupDetails:", e);
+ }
+ }
+ return member;
+ }));
+ }
 
-            if (!membership || membership.role !== "ADMIN") {
-                // Allow creator? Creator is admin via creation logic.
-                // Or maybe allow any member to add?
-                // Let's strict to ADMIN for now.
-                throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can add members" });
-            }
+ return group;
+ }),
 
-            const newMember = await ctx.prisma.groupMember.create({
-                data: {
-                    groupId: input.groupId,
-                    userId: input.userId,
-                    role: "MEMBER"
-                }
-            });
+ addGroupMember: protectedProcedure
+ .input(z.object({ groupId: z.string(), userId: z.string() }))
+ .mutation(async ({ ctx, input }) => {
+ // Check if user is admin of group
+ const membership = await ctx.prisma.groupMember.findUnique({
+ where: {
+ userId_groupId: {
+ userId: ctx.session.user.id,
+ groupId: input.groupId
+ }
+ }
+ });
 
-            // Find group name for notification
-            const group = await ctx.prisma.group.findUnique({
-                where: { id: input.groupId },
-                select: { name: true }
-            });
+ if (!membership || membership.role !=="ADMIN") {
+ // Allow creator? Creator is admin via creation logic.
+ // Or maybe allow any member to add?
+ // Let's strict to ADMIN for now.
+ throw new TRPCError({ code:"FORBIDDEN", message:"Only admins can add members" });
+ }
 
-            // Create notification for the invited user
-            await ctx.prisma.notification.create({
-                data: {
-                    userId: input.userId,
-                    actorId: ctx.session.user.id,
-                    type: "GROUP_INVITE",
-                    data: { groupId: input.groupId, groupName: group?.name }
-                }
-            });
+ const newMember = await ctx.prisma.groupMember.create({
+ data: {
+ groupId: input.groupId,
+ userId: input.userId,
+ role:"MEMBER"
+ }
+ });
 
-            return newMember;
-        }),
+ // Find group name for notification
+ const group = await ctx.prisma.group.findUnique({
+ where: { id: input.groupId },
+ select: { name: true }
+ });
 
-    updateGroup: protectedProcedure
-        .input(z.object({
-            groupId: z.string(),
-            name: z.string().min(1).optional(),
-            image: z.string().optional()
-        }))
-        .mutation(async ({ ctx, input }) => {
-            const membership = await ctx.prisma.groupMember.findUnique({
-                where: { userId_groupId: { userId: ctx.session.user.id, groupId: input.groupId } }
-            });
+ // Create notification for the invited user
+ await ctx.prisma.notification.create({
+ data: {
+ userId: input.userId,
+ actorId: ctx.session.user.id,
+ type:"GROUP_INVITE",
+ data: { groupId: input.groupId, groupName: group?.name }
+ }
+ });
 
-            if (!membership || membership.role !== "ADMIN") {
-                throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can update group settings" });
-            }
+ return newMember;
+ }),
 
-            return ctx.prisma.group.update({
-                where: { id: input.groupId },
-                data: {
-                    name: input.name,
-                    image: input.image
-                }
-            });
-        }),
+ updateGroup: protectedProcedure
+ .input(z.object({
+ groupId: z.string(),
+ name: z.string().min(1).optional(),
+ image: z.string().optional()
+ }))
+ .mutation(async ({ ctx, input }) => {
+ const membership = await ctx.prisma.groupMember.findUnique({
+ where: { userId_groupId: { userId: ctx.session.user.id, groupId: input.groupId } }
+ });
 
-    deleteGroup: protectedProcedure
-        .input(z.object({ groupId: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            const membership = await ctx.prisma.groupMember.findUnique({
-                where: { userId_groupId: { userId: ctx.session.user.id, groupId: input.groupId } }
-            });
+ if (!membership || membership.role !=="ADMIN") {
+ throw new TRPCError({ code:"FORBIDDEN", message:"Only admins can update group settings" });
+ }
 
-            if (!membership || membership.role !== "ADMIN") {
-                throw new TRPCError({ code: "FORBIDDEN", message: "Only admins can delete groups" });
-            }
+ return ctx.prisma.group.update({
+ where: { id: input.groupId },
+ data: {
+ name: input.name,
+ image: input.image
+ }
+ });
+ }),
 
-            return ctx.prisma.group.delete({
-                where: { id: input.groupId }
-            });
-        }),
+ deleteGroup: protectedProcedure
+ .input(z.object({ groupId: z.string() }))
+ .mutation(async ({ ctx, input }) => {
+ const membership = await ctx.prisma.groupMember.findUnique({
+ where: { userId_groupId: { userId: ctx.session.user.id, groupId: input.groupId } }
+ });
 
-    getGroupFiles: protectedProcedure
-        .input(z.object({ groupId: z.string() }))
-        .query(async ({ ctx, input }) => {
-            // Verify membership
-            const membership = await ctx.prisma.groupMember.findUnique({
-                where: { userId_groupId: { userId: ctx.session.user.id, groupId: input.groupId } }
-            });
-            if (!membership) throw new TRPCError({ code: "FORBIDDEN", message: "Not a member" });
+ if (!membership || membership.role !=="ADMIN") {
+ throw new TRPCError({ code:"FORBIDDEN", message:"Only admins can delete groups" });
+ }
 
-            return ctx.prisma.note.findMany({
-                where: {
-                    sharedGroups: {
-                        some: { id: input.groupId }
-                    }
-                },
-                include: {
-                    author: { select: { name: true, image: true, id: true } },
-                    course: true
-                },
-                orderBy: { createdAt: "desc" }
-            });
-        }),
+ return ctx.prisma.group.delete({
+ where: { id: input.groupId }
+ });
+ }),
 
-    /**
-     * Remove a friend by deleting the accepted friend request between the users.
-     * Auth: Protected
-     */
-    removeFriend: protectedProcedure
-        .input(z.object({ friendId: z.string() }))
-        .mutation(async ({ ctx, input }) => {
-            const result = await ctx.prisma.friendRequest.deleteMany({
-                where: {
-                    status: "ACCEPTED",
-                    OR: [
-                        { senderId: ctx.session.user.id, receiverId: input.friendId },
-                        { senderId: input.friendId, receiverId: ctx.session.user.id }
-                    ]
-                }
-            });
+ getGroupFiles: protectedProcedure
+ .input(z.object({ groupId: z.string() }))
+ .query(async ({ ctx, input }) => {
+ // Verify membership
+ const membership = await ctx.prisma.groupMember.findUnique({
+ where: { userId_groupId: { userId: ctx.session.user.id, groupId: input.groupId } }
+ });
+ if (!membership) throw new TRPCError({ code:"FORBIDDEN", message:"Not a member" });
 
-            if (result.count === 0) {
-                throw new TRPCError({ code: "NOT_FOUND", message: "Friendship not found" });
-            }
+ const files = await ctx.prisma.note.findMany({
+ where: {
+ sharedGroups: {
+ some: { id: input.groupId }
+ }
+ },
+ include: {
+ author: { select: { name: true, image: true, id: true } },
+ course: true
+ },
+ orderBy: { createdAt:"desc" }
+ });
 
-            return { success: true };
-        })
+ // Resolve author images
+ await Promise.all(files.map(async (file) => {
+ if (file.author?.image && !file.author.image.startsWith("http")) {
+ try {
+ file.author.image = await getPresignedDownloadUrl(file.author.image);
+ } catch (e) {
+ console.error("Failed to resolve author image in getGroupFiles:", e);
+ }
+ }
+ }));
+
+ return files;
+ }),
+
+
+ /**
+ * Remove a friend by deleting the accepted friend request between the users.
+ * Auth: Protected
+ */
+ removeFriend: protectedProcedure
+ .input(z.object({ friendId: z.string() }))
+ .mutation(async ({ ctx, input }) => {
+ const result = await ctx.prisma.friendRequest.deleteMany({
+ where: {
+ status:"ACCEPTED",
+ OR: [
+ { senderId: ctx.session.user.id, receiverId: input.friendId },
+ { senderId: input.friendId, receiverId: ctx.session.user.id }
+ ]
+ }
+ });
+
+ if (result.count === 0) {
+ throw new TRPCError({ code:"NOT_FOUND", message:"Friendship not found" });
+ }
+
+ return { success: true };
+ })
 
 });

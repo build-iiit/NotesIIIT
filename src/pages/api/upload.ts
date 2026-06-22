@@ -1,123 +1,184 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { IncomingForm, File as FormidableFile, Fields, Files } from "formidable";
-import { auth } from "@/auth";
+import { NextApiRequest, NextApiResponse } from"next";
+import { writeFile, mkdir, appendFile, rename, unlink, readFile } from"fs/promises";
+import { existsSync } from"fs";
+import path from"path";
+import { IncomingForm, File as FormidableFile, Fields, Files } from"formidable";
+import { auth } from"../../auth";
+import { uploadFileToS3 } from"@/lib/s3";
 
 // Disable default body parser to handle file uploads
 export const config = {
-    api: {
-        bodyParser: false,
-    },
+ api: {
+ bodyParser: false,
+ },
 };
 
 const parseForm = async (
-    req: NextApiRequest
+ req: NextApiRequest
 ): Promise<{ fields: Fields; files: Files }> => {
-    return new Promise(async (resolve, reject) => {
-        const uploadDir = path.join(process.cwd(), "public", "uploads");
-        try {
-            await mkdir(uploadDir, { recursive: true });
-        } catch (e) {
-            console.error("Error creating directory", e);
-        }
+ return new Promise(async (resolve, reject) => {
+ const uploadDir = path.join(process.cwd(),"public","uploads","temp");
+ try {
+ if (!existsSync(uploadDir)) {
+ await mkdir(uploadDir, { recursive: true });
+ }
+ } catch (e) {
+ console.error("Error creating directory", e);
+ }
 
-        const form = new IncomingForm({
-            multiples: true,
-            keepExtensions: true,
-            uploadDir,
-            maxFileSize: 50 * 1024 * 1024, // 50MB
-        });
+ const form = new IncomingForm({
+ multiples: true,
+ keepExtensions: true,
+ uploadDir,
+ maxFileSize: 50 * 1024 * 1024, // 50MB per chunk limit
+ });
 
-        form.parse(req, (err, fields, files) => {
-            if (err) return reject(err);
-            resolve({ fields, files });
-        });
-    });
+ form.parse(req, (err, fields, files) => {
+ if (err) return reject(err);
+ resolve({ fields, files });
+ });
+ });
 };
 
 export default async function handler(
-    req: NextApiRequest,
-    res: NextApiResponse
+ req: NextApiRequest,
+ res: NextApiResponse
 ) {
-    if (req.method !== "POST") {
-        return res.status(405).json({ success: false, error: "Method not allowed" });
-    }
+ if (req.method !=="POST") {
+ return res.status(405).json({ success: false, error:"Method not allowed" });
+ }
 
-    // Session check - for pages router we might need standard next-auth getSession or similar
-    // But importing 'auth' from '@/auth' works in server contexts usually.
-    // Actually, for Pages Router 'auth()' helper returns session? No, usually req involved.
-    // We can try to assume it's publicly protected or check header if possible.
-    // WORKAROUND: For now, let's keep it open or try to use `auth` if compatible.
-    // The original route had: const session = await auth();
+ try {
+ const { fields, files } = await parseForm(req);
 
-    // Note: auth() from v5 relies on headers. It might work.
-    // If not, we skip auth for this specific upload or use `unstable_getServerSession` equivalent.
+ // helper to get single value
+ const getValue = (val: string[] | string | undefined) => {
+ if (Array.isArray(val)) return val[0];
+ return val;
+ };
 
-    try {
-        const { files } = await parseForm(req);
+ const chunkIndexStr = getValue(fields.chunkIndex);
+ const totalChunksStr = getValue(fields.totalChunks);
+ const uploadId = getValue(fields.uploadId);
+ const fileName = getValue(fields.fileName);
 
-        // Check if file exists
-        // formidable 'files.file' might be an array or single object
-        const uploadedFileVal = files.file;
-        const uploadedFile = Array.isArray(uploadedFileVal) ? uploadedFileVal[0] : uploadedFileVal;
+ // Handle standard single-file upload (backward compatibility / thumbnail upload)
+ if (!chunkIndexStr || !totalChunksStr || !uploadId) {
 
-        if (!uploadedFile) {
-            return res.status(400).json({ success: false, error: "No file uploaded" });
-        }
+ // Checks if it's a thumbnail or standard file
+ const uploadedFileVal = files.file;
+ const uploadedFile = Array.isArray(uploadedFileVal) ? uploadedFileVal[0] : uploadedFileVal;
 
-        // Since Formidable automatically saves files to uploadDir, we just need to rename/return key
-        const oldPath = uploadedFile.filepath;
-        const originalFilename = uploadedFile.originalFilename || "unknown.pdf";
-        const timestamp = Date.now();
-        const sanitizedFilename = originalFilename.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const newFilename = `${timestamp}-${sanitizedFilename}`;
-        const newPath = path.join(process.cwd(), "public", "uploads", newFilename);
-        const relativeKey = `/uploads/${newFilename}`;
+ if (!uploadedFile) {
+ return res.status(400).json({ success: false, error:"No file uploaded" });
+ }
 
-        // Rename file to our naming convention
-        await writeFile(newPath, await (await import("fs/promises")).readFile(oldPath));
-        // clean up formidable temp file if needed (though we set uploadDir to target, renaming is better)
-        // Actually formidable saves with random name.
+ const originalFilename = uploadedFile.originalFilename ||"unknown.pdf";
+ const timestamp = Date.now();
+ const sanitizedFilename = originalFilename.replace(/[^a-zA-Z0-9.-]/g,"_");
+ const newFilename = `${timestamp}-${sanitizedFilename}`;
 
-        // Delete temp file
-        try {
-            await (await import("fs/promises")).unlink(oldPath);
-        } catch (e) {
-            // ignore
-        }
+ // Determine folder (thumbnails or uploads) based on extension or context
+ // Ideally should be passed in fields, but for now we can guess or default to'uploads'
+ // Thumbnails usually come from metadata dialog which might not hit this specific route 
+ // the same way, but let's support general upload.
+ const isImage = uploadedFile.mimetype?.startsWith("image/") || originalFilename.match(/\.(jpg|jpeg|png|webp)$/i);
+ const folder = isImage ?"thumbnails" :"uploads";
+ const key = `${folder}/${newFilename}`;
 
-        // Handle thumbnail
-        let thumbnailKey = null;
-        const thumbFileVal = files.thumbnail;
-        const thumbFile = Array.isArray(thumbFileVal) ? thumbFileVal[0] : thumbFileVal;
+ console.log(`[Upload API] Preparing to upload file: ${key}`);
+ console.log(`[Upload API] File size: ${uploadedFile.size} bytes`);
+ console.log(`[Upload API] Content type: ${uploadedFile.mimetype}`);
 
-        if (thumbFile) {
-            const tOriginal = thumbFile.originalFilename || "thumb.jpg";
-            const tSanitized = tOriginal.replace(/[^a-zA-Z0-9.-]/g, "_");
-            const tFilename = `${timestamp}-${tSanitized}`;
-            const tPath = path.join(process.cwd(), "public", "uploads", tFilename);
+ // Read file buffer
+ const fileBuffer = await readFile(uploadedFile.filepath);
+ console.log(`[Upload API] Read buffer size: ${fileBuffer.length} bytes`);
 
-            await writeFile(tPath, await (await import("fs/promises")).readFile(thumbFile.filepath));
-            thumbnailKey = `/uploads/${tFilename}`;
+ // Upload to S3
+ try {
+ await uploadFileToS3(fileBuffer, key, uploadedFile.mimetype ||"application/octet-stream");
+ console.log(`[Upload API] Successfully uploaded to S3: ${key}`);
+ } catch (s3Error) {
+ console.error(`[Upload API] S3 Upload FAILED for key ${key}:`, s3Error);
+ throw s3Error;
+ }
 
-            try {
-                await (await import("fs/promises")).unlink(thumbFile.filepath);
-            } catch { }
-        }
+ // Clean up temp file
+ await unlink(uploadedFile.filepath);
 
-        console.log(`Saved file to ${newPath}`);
+ return res.status(200).json({
+ success: true,
+ key: key // Return the S3 key (e.g."uploads/xyz.pdf")
+ });
 
-        return res.status(200).json({
-            success: true,
-            key: relativeKey,
-            thumbnailKey
-        });
+ }
 
-    } catch (error) {
-        console.error("Upload handler error:", error);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const msg = (error as any)?.message || "Internal Server Error";
-        return res.status(500).json({ success: false, error: msg });
-    }
+ // --- Chunked Upload Logic ---
+ const chunkIndex = parseInt(chunkIndexStr);
+ const totalChunks = parseInt(totalChunksStr);
+
+ const uploadedFileVal = files.file;
+ const uploadedChunk = Array.isArray(uploadedFileVal) ? uploadedFileVal[0] : uploadedFileVal;
+
+ if (!uploadedChunk) {
+ return res.status(400).json({ success: false, error:"No chunk uploaded" });
+ }
+
+ const tempDir = path.join(process.cwd(),"public","uploads","temp");
+ const tempFilePath = path.join(tempDir, `${uploadId}.part`);
+
+ // Read the chunk data
+ const chunkData = await readFile(uploadedChunk.filepath);
+
+ if (chunkIndex === 0) {
+ await writeFile(tempFilePath, chunkData);
+ } else {
+ await appendFile(tempFilePath, chunkData);
+ }
+
+ // Clean up the formidable chunk file
+ try {
+ await unlink(uploadedChunk.filepath);
+ } catch (e) { }
+
+ // If last chunk, finalize
+ if (chunkIndex === totalChunks - 1) {
+
+ const originalFn = fileName ||"unknown.pdf";
+ const timestamp = Date.now();
+ const sanitizedFn = originalFn.replace(/[^a-zA-Z0-9.-]/g,"_");
+ const finalFilename = `${timestamp}-${uploadId}-${sanitizedFn}`;
+ const key = `uploads/${finalFilename}`;
+
+ // Read the fully merged file
+ const finalFileBuffer = await readFile(tempFilePath);
+
+ // Upload to S3
+ // Assert PDF for now as this is primary use case for chunked upload
+ await uploadFileToS3(finalFileBuffer, key,"application/pdf");
+
+ // Clean up local merged file
+ await unlink(tempFilePath);
+
+ console.log(`Finalized chunked upload to S3: ${key}`);
+
+ return res.status(200).json({
+ success: true,
+ key: key,
+ completed: true
+ });
+ }
+
+ return res.status(200).json({
+ success: true,
+ chunkIndex,
+ message:"Chunk received"
+ });
+
+ } catch (error) {
+ console.error("Upload handler error:", error);
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ const msg = (error as any)?.message ||"Internal Server Error";
+ return res.status(500).json({ success: false, error: msg });
+ }
 }

@@ -81,6 +81,32 @@ async function main() {
         console.log(`Upserted course: ${upsertedCourse.code}`)
     }
 
+    // Seed default tags
+    const defaultTags = [
+        "Assignments",
+        "PYQs",
+        "Reference Books",
+        "Lecture Notes",
+        "Tutorials",
+        "Lab Reports",
+        "Cheat Sheets",
+        "Formula Sheets"
+    ]
+
+    console.log(`Seeding ${defaultTags.length} default tags...`)
+
+    for (const tagName of defaultTags) {
+        const upsertedTag = await prisma.tag.upsert({
+            where: { name: tagName },
+            update: {},
+            create: {
+                name: tagName,
+                isDefault: true
+            }
+        })
+        console.log(`Upserted tag: ${upsertedTag.name}`)
+    }
+
     console.log('Seeding finished.')
 }
 
