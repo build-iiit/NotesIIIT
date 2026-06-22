@@ -7,13 +7,6 @@ import { Folder, FileText, ChevronRight, FolderPlus, Trash2, ArrowLeft, Home, Gr
 import { api } from"@/app/_trpc/client";
 import Link from"next/link";
 
-
-const SHARED_ROOT_ID ="shared-root";
-const PUBLIC_ROOT_ID ="public-root";
-const GROUP_FOLDER_PREFIX ="group-";
-
-function MyFilesContent() {
-
  const router = useRouter();
  const searchParams = useSearchParams();
  const initialFolderId = searchParams?.get("folderId") || null;
@@ -139,7 +132,6 @@ function MyFilesContent() {
  // Removed Public Files folder - saved notes appear directly in user's folders
  }
  }
-
  // Breadcrumbs Display
  const breadcrumbsDisplay: { id: string; name: string }[] = [];
  if (isSharedRoot) {
@@ -325,8 +317,7 @@ function MyFilesContent() {
  {/* Layered Glass Container */}
  <div className="relative bg-gradient-to-br from-white/10 via-white/5 to-white/10 dark:from-white/[0.07] dark:via-white/[0.03] dark:to-white/[0.07] rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/20 p-6">
  {/* Monochrome Background Override */}
- <div className="absolute inset-0 rounded-2xl -z-10 bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] opacity-30" />
- {/* Inner layer */}
+ <div className="absolute inset-0 rounded-2xl -z-10 bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] opacity-30" /> {/* Inner layer */}
  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
  <div className="flex items-center justify-between mb-6">
@@ -368,8 +359,7 @@ function MyFilesContent() {
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, null)}
  className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 ${!currentFolderId
- ?"bg-primary text-primary-foreground font-bold border border-white/20"
- :"hover:bg-white/20 dark:hover:bg-white/10"
+ ?"bg-primary text-primary-foreground font-bold border border-white/20" :"hover:bg-white/20 dark:hover:bg-white/10"
  } ${dragOverFolderId === null && (draggedNoteId || draggedFolderId) ?"ring-2 ring-primary bg-primary/20" :""}`}
  >
  <Home className="h-3 w-3" />
@@ -386,8 +376,7 @@ function MyFilesContent() {
  onDragLeave={handleDragLeave}
  onDrop={(e) => handleDrop(e, crumb.id)}
  className={`px-3 py-1 rounded-lg transition-all ${currentFolderId === crumb.id
- ?"bg-primary text-primary-foreground font-bold border border-white/20"
- :"hover:bg-white/20 dark:hover:bg-white/10"
+ ?"bg-primary text-primary-foreground font-bold border border-white/20" :"hover:bg-white/20 dark:hover:bg-white/10"
  } ${dragOverFolderId === crumb.id && (draggedNoteId || draggedFolderId) ?"ring-2 ring-primary bg-primary/20" :""}`}
  >
  {crumb.name}
@@ -435,8 +424,7 @@ function MyFilesContent() {
  className={`group relative flex flex-col items-center p-5 rounded-2xl transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border cursor-pointer
  {dragOverFolderId === folder.id && (draggedNoteId || draggedFolderId) && draggedFolderId !== folder.id
  ?"ring-2 ring-primary bg-primary/20 scale-105"
- :"bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border-white/25 active:scale-[0.98] hover:bg-primary/5 hover:border-primary/50 hover:shadow-xl hover:scale-[1.05] hover:shadow-[0_12px_32px_0_var(--glow-color)]"
- }
+ :"bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border-white/25 active:scale-[0.98] hover:bg-primary/5 hover:border-primary/50 hover:shadow-xl hover:scale-[1.05] hover:shadow-[0_12px_32px_0_var(--glow-color)]" }
  ${draggedFolderId === folder.id ?"opacity-50 scale-95" :""}`}
  >
  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -458,8 +446,7 @@ function MyFilesContent() {
  ) : folder.type ==='public-root' ? (
  <Globe className="h-16 w-16 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300 text-primary fill-primary/10" />
  ) : (
- <Folder className="h-16 w-16 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300 text-primary fill-primary/10" />
- )}
+ <Folder className="h-16 w-16 drop-shadow-xl transform group-hover:scale-110 transition-transform duration-300 text-primary fill-primary/10" /> )}
  </div>
 
  <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200">{folder.name}</span>
@@ -473,8 +460,7 @@ function MyFilesContent() {
  draggable={!isSharedRoot && !isGroupFolder && !isPublicRoot}
  onDragStart={(e) => handleDragStart(e, note.id,'note')}
  onDragEnd={handleDragEnd}
- className={`group relative flex flex-col items-center p-5 rounded-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border border-white/25 active:scale-[0.98] cursor-grab active:cursor-grabbing hover:bg-primary/5 hover:border-primary/50 hover:scale-[1.05] hover:shadow-[0_12px_32px_0_var(--glow-color)] ${draggedNoteId === note.id ?"opacity-50 scale-95" :""}`}
- >
+ className={`group relative flex flex-col items-center p-5 rounded-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border border-white/25 active:scale-[0.98] cursor-grab active:cursor-grabbing hover:bg-primary/5 hover:border-primary/50 hover:scale-[1.05] hover:shadow-[0_12px_32px_0_var(--glow-color)] ${draggedNoteId === note.id ?"opacity-50 scale-95" :""}`} >
  {/* Drag handle indicator */}
  {!isSharedRoot && !isGroupFolder && !isPublicRoot && (
  <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-50 transition-opacity">

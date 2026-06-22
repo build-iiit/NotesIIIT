@@ -7,14 +7,12 @@ import { ProfileImage } from"@/components/ProfileImage";
 import { UserStatsCard } from"@/components/UserStatsCard";
 import { UserNotesGrid, type Note } from"@/components/UserNotesGrid";
 import { EditProfileDialog } from"@/components/EditProfileDialog";
-import { FileExplorer } from"@/components/FileExplorer"; // Features from main
-import { api } from"@/app/_trpc/client";
+import { FileExplorer } from"@/components/FileExplorer"; // Features from mainimport { api } from"@/app/_trpc/client";
 import {
  FileText, Eye, TrendingUp, Trophy, Award,
  Sparkles, Medal, Edit, Folder, Search, Settings, Key
 } from"lucide-react";
 import { useThemeStyle } from"@/components/ThemeStyleProvider";
-
 // Types from main for safety and search logic
 interface UserProfile {
  id: string;
@@ -201,7 +199,6 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
 
  {/* Settings Section (Own Profile Only) */}
  {isOwnProfile && <SettingsSection />}
-
  {isEditOpen && (
  <EditProfileDialog
  user={user}
@@ -213,7 +210,6 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
 }
 
 import { ApiKeyDialog } from"@/components/ApiKeyDialog";
-
 // ...
 
 // Settings Section Component
@@ -236,7 +232,6 @@ function SettingsSection() {
  const toggleThemeStyle = (style:"sunset" |"monochrome") => {
  setThemeStyle(style);
  };
-
  return (
  <div className="mb-12 space-y-6">
  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2 px-2">
@@ -298,8 +293,7 @@ function SettingsSection() {
  {!apiKeyStatus?.hasKey && (
  <button
  onClick={() => setIsEditKeyOpen(true)}
- className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-via)] hover:opacity-90 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
- >
+ className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-via)] hover:opacity-90 transition-all shadow-md hover:shadow-lg flex items-center gap-2" >
  <Key className="w-4 h-4" />
  Add API Key
  </button>
@@ -339,7 +333,6 @@ function SettingsSection() {
  </div>
  </div>
  </div>
-
  {isEditKeyOpen && (
  <ApiKeyDialog
  onClose={() => setIsEditKeyOpen(false)}

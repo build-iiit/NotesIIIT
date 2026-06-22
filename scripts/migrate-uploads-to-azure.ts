@@ -1,9 +1,9 @@
 /**
- * Migration script to upload local files from public/uploads to MinIO S3
- * Run with: npx ts-node scripts/migrate-uploads-to-s3.ts
+ * Migration script to upload local files from public/uploads to Azure Blob Storage
+ * Run with: npx ts-node scripts/migrate-uploads-to-azure.ts
  */
 
-import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { BlobServiceClient } from "@azure/storage-blob";
 import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
@@ -11,40 +11,40 @@ import * as dotenv from "dotenv";
 // Load environment variables
 dotenv.config();
 
-const s3Client = new S3Client({
-    region: process.env.S3_REGION || "us-east-1",
-    endpoint: process.env.S3_ENDPOINT || "http://localhost:9000",
-    forcePathStyle: true,
-    credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY || "minioadmin",
-        secretAccessKey: process.env.S3_SECRET_KEY || "minioadmin",
-    },
-});
+const connectionString =
+    process.env.AZURE_STORAGE_CONNECTION_STRING ||
+    "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;" +
+    "AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;" +
+    "BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;";
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || "notes-bucket";
+const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME || "notes-bucket";
 const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
 
-async function checkFileExists(key: string): Promise<boolean> {
+const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+const containerClient = blobServiceClient.getContainerClient(containerName);
+
+async function ensureContainer() {
     try {
-        await s3Client.send(new HeadObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: key,
-        }));
-        return true;
-    } catch {
-        return false;
+        await containerClient.createIfNotExists({ access: "blob" });
+        console.log(`✅ Container '${containerName}' is ready.`);
+    } catch (error) {
+        console.error("❌ Failed to create container:", error);
+        throw error;
     }
+}
+
+async function checkFileExists(key: string): Promise<boolean> {
+    const blobClient = containerClient.getBlockBlobClient(key);
+    return blobClient.exists();
 }
 
 async function uploadFile(filePath: string, key: string, contentType: string): Promise<void> {
     const fileBuffer = fs.readFileSync(filePath);
+    const blobClient = containerClient.getBlockBlobClient(key);
 
-    await s3Client.send(new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: key,
-        Body: fileBuffer,
-        ContentType: contentType,
-    }));
+    await blobClient.uploadData(fileBuffer, {
+        blobHTTPHeaders: { blobContentType: contentType },
+    });
 }
 
 function getContentType(filename: string): string {
@@ -60,10 +60,12 @@ function getContentType(filename: string): string {
 }
 
 async function migrate() {
-    console.log("🚀 Starting migration of local uploads to S3...");
+    console.log("🚀 Starting migration of local uploads to Azure Blob Storage...");
     console.log(`📁 Source: ${UPLOADS_DIR}`);
-    console.log(`☁️  Destination: s3://${BUCKET_NAME}/`);
+    console.log(`☁️  Destination: ${containerName}`);
     console.log("");
+
+    await ensureContainer();
 
     if (!fs.existsSync(UPLOADS_DIR)) {
         console.error("❌ Uploads directory does not exist!");
@@ -83,10 +85,10 @@ async function migrate() {
     // Migrate PDFs
     for (const file of pdfFiles) {
         const filePath = path.join(UPLOADS_DIR, file);
-        const s3Key = `uploads/${file}`;
+        const blobKey = `uploads/${file}`;
 
         try {
-            const exists = await checkFileExists(s3Key);
+            const exists = await checkFileExists(blobKey);
             if (exists) {
                 console.log(`⏭️  Skipping (already exists): ${file}`);
                 skipped++;
@@ -94,8 +96,8 @@ async function migrate() {
             }
 
             console.log(`📤 Uploading PDF: ${file}`);
-            await uploadFile(filePath, s3Key, "application/pdf");
-            console.log(`✅ Uploaded: ${s3Key}`);
+            await uploadFile(filePath, blobKey, "application/pdf");
+            console.log(`✅ Uploaded: ${blobKey}`);
             uploaded++;
         } catch (error) {
             console.error(`❌ Failed to upload ${file}:`, error);
@@ -106,11 +108,11 @@ async function migrate() {
     // Migrate thumbnails/images
     for (const file of imageFiles) {
         const filePath = path.join(UPLOADS_DIR, file);
-        const s3Key = `thumbnails/${file}`;
+        const blobKey = `thumbnails/${file}`;
         const contentType = getContentType(file);
 
         try {
-            const exists = await checkFileExists(s3Key);
+            const exists = await checkFileExists(blobKey);
             if (exists) {
                 console.log(`⏭️  Skipping (already exists): ${file}`);
                 skipped++;
@@ -118,8 +120,8 @@ async function migrate() {
             }
 
             console.log(`📤 Uploading image: ${file}`);
-            await uploadFile(filePath, s3Key, contentType);
-            console.log(`✅ Uploaded: ${s3Key}`);
+            await uploadFile(filePath, blobKey, contentType);
+            console.log(`✅ Uploaded: ${blobKey}`);
             uploaded++;
         } catch (error) {
             console.error(`❌ Failed to upload ${file}:`, error);

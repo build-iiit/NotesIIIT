@@ -114,8 +114,7 @@ export function CourseFormDialog({ course, onClose, onSuccess }: CourseFormDialo
  onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
  placeholder="e.g., CS101"
  className={`w-full px-3 py-2 border ${errors.code ?"border-red-500" :"border-gray-200 dark:border-zinc-700"
- } rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono`}
- disabled={isLoading}
+ } rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary font-mono`} disabled={isLoading}
  />
  {errors.code && (
  <p className="mt-1 text-xs text-red-500">{errors.code}</p>
@@ -134,8 +133,7 @@ export function CourseFormDialog({ course, onClose, onSuccess }: CourseFormDialo
  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
  placeholder="e.g., Introduction to Programming"
  className={`w-full px-3 py-2 border ${errors.name ?"border-red-500" :"border-gray-200 dark:border-zinc-700"
- } rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
- disabled={isLoading}
+ } rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} disabled={isLoading}
  />
  {errors.name && (
  <p className="mt-1 text-xs text-red-500">{errors.name}</p>
@@ -154,8 +152,7 @@ export function CourseFormDialog({ course, onClose, onSuccess }: CourseFormDialo
  onChange={(e) => setFormData(prev => ({ ...prev, branch: e.target.value.toUpperCase() }))}
  placeholder="e.g., CSE, ECE, MTH"
  className={`w-full px-3 py-2 border ${errors.branch ?"border-red-500" :"border-gray-200 dark:border-zinc-700"
- } rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary uppercase`}
- disabled={isLoading}
+ } rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary uppercase`} disabled={isLoading}
  />
  {errors.branch && (
  <p className="mt-1 text-xs text-red-500">{errors.branch}</p>
@@ -173,8 +170,7 @@ export function CourseFormDialog({ course, onClose, onSuccess }: CourseFormDialo
  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
  placeholder="Brief description of the course..."
  rows={3}
- className="w-full px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
- disabled={isLoading}
+ className="w-full px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" disabled={isLoading}
  />
  </div>
 
@@ -190,8 +186,7 @@ export function CourseFormDialog({ course, onClose, onSuccess }: CourseFormDialo
  </button>
  <button
  type="submit"
- className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50"
- disabled={isLoading}
+ className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50" disabled={isLoading}
  >
  {isLoading ?"Saving..." : course ?"Update Course" :"Create Course"}
  </button>

@@ -87,8 +87,7 @@ export function AdminCoursesTable() {
  if (isLoading) {
  return (
  <div className="flex items-center justify-center p-12">
- <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
- </div>
+ <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div> </div>
  );
  }
 
@@ -107,8 +106,7 @@ export function AdminCoursesTable() {
  placeholder="Search courses..."
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
- />
+ className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
  </div>
 
  {/* Branch Filter */}
@@ -117,8 +115,7 @@ export function AdminCoursesTable() {
  <select
  value={selectedBranch ||""}
  onChange={(e) => setSelectedBranch(e.target.value || undefined)}
- className="pl-10 pr-8 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer"
- >
+ className="pl-10 pr-8 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary appearance-none cursor-pointer" >
  <option value="">All Branches</option>
  {branches?.map((branch) => (
  <option key={branch} value={branch}>{branch}</option>
@@ -146,8 +143,7 @@ export function AdminCoursesTable() {
  </button>
  <button
  onClick={() => setIsCreateOpen(true)}
- className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-2"
- >
+ className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors flex items-center gap-2" >
  <Plus className="w-4 h-4" />
  Create Course
  </button>
@@ -217,8 +213,7 @@ export function AdminCoursesTable() {
  )}
  </td>
  <td className="px-4 py-3 text-sm">
- <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">
- {course.branch}
+ <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium"> {course.branch}
  </span>
  </td>
  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
@@ -228,8 +223,7 @@ export function AdminCoursesTable() {
  <div className="flex items-center gap-2">
  <button
  onClick={() => setEditingCourse(course)}
- className="p-1.5 text-primary hover:bg-primary/10 rounded transition-colors"
- title="Edit"
+ className="p-1.5 text-primary hover:bg-primary/10 rounded transition-colors" title="Edit"
  >
  <Edit2 className="w-4 h-4" />
  </button>

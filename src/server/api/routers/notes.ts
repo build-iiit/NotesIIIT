@@ -1,7 +1,7 @@
 import { z } from"zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from"@/server/api/trpc";
 import { TRPCError } from"@trpc/server";
-import { getPresignedUrl, getPresignedDownloadUrl } from"@/lib/s3";
+import { getPresignedUrl, getPresignedDownloadUrl } from"@/lib/storage";
 import { v4 as uuidv4 } from"uuid";
 
 export const notesRouter = createTRPCRouter({
@@ -114,8 +114,7 @@ export const notesRouter = createTRPCRouter({
  { author: { name: { contains: term, mode:'insensitive' } } },
  ]
  }));
- }
- }
+ } }
 
  const items = await ctx.prisma.note.findMany({
  take: limit + 1,
@@ -235,7 +234,6 @@ export const notesRouter = createTRPCRouter({
  const isLocked = noteAny.isLocked as boolean | undefined;
  const isFeatured = noteAny.isFeatured as boolean | undefined;
  const isPinned = noteAny.isPinned as boolean | undefined;
-
  // Check moderation status - hidden/deleted notes only visible to author or admins
  if (moderationStatus) {
  const hiddenStatuses = ["HIDDEN","DELETED","UNDER_REVIEW"];
@@ -548,8 +546,7 @@ export const notesRouter = createTRPCRouter({
  .query(async ({ ctx, input }) => {
  if (!ctx.session?.user) {
  return {};
- }
- const annotations = await ctx.prisma.annotation.findMany({
+ } const annotations = await ctx.prisma.annotation.findMany({
  where: {
  userId: ctx.session.user.id,
  page: { versionId: input.versionId }

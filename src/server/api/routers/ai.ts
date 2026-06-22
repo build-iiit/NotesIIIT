@@ -84,8 +84,7 @@ export const aiRouter = createTRPCRouter({
  if (errMessage.includes("400") || errMessage.includes("INVALID_ARGUMENT") || errMessage.includes("API_KEY_INVALID")) {
  throw new TRPCError({
  code:"PRECONDITION_FAILED",
- message:"Invalid API Key. Please check your settings.",
- cause: error
+ message:"Invalid API Key. Please check your settings.", cause: error
  });
  }
 
@@ -154,7 +153,6 @@ export const aiRouter = createTRPCRouter({
  hasAccess = true;
  }
  }
-
  if (!hasAccess) {
  throw new TRPCError({ code:"UNAUTHORIZED", message:"You do not have access to this document" });
  }
@@ -170,10 +168,13 @@ export const aiRouter = createTRPCRouter({
 
  const prompt = `You are an intelligent assistant helping a student understand a document.
 You are looking at page ${input.pageNumber} of a PDF document.
-
+ const prompt = `Context: You are a helpful academic AI assistant analyzing page ${input.pageNumber} of a document.
 User Question: ${input.question}
 
-Please answer the question based on what you can see in the image. Be concise and helpful. If the answer isn't visible on this page, let the user know they may need to check other pages.`;
+Instructions:
+1. Provide a highly detailed and accurate answer based STRICTLY on the visible page content.
+2. Optimize your response length to use minimum tokens while preserving all necessary detail and context.
+3. If the answer is not visible on this page, clearly state that you cannot see it on page ${input.pageNumber}.`;
 
  try {
  const result = await model.generateContent([

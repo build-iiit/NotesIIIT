@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from"react";
-import { LeaderboardTable } from"@/components/LeaderboardTable";
-import { FriendsList } from"@/components/social/FriendsList";
+import { LeaderboardTable } from"@/components/LeaderboardTable";import { FriendsList } from"@/components/social/FriendsList";
 import { GroupsList } from"@/components/social/GroupsList";
 import { Users, UserPlus, Trophy, Folder } from"lucide-react";
 

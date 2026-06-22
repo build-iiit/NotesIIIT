@@ -5,7 +5,6 @@ import StarterKit from'@tiptap/starter-kit';
 import Placeholder from'@tiptap/extension-placeholder';
 import Typography from'@tiptap/extension-typography';
 import { useCallback, useEffect, useMemo, useState, useRef } from'react';
-
 import { MathInline } from'./extensions/MathInline';
 import { MathBlock } from'./extensions/MathBlock';
 import { SlashCommand } from'./extensions/SlashCommand';
@@ -24,7 +23,6 @@ const hexToRgba = (hex: string, alpha: number) => {
  const b = parseInt(hex.slice(5, 7), 16) || 0;
  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
-
 /**
  * NotionEditor - A Notion-style block-based editor using TipTap
  * 
@@ -51,6 +49,33 @@ export interface NotionEditorProps {
  className?: string;
 }
 
+/** Compact Samsung Notes-style sidebar button */
+function SidebarBtn({ active, onClick, title, disabled, children }: {
+ active: boolean;
+ onClick: () => void;
+ title: string;
+ disabled?: boolean;
+ children: React.ReactNode;
+}) {
+ return (
+ <button
+ onClick={onClick}
+ title={title}
+ disabled={disabled}
+ className={`
+ w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-150
+ ${active
+ ?'bg-white/15 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)]'
+ : disabled
+ ?'text-zinc-600 opacity-50'
+ :'text-zinc-400 hover:text-white hover:bg-white/10'
+ }
+ `}
+ >
+ {children}
+ </button>
+ );
+}
 export function NotionEditor({
  content,
  onUpdate,
@@ -357,8 +382,7 @@ export function NotionEditor({
  style={{ touchAction: activeTool !=='keyboard' ?'none' :'auto' }}
  />
  </div>
- );
-}
+ );}
 
 /**
  * Get plain text from editor content for thumbnails

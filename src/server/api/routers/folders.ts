@@ -5,7 +5,7 @@ import {
  createTRPCRouter,
  protectedProcedure,
 } from"@/server/api/trpc";
-import { getPresignedDownloadUrl } from"@/lib/s3";
+import { getPresignedDownloadUrl } from"@/lib/storage";
 import { TRPCError } from"@trpc/server";
 
 export const foldersRouter = createTRPCRouter({

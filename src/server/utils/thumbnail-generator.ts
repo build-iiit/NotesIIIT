@@ -1,7 +1,7 @@
 import { createCanvas } from'canvas';
-import { s3Client } from'@/lib/s3';
-import { PutObjectCommand } from'@aws-sdk/client-s3';
+import { uploadFileToS3 } from'@/lib/storage';
 
+import { PutObjectCommand } from'@aws-sdk/client-s3';
 const THUMBNAIL_WIDTH = 1200;
 const THUMBNAIL_HEIGHT = 630;
 const ACCENT_COLOR ='#3b82f6'; // blue-500
@@ -199,16 +199,8 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
 export async function uploadThumbnail(noteId: string, itemBuffer: Buffer): Promise<string> {
  const key = `thumbnails/${noteId}.png`;
 
- const command = new PutObjectCommand({
- Bucket: process.env.S3_BUCKET_NAME ||"notes-bucket",
- Key: key,
- Body: itemBuffer,
- ContentType:'image/png',
- });
-
  try {
- await s3Client.send(command);
- console.log(`Successfully uploaded thumbnail for note ${noteId}`);
+ await uploadFileToS3(itemBuffer, key,'image/png'); console.log(`Successfully uploaded thumbnail for note ${noteId}`);
  return key;
  } catch (error) {
  console.error("Error uploading thumbnail:", error);

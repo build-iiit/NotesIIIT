@@ -4,7 +4,6 @@ import { useState } from"react";
 import { api } from"@/app/_trpc/client";
 import { X, Search, UserPlus, Check } from"lucide-react";
 import { ProfileImage } from"../ProfileImage";
-
 interface AddFriendDialogProps {
  isOpen: boolean;
  onClose: () => void;
@@ -84,8 +83,7 @@ export function AddFriendDialog({ isOpen, onClose }: AddFriendDialogProps) {
  onClick={() => sendRequestMutation.mutate({ userId: user.id })}
  disabled={sendRequestMutation.isPending || sendRequestMutation.isSuccess}
  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${sendRequestMutation.isSuccess
- ?"bg-secondary text-muted-foreground"
- :"bg-primary/10 text-primary hover:bg-primary/20"
+ ?"bg-secondary text-muted-foreground" :"bg-primary/10 text-primary hover:bg-primary/20"
  }`}
  >
  {sendRequestMutation.isSuccess ? (

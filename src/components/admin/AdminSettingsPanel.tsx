@@ -126,8 +126,7 @@ export function AdminSettingsPanel() {
  <button
  onClick={() => handleSave(setting.key)}
  disabled={isSaving}
- className="ml-2 px-3 py-1 text-xs font-medium bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"
- >
+ className="ml-2 px-3 py-1 text-xs font-medium bg-primary text-white rounded hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1" >
  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
  Save
  </button>
@@ -142,15 +141,13 @@ export function AdminSettingsPanel() {
  type="number"
  value={value as number}
  onChange={(e) => handleValueChange(setting.key, parseInt(e.target.value) || 0)}
- className="w-32 px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-primary"
- disabled={isSaving}
+ className="w-32 px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-primary" disabled={isSaving}
  />
  {changed && (
  <button
  onClick={() => handleSave(setting.key)}
  disabled={isSaving}
- className="px-3 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"
- >
+ className="px-3 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1" >
  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
  Save
  </button>
@@ -166,15 +163,13 @@ export function AdminSettingsPanel() {
  type="text"
  value={value as string}
  onChange={(e) => handleValueChange(setting.key, e.target.value)}
- className="flex-1 max-w-md px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-primary"
- disabled={isSaving}
+ className="flex-1 max-w-md px-3 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-primary" disabled={isSaving}
  />
  {changed && (
  <button
  onClick={() => handleSave(setting.key)}
  disabled={isSaving}
- className="px-3 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"
- >
+ className="px-3 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1" >
  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
  Save
  </button>
@@ -189,8 +184,7 @@ export function AdminSettingsPanel() {
  case"BOOLEAN":
  return <ToggleRight className="w-4 h-4 text-green-500" />;
  case"NUMBER":
- return <Hash className="w-4 h-4 text-primary" />;
- default:
+ return <Hash className="w-4 h-4 text-primary" />; default:
  return <Type className="w-4 h-4 text-gray-500" />;
  }
  };
@@ -228,8 +222,7 @@ export function AdminSettingsPanel() {
  <button
  onClick={() => seedMutation.mutate()}
  disabled={seedMutation.isPending}
- className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2 mx-auto"
- >
+ className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2 mx-auto" >
  {seedMutation.isPending ? (
  <Loader2 className="w-5 h-5 animate-spin" />
  ) : (

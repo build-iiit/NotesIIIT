@@ -62,8 +62,7 @@ export function ConfirmDialog({
  },
  info: {
  icon:"bg-primary/10 text-primary",
- button:"bg-primary hover:bg-primary/90 text-white",
- },
+ button:"bg-primary hover:bg-primary/90 text-white", },
  };
 
  return (

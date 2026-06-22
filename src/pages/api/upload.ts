@@ -4,7 +4,7 @@ import { existsSync } from"fs";
 import path from"path";
 import { IncomingForm, File as FormidableFile, Fields, Files } from"formidable";
 import { auth } from"../../auth";
-import { uploadFileToS3 } from"@/lib/s3";
+import { uploadFileToS3 } from"@/lib/storage";
 
 // Disable default body parser to handle file uploads
 export const config = {

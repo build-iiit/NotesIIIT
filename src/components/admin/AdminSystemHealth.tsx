@@ -100,8 +100,7 @@ export function AdminSystemHealth() {
  <div className="bg-white dark:bg-zinc-900 rounded-xl p-5 border border-gray-200 dark:border-zinc-800">
  <div className="flex items-center gap-2 mb-3">
  <div className="p-2 rounded-lg bg-primary/10">
- <Activity className="w-4 h-4 text-primary" />
- </div>
+ <Activity className="w-4 h-4 text-primary" /> </div>
  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Users</h3>
  </div>
  <p className="text-2xl font-bold">{health.activity.activeUsersLastHour}</p>
@@ -111,8 +110,7 @@ export function AdminSystemHealth() {
  <div className="bg-white dark:bg-zinc-900 rounded-xl p-5 border border-gray-200 dark:border-zinc-800">
  <div className="flex items-center gap-2 mb-3">
  <div className="p-2 rounded-lg bg-primary/10">
- <FileText className="w-4 h-4 text-primary" />
- </div>
+ <FileText className="w-4 h-4 text-primary" /> </div>
  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">New Notes</h3>
  </div>
  <p className="text-2xl font-bold">{health.activity.newNotesToday}</p>

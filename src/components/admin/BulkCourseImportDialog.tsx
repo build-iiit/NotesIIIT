@@ -151,8 +151,7 @@ export function BulkCourseImportDialog({ onClose, onSuccess }: BulkCourseImportD
  <li><code className="bg-primary/10 px-1 rounded">code</code> - Unique course code</li>
  <li><code className="bg-primary/10 px-1 rounded">name</code> - Course name</li>
  <li><code className="bg-primary/10 px-1 rounded">branch</code> - Branch (e.g., CSE, ECE)</li>
- <li><code className="bg-primary/10 px-1 rounded">description</code> - Optional description</li>
- </ul>
+ <li><code className="bg-primary/10 px-1 rounded">description</code> - Optional description</li> </ul>
  </div>
 
  {/* Sample */}
@@ -178,8 +177,7 @@ export function BulkCourseImportDialog({ onClose, onSuccess }: BulkCourseImportD
  }}
  placeholder="Paste JSON array here..."
  rows={10}
- className="w-full px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none"
- />
+ className="w-full px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
  </div>
 
  {/* Parse Error */}
@@ -237,8 +235,7 @@ export function BulkCourseImportDialog({ onClose, onSuccess }: BulkCourseImportD
  <button
  onClick={handleParse}
  disabled={!jsonInput.trim()}
- className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50"
- >
+ className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50" >
  Parse JSON
  </button>
  ) : (

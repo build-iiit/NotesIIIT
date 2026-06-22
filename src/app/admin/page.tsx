@@ -45,8 +45,7 @@ function RoleBadge({ role }: { role: string }) {
  const styles: Record<string, string> = {
  SUPER_ADMIN:"bg-primary/20 text-primary",
  ADMIN:"bg-primary/10 text-primary",
- MODERATOR:"bg-primary/10 text-primary",
- USER:"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
+ MODERATOR:"bg-primary/10 text-primary", USER:"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
  };
 
  const icons: Record<string, React.ReactNode> = {
@@ -99,8 +98,7 @@ export default function AdminPage() {
  </p>
  <Link
  href="/"
- className="inline-block px-6 py-3 bg-primary text-white dark:text-black rounded-lg hover:opacity-90 transition-colors"
- >
+ className="inline-block px-6 py-3 bg-primary text-white dark:text-black rounded-lg hover:opacity-90 transition-colors" >
  Go to Home
  </Link>
  </div>
@@ -143,8 +141,7 @@ export default function AdminPage() {
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="p-2 bg-primary/10 rounded-lg">
- <Shield className="w-6 h-6 text-primary" />
+ <div className="p-2 bg-primary/10 rounded-lg"> <Shield className="w-6 h-6 text-primary" />
  </div>
  <div>
  <div className="flex items-center gap-3">

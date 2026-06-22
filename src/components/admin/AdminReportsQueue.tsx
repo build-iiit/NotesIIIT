@@ -24,8 +24,7 @@ type TargetType ="NOTE" |"PAGE" |"COMMENT" |"USER";
 
 const statusColors: Record<ReportStatus, string> = {
  PENDING:"bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
- UNDER_REVIEW:"bg-primary/10 text-primary",
- RESOLVED:"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+ UNDER_REVIEW:"bg-primary/10 text-primary", RESOLVED:"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
  DISMISSED:"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
 };
 
@@ -118,8 +117,7 @@ export function AdminReportsQueue() {
  <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 p-4">
  <div className="flex items-center gap-3">
  <div className="p-2 bg-primary/10 rounded-lg">
- <AlertTriangle className="w-5 h-5 text-primary" />
- </div>
+ <AlertTriangle className="w-5 h-5 text-primary" /> </div>
  <div>
  <div className="text-2xl font-bold">{data?.counts?.underReview ?? 0}</div>
  <div className="text-sm text-gray-500">Under Review</div>
@@ -262,8 +260,7 @@ export function AdminReportsQueue() {
  <Link
  href={`/notes/${report.targetId}`}
  target="_blank"
- className="text-primary hover:underline flex items-center gap-1"
- >
+ className="text-primary hover:underline flex items-center gap-1" >
  View <ExternalLink className="w-3 h-3" />
  </Link>
  )}
@@ -290,8 +287,7 @@ export function AdminReportsQueue() {
  <button
  onClick={() => handleUpdateStatus(report.id,"UNDER_REVIEW")}
  disabled={updateStatusMutation.isPending}
- className="px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 rounded-lg disabled:opacity-50"
- >
+ className="px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 rounded-lg disabled:opacity-50" >
  Take for Review
  </button>
  )}
