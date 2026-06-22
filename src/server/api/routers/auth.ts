@@ -32,51 +32,13 @@ export const authRouter = createTRPCRouter({
  email: input.email,
  password: hashedPassword,
  },
- });
-
- return { success: true, userId: user.id };
- }),
- /**
- * Get the current user's profile.
- * Auth: Public (returns null if not logged in) or Protected
- */
- getMe: publicProcedure.query(async ({ ctx }) => {
- if (!ctx.session?.user?.id) return null;
-
- // Fetch fresh user data from database
- const user = await ctx.prisma.user.findUnique({
- where: { id: ctx.session.user.id },
- select: {
- id: true,
- name: true,
- email: true,
- image: true,
- role: true,
- }
- });
-
- if (!user) return null;
-
- // Resolve S3 URL for profile image
- let imageUrl = user.image;
- if (user.image && !user.image.startsWith("http")) {
- try {
- imageUrl = await getPresignedDownloadUrl(user.image);
- } catch (e) {
- console.error("Failed to resolve profile image in getMe:", e);
- // Keep original string (or set to null)
- }
- }
-
-
-import { v4 as uuidv4 } from"uuid";
-
-export const authRouter = createTRPCRouter({
- /**
- * Get the current user's profile.
- * Auth: Public (returns null if not logged in) or Protected
- */
- getMe: publicProcedure.query(async ({ ctx }) => {
+ });  return { success: true, userId: user.id };
+  }),
+  /**
+  * Get the current user's profile.
+  * Auth: Public (returns null if not logged in) or Protected
+  */
+  getMe: publicProcedure.query(async ({ ctx }) => {
  if (!ctx.session?.user?.id) return null;
 
  // Fetch fresh user data from database

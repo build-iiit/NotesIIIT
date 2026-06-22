@@ -1,7 +1,6 @@
 import { createCanvas } from'canvas';
 import { uploadFileToS3 } from'@/lib/storage';
 
-import { PutObjectCommand } from'@aws-sdk/client-s3';
 const THUMBNAIL_WIDTH = 1200;
 const THUMBNAIL_HEIGHT = 630;
 const ACCENT_COLOR ='#3b82f6'; // blue-500
@@ -71,7 +70,7 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
  ctx.fillRect(0, 0, THUMBNAIL_WIDTH, 12);
 
  // Padding & Typography Config
- const PADDING_X = 80;
+ const PADDINGX = 80;
  const PADDING_Y = 100;
  let currentY = PADDING_Y;
 
@@ -82,7 +81,7 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
  ctx.shadowBlur = 4;
  ctx.shadowOffsetY = 2;
 
- const maxTitleWidth = THUMBNAIL_WIDTH - (PADDING_X * 2);
+ const maxTitleWidth = THUMBNAIL_WIDTH - (PADDINGX * 2);
  const words = title.split('');
  let line ='';
 
@@ -91,14 +90,14 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
  const testLine = line + words[i] +'';
  const metrics = ctx.measureText(testLine);
  if (metrics.width > maxTitleWidth && i > 0) {
- ctx.fillText(line.trim(), PADDING_X, currentY);
+ ctx.fillText(line.trim(), PADDINGX, currentY);
  line = words[i] +'';
  currentY += 86; // Line height
  } else {
  line = testLine;
  }
  }
- ctx.fillText(line.trim(), PADDING_X, currentY);
+ ctx.fillText(line.trim(), PADDINGX, currentY);
 
  // Reset Shadow for Body Text
  ctx.shadowColor ='transparent';
@@ -140,7 +139,7 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
  const bgWidth = Math.min(metrics.width + 20, maxTitleWidth);
 
  ctx.fillStyle ='rgba(59, 130, 246, 0.1)'; // blue-100/50
- ctx.fillRect(PADDING_X - 10, currentY - 26, bgWidth, 36);
+ ctx.fillRect(PADDINGX - 10, currentY - 26, bgWidth, 36);
 
  ctx.fillStyle ='#1e293b'; // slate-800
  } else {
@@ -156,7 +155,7 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
  contentLine +='...';
  }
 
- ctx.fillText(contentLine, PADDING_X, currentY);
+ ctx.fillText(contentLine, PADDINGX, currentY);
  currentY += lineHeight;
  renderedLines++;
  }
@@ -166,14 +165,14 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
 
  // Logo Icon Placeholder (Blue Circle)
  ctx.beginPath();
- ctx.arc(PADDING_X + 15, footerY - 8, 15, 0, Math.PI * 2);
+ ctx.arc(PADDINGX + 15, footerY - 8, 15, 0, Math.PI * 2);
  ctx.fillStyle = ACCENT_COLOR;
  ctx.fill();
 
  // Brand Name
  ctx.font ='bold 28px sans-serif';
  ctx.fillStyle ='#334155'; // slate-700
- ctx.fillText('NotesIIIT', PADDING_X + 45, footerY);
+ ctx.fillText('NotesIIIT', PADDINGX + 45, footerY);
 
  //"Markdown Note" Badge
  const badgeText ='MARKDOWN';
@@ -183,12 +182,12 @@ export async function generateThumbnail(title: string, content: any): Promise<Bu
  // Badge Background
  ctx.fillStyle ='#e2e8f0'; // slate-200
  ctx.beginPath();
- ctx.roundRect(THUMBNAIL_WIDTH - PADDING_X - badgeWidth, footerY - 30, badgeWidth, 40, 8);
+ ctx.roundRect(THUMBNAIL_WIDTH - PADDINGX - badgeWidth, footerY - 30, badgeWidth, 40, 8);
  ctx.fill();
 
  // Badge Text
  ctx.fillStyle ='#64748b'; // slate-500
- ctx.fillText(badgeText, THUMBNAIL_WIDTH - PADDING_X - badgeWidth + 15, footerY - 4);
+ ctx.fillText(badgeText, THUMBNAIL_WIDTH - PADDINGX - badgeWidth + 15, footerY - 4);
 
  return canvas.toBuffer('image/png');
 }
