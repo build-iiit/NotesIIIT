@@ -1,5 +1,5 @@
 import { signIn } from"@/auth"
-import { ThemeToggle } from"@/components/theme-toggle"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { BookOpen, Github } from"lucide-react"
 
 export default async function SignIn(props: { searchParams: Promise<{ callbackUrl?: string }> }) {

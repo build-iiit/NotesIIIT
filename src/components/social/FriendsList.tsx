@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from"react";
 import { api } from"@/app/_trpc/client";
 import { UserPlus, Search, MoreHorizontal, UserMinus, ExternalLink } from"lucide-react";
 import { AddFriendDialog } from"./AddFriendDialog";
-import { ProfileImage } from"@/components/ProfileImage";import Link from"next/link";
+import { ProfileImage } from "@/components/ui/ProfileImage";
+import Link from "next/link";
 
 // import Link from"next/link";
 export function FriendsList() {

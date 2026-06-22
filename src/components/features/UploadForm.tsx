@@ -104,7 +104,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
  const [folderId, setFolderId] = useState<string | null>(initialFolderId);
  const [uploading, setUploading] = useState(false);
- const [uploadStep, setUploadStep] = useState<UploadStep>("idle");
+ const [_uploadStep, setUploadStep] = useState<UploadStep>("idle");
  const [overallProgress, setOverallProgress] = useState(0);
  const [dragActive, setDragActive] = useState(false);
 
@@ -525,7 +525,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  return Math.round(bytes / Math.pow(k, i) * 100) / 100 +"" + ["Bytes","KB","MB","GB"][i];
  };
 
- const pendingCount = queuedFiles.filter(f => f.status ==="pending").length;
+ const _pendingCount = queuedFiles.filter(f => f.status ==="pending").length;
  const completedCount = queuedFiles.filter(f => f.status ==="complete").length;
 
  return (
@@ -773,6 +773,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  disabled={uploading}
  className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm flex items-center gap-2 transition-all z-10 relative disabled:opacity-50 mx-auto"
  >
+ {/* eslint-disable-next-line @next/next/no-img-element */}
  <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive" />
  Import from Drive
  </button>
@@ -936,7 +937,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  <input
  type="checkbox"
  checked={selectedGroupIds.includes(group.id)}
- onChange={(e) => { e.target.checked ? setSelectedGroupIds([...selectedGroupIds, group.id]) : setSelectedGroupIds(selectedGroupIds.filter((id) => id !== group.id)); }}
+ onChange={(e) => { if (e.target.checked) { setSelectedGroupIds([...selectedGroupIds, group.id]); } else { setSelectedGroupIds(selectedGroupIds.filter((id) => id !== group.id)); } }}
  className="w-3.5 h-3.5 rounded text-primary"
  />
  <span className="text-sm text-gray-900 dark:text-white truncate">{group.name}</span>

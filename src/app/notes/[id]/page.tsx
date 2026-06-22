@@ -2,19 +2,19 @@
 
 import { use, useState, useEffect, useCallback } from"react";
 import { api } from"@/app/_trpc/client";
-import { InteractionsPanel } from"@/components/InteractionsPanel";
-import Link from"next/link";
-import dynamic from"next/dynamic";
-import { Maximize2, Eye, ChevronLeft } from"lucide-react";
-import { ReportButton } from"@/components/ReportButton";
+import { InteractionsPanel } from "@/components/features/InteractionsPanel";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+import { Maximize2, Eye, ChevronLeft } from "lucide-react";
+import { ReportButton } from "@/components/ui/ReportButton";
 
-// Dynamically import PDF components with SSR disabled to avoid"DOMMatrix is not defined" error
-const PdfViewer = dynamic(() => import("@/components/PdfViewer").then(mod => mod.PdfViewer), { ssr: false,
+// Dynamically import PDF components with SSR disabled to avoid "DOMMatrix is not defined" error
+const PdfViewer = dynamic(() => import("@/components/features/PdfViewer").then(mod => mod.PdfViewer), { ssr: false,
  loading: () => <div className="animate-pulse h-[600px] bg-gray-100 dark:bg-zinc-800 rounded-xl" />
-});
+}) as any;
 
-const FullPageNoteViewer = dynamic(() => import("@/components/FullPageNoteViewer").then(mod => mod.FullPageNoteViewer), { ssr: false
-});
+const FullPageNoteViewer = dynamic(() => import("@/components/features/FullPageNoteViewer").then(mod => mod.FullPageNoteViewer), { ssr: false
+}) as any;
 
 import { useRouter, useSearchParams } from"next/navigation";
 

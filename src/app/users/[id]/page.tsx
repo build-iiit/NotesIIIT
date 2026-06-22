@@ -1,7 +1,7 @@
 import { api } from"@/app/_trpc/server";
 import { UserProfileClient } from"./UserProfileClient";
 import { auth } from"@/auth";
-import { Trophy, Sparkles, Award, Medal, TrendingUp, Drama, Diamond } from"lucide-react";
+import { Trophy } from"lucide-react";
 
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
  const { id } = await params;

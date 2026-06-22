@@ -100,24 +100,8 @@ export default function NewMarkdownNotePage() {
  };
  }, []);
 
- // Initial Save Trigger (opens dialog for new notes)
- const handleSaveClick = useCallback(() => {
- if (!title.trim()) {
- titleInputRef.current?.focus();
- return;
- }
-
- if (noteId) {
- // If note already exists, just save content directly
- handleSaveExisting();
- } else {
- // New note -> Open dialog
- setIsMetadataDialogOpen(true);
- }
- }, [title, noteId]);
-
  // Save Existing Note
- const handleSaveExisting = async () => {
+ const handleSaveExisting = useCallback(async () => {
  if (!noteId) return;
  setIsSaving(true);
  try {
@@ -132,7 +116,23 @@ export default function NewMarkdownNotePage() {
  } finally {
  setIsSaving(false);
  }
- };
+ }, [noteId, content, updateContentMutation]);
+
+ // Initial Save Trigger (opens dialog for new notes)
+ const handleSaveClick = useCallback(() => {
+ if (!title.trim()) {
+ titleInputRef.current?.focus();
+ return;
+ }
+
+ if (noteId) {
+ // If note already exists, just save content directly
+ void handleSaveExisting();
+ } else {
+ // New note -> Open dialog
+ setIsMetadataDialogOpen(true);
+ }
+ }, [title, noteId, handleSaveExisting]);
 
  // Handle Metadata Save (Create Note)
  const handleMetadataSave = async (metadata: NoteMetadata) => {

@@ -1,5 +1,5 @@
-import { PDFDocument, rgb, degrees } from'pdf-lib';
-import { Stroke, TextNote, PageAnnotations } from'@/components/annotations/types';
+import { PDFDocument, rgb } from'pdf-lib';
+import { Stroke, TextNote } from'@/components/annotations/types';
 
 /**
  * Helper to convert hex color (e.g. #FF0000) to RGB components for pdf-lib (0-1 range)

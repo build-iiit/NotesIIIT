@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from"react";
 import * as pdfjsLib from"pdfjs-dist";
-import { Bookmark, X, ChevronDown, ChevronUp, Maximize } from"lucide-react";
+import { Bookmark, Maximize } from"lucide-react";
 import { api } from"@/app/_trpc/client";
-import { TextNoteOverlay } from"./annotations/TextNoteOverlay";
-import { Point, Stroke, TextNote, PageAnnotations } from"./annotations/types";
+import { TextNoteOverlay } from"../annotations/TextNoteOverlay";
+import { Stroke, TextNote, PageAnnotations } from"../annotations/types";
 
 // Initialize worker globally at module-level to prevent reload rendering race conditions
 if (typeof window !=="undefined") {
@@ -56,7 +56,9 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
  if (data.textNotes) textNotesData[pageNumInt] = data.textNotes;
  if (data.strokes) strokesData[pageNumInt] = data.strokes;
  });
+// eslint-disable-next-line react-hooks/set-state-in-effect
  setTextNotes(textNotesData);
+// eslint-disable-next-line react-hooks/set-state-in-effect
  setAnnotations(strokesData);
  }
  }, [savedAnnotations]);
@@ -85,7 +87,7 @@ export function PdfViewer({ url, pageNum, onPageChange, noteId, versionId, onDou
  const firstPoint = stroke.points[0];
  ctx.moveTo(firstPoint.x * viewport.width, firstPoint.y * viewport.height);
 
- stroke.points.slice(1).forEach(p => {
+ stroke.points.slice(1).forEach((p: any) => {
  ctx.lineTo(p.x * viewport.width, p.y * viewport.height);
  });
  ctx.stroke();

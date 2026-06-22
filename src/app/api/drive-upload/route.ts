@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from"next/server";
 import { auth } from"@/auth";
 import { uploadFileToS3 } from"@/lib/storage";
 import { v4 as uuidv4 } from"uuid";
-import { S3Client, PutObjectCommand } from"@aws-sdk/client-s3";
-import { v4 as uuidv4 } from"uuid";
+import { S3Client } from"@aws-sdk/client-s3";
 
 // S3 Client
-const s3Client = new S3Client({
+const _s3Client = new S3Client({
  region: process.env.S3_REGION ||"us-east-1",
  endpoint: process.env.S3_ENDPOINT,
  credentials: {

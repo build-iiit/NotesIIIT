@@ -28,16 +28,7 @@ interface UnifiedAnnotationToolbarProps {
  onSettingsClick?: () => void;
 }
 
-export function UnifiedAnnotationToolbar({
- activeTool,
- setActiveTool,
- activeColor,
- setActiveColor,
- onUndo,
- onRedo,
- onSettingsClick
-}: UnifiedAnnotationToolbarProps) {
- const IconButton = ({ 
+const IconButton = ({ 
  icon: Icon, 
  isActive = false, 
  onClick 
@@ -49,27 +40,36 @@ export function UnifiedAnnotationToolbar({
  <button
  onClick={onClick}
  className={`p-2 rounded-full transition-colors flex items-center justify-center ${
- isActive ?'bg-zinc-700 text-white' :'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+ isActive ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
  }`}
  >
  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
  </button>
  );
 
- const ColorButton = ({ colorValue, bgClass }: { colorValue: string, bgClass: string }) => {
+const ColorButton = ({ colorValue, bgClass, activeColor, setActiveColor }: { colorValue: string, bgClass: string, activeColor: string, setActiveColor: (color: string) => void }) => {
  const isActive = activeColor === colorValue;
  return (
  <button
  onClick={() => setActiveColor(colorValue)}
  className={`p-2 rounded-full transition-colors flex items-center justify-center hover:bg-zinc-800 ${
- isActive ?'bg-zinc-700' :''
+ isActive ? 'bg-zinc-700' : ''
  }`}
  >
- <div className={`w-5 h-5 rounded-full ${bgClass} ${isActive ?'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' :''}`} />
+ <div className={`w-5 h-5 rounded-full ${bgClass} ${isActive ? 'ring-2 ring-white ring-offset-2 ring-offset-zinc-900' : ''}`} />
  </button>
  );
- };
+};
 
+export function UnifiedAnnotationToolbar({
+ activeTool,
+ setActiveTool,
+ activeColor,
+ setActiveColor,
+ onUndo,
+ onRedo,
+ onSettingsClick
+}: UnifiedAnnotationToolbarProps) {
  return (
  <div className="flex flex-col items-center gap-3 bg-zinc-900 p-3 rounded-2xl shadow-xl w-14">
  {/* 1-5 Top Tools */}
@@ -82,9 +82,9 @@ export function UnifiedAnnotationToolbar({
  <hr className="w-8 border-t border-zinc-700 my-1" />
 
  {/* 6-8 Color Presets */}
- <ColorButton colorValue="#ef4444" bgClass="bg-red-500" />
- <ColorButton colorValue="#22c55e" bgClass="bg-green-500" />
- <ColorButton colorValue="#3b82f6" bgClass="bg-blue-400" />
+ <ColorButton colorValue="#ef4444" bgClass="bg-red-500" activeColor={activeColor} setActiveColor={setActiveColor} />
+ <ColorButton colorValue="#22c55e" bgClass="bg-green-500" activeColor={activeColor} setActiveColor={setActiveColor} />
+ <ColorButton colorValue="#3b82f6" bgClass="bg-blue-400" activeColor={activeColor} setActiveColor={setActiveColor} />
 
  {/* 9. Thickness */}
  <IconButton icon={Minus} isActive={activeTool ==='thickness'} onClick={() => setActiveTool('thickness')} />

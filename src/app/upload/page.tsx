@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense } from"react";
-import { UploadForm } from"@/components/UploadForm";import { useSearchParams } from"next/navigation";
+import { UploadForm } from "@/components/features/UploadForm";
+import { useSearchParams } from "next/navigation";
 
 function UploadContent() {
  const searchParams = useSearchParams();

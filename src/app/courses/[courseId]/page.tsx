@@ -1,7 +1,8 @@
 "use client";
 
 import { api } from"@/app/_trpc/client";
-import { UserNotesGrid } from"@/components/UserNotesGrid";import { Loader2 } from"lucide-react";
+import { UserNotesGrid } from "@/components/features/UserNotesGrid";
+import { Loader2 } from "lucide-react";
 import { useParams } from"next/navigation";
 
 export default function CourseDetailsPage() {

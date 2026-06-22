@@ -52,6 +52,7 @@ export function TrendingNotes() {
 
  <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800 overflow-hidden">
  {(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey ? (
+ // eslint-disable-next-line @next/next/no-img-element
  <img
  src={(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey}
  alt={`Thumbnail for ${note.title}`}

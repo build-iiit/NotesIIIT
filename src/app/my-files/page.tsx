@@ -5,9 +5,12 @@ import { useSearchParams } from"next/navigation";
 import { useState, useEffect, Suspense } from"react";
 import { Folder, FileText, ChevronRight, FolderPlus, Trash2, ArrowLeft, Home, GripVertical, Plus, Users, Globe } from"lucide-react";
 import { api } from"@/app/_trpc/client";
-import Link from"next/link";
+import Link from"next/link";const SHARED_ROOT_ID = "shared-root";
+const PUBLIC_ROOT_ID = "public-root";
+const GROUP_FOLDER_PREFIX = "group-";
 
- const router = useRouter();
+function MyFilesContent() {
+  const router = useRouter();
  const searchParams = useSearchParams();
  const initialFolderId = searchParams?.get("folderId") || null;
 

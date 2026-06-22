@@ -2,7 +2,6 @@
 
 import { useState } from"react";
 import { useRouter } from"next/navigation";
-import Link from"next/link";
 import { BookOpen } from"lucide-react";
 import { api } from"@/app/_trpc/client";
 

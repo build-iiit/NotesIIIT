@@ -18,7 +18,7 @@ import {
  AlertCircle,
  ChevronDown
 } from"lucide-react";
-import { ProfileImage } from"../ProfileImage";
+import { ProfileImage } from "../ui/ProfileImage";
 type UserStatus ="ACTIVE" |"SUSPENDED" |"BANNED";
 
 const statusColors: Record<UserStatus, string> = {

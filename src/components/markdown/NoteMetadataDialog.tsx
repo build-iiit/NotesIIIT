@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from"react";
-import { Search, X, ChevronDown, CheckCircle, Loader2, Save } from"lucide-react";
+import { Search, X, ChevronDown, Loader2, Save } from"lucide-react";
 import { api } from"@/app/_trpc/client";
 
 interface NoteMetadataDialogProps {

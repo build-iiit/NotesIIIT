@@ -1,13 +1,14 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { api } from"@/app/_trpc/client";
 import Link from"next/link";
 import { useEffect, useState } from"react";
 import { useInView } from"react-intersection-observer";
-import { TrendingUp, FileText } from"lucide-react";
-import { networkInterfaces } from"os";
+import { FileText } from"lucide-react";
 import { Draggable } from"@/components/dnd/Draggable";
-import { SaveToFiles } from"./SaveToFiles";
+import { SaveToFiles } from"@/components/ui/SaveToFiles";
 import { useSession } from"next-auth/react";
 
 
@@ -131,6 +132,7 @@ export function NotesFeed() {
  >
  <div className="h-40 w-full relative overflow-hidden bg-white/5 border-b border-white/10 group-hover:opacity-90 transition-opacity">
  {(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey ? (
+ // eslint-disable-next-line @next/next/no-img-element
  <img
  src={(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey}
  alt={`Thumbnail for ${note.title}`}

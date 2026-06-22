@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from'react';
+import React, { useEffect, useRef, useState } from'react';
 import * as pdfjsLib from'pdfjs-dist';
 import { TextLayer } from'pdfjs-dist';
 import { useInView } from'react-intersection-observer';
@@ -27,9 +27,9 @@ interface VirtualPageProps {
 }
 
 export const VirtualPage: React.FC<VirtualPageProps> = React.memo(({
- pdfDoc, pageNum, scale, zoomMode, containerWidth, annotations, textNotes,
+ pdfDoc, pageNum, scale, zoomMode: _zoomMode, containerWidth, annotations, textNotes: _textNotes,
  currentStroke, tool, penColor, highlightColor, penWidth, highlightWidth, shape,
- onPointerDown, onPointerMove, onPointerUp, onTextNoteClick, searchQuery
+ onPointerDown, onPointerMove, onPointerUp, onTextNoteClick, searchQuery: _searchQuery
 }) => {
  const { ref: inViewRef, inView } = useInView({
  threshold: 0,
@@ -136,7 +136,7 @@ export const VirtualPage: React.FC<VirtualPageProps> = React.memo(({
  const drawStroke = (stroke: Stroke | { points: Point[], color: string, type: string, width: number, shape: ShapeType }) => {
  if (stroke.points.length < 2) return;
  ctx.beginPath();
- ctx.lineWidth = stroke.width;
+ ctx.lineWidth = stroke.width || 2;
  ctx.lineJoin ='round';
  ctx.lineCap ='round';
  ctx.strokeStyle = stroke.color;
@@ -155,7 +155,7 @@ export const VirtualPage: React.FC<VirtualPageProps> = React.memo(({
  
  ctx.beginPath();
  // Vary thickness by 50% based on pressure. (0.5 to 1.0 multiplier)
- ctx.lineWidth = stroke.width * (0.5 + avgPressure * 0.5);
+ ctx.lineWidth = (stroke.width || 2) * (0.5 + avgPressure * 0.5);
  ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
  ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
  ctx.stroke();
@@ -195,7 +195,7 @@ export const VirtualPage: React.FC<VirtualPageProps> = React.memo(({
  ctx.stroke();
  
  const angle = Math.atan2(y2 - y1, x2 - x1);
- const headLen = stroke.width * 3 + 5;
+ const headLen = (stroke.width || 2) * 3 + 5;
  const angleOffset = Math.PI / 6;
  
  ctx.beginPath();

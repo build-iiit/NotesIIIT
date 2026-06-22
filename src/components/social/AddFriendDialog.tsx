@@ -3,7 +3,7 @@
 import { useState } from"react";
 import { api } from"@/app/_trpc/client";
 import { X, Search, UserPlus, Check } from"lucide-react";
-import { ProfileImage } from"../ProfileImage";
+import { ProfileImage } from "../ui/ProfileImage";
 interface AddFriendDialogProps {
  isOpen: boolean;
  onClose: () => void;

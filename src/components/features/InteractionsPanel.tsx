@@ -1,9 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { api } from"@/app/_trpc/client";
 import { useState, useEffect } from"react";
 import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles, Settings } from"lucide-react";
-import { ApiKeyDialog } from"./ApiKeyDialog";
+import { ApiKeyDialog } from "../ui/ApiKeyDialog";
 
 interface InteractionsPanelProps {
  versionId: string;
@@ -37,6 +39,7 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  setSelectedModel(bestMatch || availableModels[0].id);
  }
  }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [availableModels]);
 
  // Fetch comments
