@@ -61,9 +61,8 @@ export function ConfirmDialog({
  button:"bg-amber-600 hover:bg-amber-700 text-white",
  },
  info: {
- icon:"bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
- button:"bg-blue-600 hover:bg-blue-700 text-white",
- },
+ icon:"bg-primary/10 text-primary",
+ button:"bg-primary hover:bg-primary/90 text-white", },
  };
 
  return (

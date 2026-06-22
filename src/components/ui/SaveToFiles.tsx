@@ -6,12 +6,14 @@ import { api } from"@/app/_trpc/client";
 import { Bookmark, Loader2, FolderInput, ChevronDown } from"lucide-react";
 import { useRouter } from"next/navigation";
 
+
 interface SaveToFilesProps {
  noteId: string;
  noteTitle: string;
 }
 
 export function SaveToFiles({ noteId, noteTitle }: SaveToFilesProps) {
+
  const [isOpen, setIsOpen] = useState(false);
  const [targetFolderId, setTargetFolderId] = useState<string | null>(null);
  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; showAbove?: boolean }>({ top: 0, left: 0 });
@@ -107,7 +109,7 @@ export function SaveToFiles({ noteId, noteTitle }: SaveToFilesProps) {
  setTargetFolderId(null);
  cloneMutation.mutate({ noteId, targetFolderId: undefined });
  }}
- className="w-full text-left px-3 py-2.5 text-sm rounded-lg bg-primary/10 hover:bg-primary/20 text-primary flex items-center gap-2 transition-colors border border-primary/30 font-medium"
+ className="w-full text-left px-3 py-2.5 text-sm rounded-lg bg-primary/5 dark:bg-primary/10 hover:bg-primary/10 dark:hover:bg-primary/20 text-primary flex items-center gap-2 transition-colors border border-primary/20 dark:border-primary/30 font-medium"
  >
  <FolderInput className="h-4 w-4" />
  <span>My Files (Root)</span>

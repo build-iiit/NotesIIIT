@@ -1,6 +1,6 @@
 {
-    "name": "NotesIIIT",
-    "short_name": "NotesIIIT",
+    "name": "iiitNotes",
+    "short_name": "iiitNotes",
     "description": "Share and access academic notes for IIIT",
     "start_url": "/",
     "display": "standalone",

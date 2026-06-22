@@ -4,10 +4,12 @@ import { useState } from"react";
 import { api } from"@/app/_trpc/client";
 import { Users, ChevronRight } from"lucide-react";
 import Image from"next/image";
-import { ProfileImage } from'@/components/ui/ProfileImage';
-import { GroupDetailsDialog } from"@/components/social/GroupDetailsDialog";
+import { ProfileImage } from"./ProfileImage";
+import { GroupDetailsDialog } from"./social/GroupDetailsDialog";
+
 
 export function HomeGroupsGrid() {
+
  const { data: groups, isLoading } = api.social.getGroups.useQuery();
  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
@@ -37,14 +39,14 @@ export function HomeGroupsGrid() {
  className="group relative cursor-pointer"
  >
  {/* iOS-Style Glass Group Card */}
- <div className="relative flex flex-col items-center p-6 rounded-2xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border border-white/25 hover:scale-[1.08] active:scale-[0.95] hover:bg-primary/5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10">
+ <div className="relative flex flex-col items-center p-6 rounded-2xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border border-white/25 hover:scale-[1.08] active:scale-[0.95] hover:bg-primary/5 hover:border-primary/50 hover:shadow-[0_16px_40px_0_var(--glow-color)]">
  {/* Inner glow layer */}
  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
  {/* Group Icon */}
  <div className="relative mb-3">
- <Users className="h-12 w-12 drop-shadow-lg group-hover:scale-110 transition-transform duration-300 text-primary fill-primary/30" />
- <div className="absolute -bottom-1 -right-1 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/40 shadow-lg bg-primary">
+ <Users className="h-12 w-12 drop-shadow-lg group-hover:scale-110 transition-transform duration-300 text-primary fill-primary/25" />
+ <div className="absolute -bottom-1 -right-1 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/40 shadow-lg bg-gradient-to-br from-[var(--brand-from)] to-[var(--brand-to)]">
  {group._count.members}
  </div>
  </div>

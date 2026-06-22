@@ -196,8 +196,7 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
  return (
  <div className="min-h-screen bg-background">
  {/* Header */}
- <div className="sticky top-16 z-40 bg-background/80 border-b border-gray-200 dark:border-gray-800 print:hidden">
- <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+ <div className="sticky top-16 z-40 bg-background border-b border-zinc-200 dark:border-zinc-800"> <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
  <button
  onClick={() => {
  if (isDirty && !window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
@@ -205,8 +204,7 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
  }
  router.back();
  }}
- className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
- >
+ className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors" >
  <ArrowLeft className="w-5 h-5" />
  <span className="hidden sm:inline">Back</span>
  </button>
@@ -218,8 +216,7 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
  onClick={() => setIsEditing(!isEditing)}
  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isEditing
  ?"bg-primary/10 text-primary"
- :"bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
- }`}
+ :"bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400" }`}
  >
  {isEditing ? (
  <>
@@ -245,8 +242,7 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
  <button
  onClick={handleSave}
  disabled={isSaving}
- className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-primary-foreground bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
- >
+ className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg" >
  {isSaving ? (
  <Loader2 className="w-4 h-4 animate-spin" />
  ) : (
@@ -261,8 +257,7 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
  <button
  onClick={handleDelete}
  disabled={deleteMutation.isPending}
- className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
- title="Delete note"
+ className="flex items-center gap-2 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors" title="Delete note"
  >
  <Trash2 className="w-4 h-4" />
  </button>
@@ -272,8 +267,7 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
  </div>
 
  {/* Content */}
- <div className="max-w-4xl mx-auto px-4 py-8 print:w-full print:max-w-none print:p-0 print:m-0">
- {/* Author info */}
+ <div className="max-w-4xl mx-auto px-4 py-8"> {/* Author info */}
  <div className="flex items-center gap-3 mb-4 text-sm text-gray-500 dark:text-gray-400">
  <span>By {note.author?.name ||"Unknown"}</span>
  <span>•</span>
@@ -299,11 +293,10 @@ export default function MarkdownNotePage({ params }: { params: Promise<{ id: str
  setIsDirty(true);
  }}
  placeholder="Untitled"
- className="w-full text-4xl font-bold bg-transparent border-none outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600 mb-8 print:text-black print:dark:text-black print:mb-4"
+ className="w-full text-4xl font-bold bg-transparent border-none outline-none placeholder:text-gray-300 dark:placeholder:text-gray-600 mb-8"
  />
  ) : (
- <h1 className="text-4xl font-bold mb-8 print:text-black print:mb-4">{title ||"Untitled"}</h1>
- )}
+ <h1 className="text-4xl font-bold mb-8">{title ||"Untitled"}</h1> )}
 
  {/* Editor */}
  <NotionEditor

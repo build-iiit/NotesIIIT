@@ -20,9 +20,11 @@ export function RandomQuote() {
  const [quote, setQuote] = useState(QUOTES[0]);
 
  useEffect(() => {
- // Randomize on mount
- // eslint-disable-next-line react-hooks/set-state-in-effect
+ // Randomize on mount asynchronously to avoid synchronous setState warning
+ const timer = setTimeout(() => {
  setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+ }, 0);
+ return () => clearTimeout(timer);
  }, []);
 
  return (

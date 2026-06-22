@@ -21,6 +21,19 @@ export const metadata: Metadata = {
  statusBarStyle:"black-translucent",
  title:"NotesIIIT",
  },
+ title:"NotesIIIT - Share Notes, Ace Exams",
+ description:"The ultimate platform for IIIT students to share lecture notes and collaborate",
+ manifest:"/manifest.json",
+ icons: {
+ icon:"/favicon.ico",
+ shortcut:"/favicon.ico",
+ apple:"/apple-icon.png",
+ },
+ appleWebApp: {
+ capable: true,
+ statusBarStyle:"black-translucent",
+ title:"NotesIIIT",
+ },
 };
 
 export const viewport: Viewport = {
@@ -33,7 +46,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
  children,
+ children,
 }: Readonly<{
+ children: React.ReactNode;
  children: React.ReactNode;
 }>) {
  return (
@@ -62,6 +77,11 @@ export default function RootLayout({
  </SessionProviderWrapper>
  </ThemeProvider>
 
+ {/* Google API Scripts */}
+ <GoogleScripts />
+ </body>
+ </html>
+ );
  {/* Google API Scripts */}
  <GoogleScripts />
  </body>

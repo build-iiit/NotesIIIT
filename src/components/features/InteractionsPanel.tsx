@@ -3,7 +3,7 @@
 import { api } from"@/app/_trpc/client";
 import { useState, useEffect } from"react";
 import { ThumbsUp, ThumbsDown, MessageSquare, Sparkles, Settings } from"lucide-react";
-import { ApiKeyDialog } from'@/components/ui/ApiKeyDialog';
+import { ApiKeyDialog } from"./ApiKeyDialog";
 
 interface InteractionsPanelProps {
  versionId: string;
@@ -34,37 +34,36 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  if (!hasCurrent) {
  const preference = ["gemini-2.0-flash","gemini-2.5-flash","gemini-1.5-flash"];
  const bestMatch = preference.find(p => availableModels.some((m: { id: string }) => m.id === p));
- // eslint-disable-next-line react-hooks/set-state-in-effect
  setSelectedModel(bestMatch || availableModels[0].id);
  }
  }
  }, [availableModels]);
 
  // Fetch comments
- const { data: comments } = api.interactions.comments.getByPage.useQuery({
+ const { data: comments } = api.comments.getByPage.useQuery({
  versionId,
  pageNumber,
  });
 
  // Fetch votes stats
- const { data: voteStats } = api.interactions.votes.getStats.useQuery({
+ const { data: voteStats } = api.votes.getStats.useQuery({
  versionId,
  pageNumber,
  });
 
- const voteMutation = api.interactions.votes.vote.useMutation({
+ const voteMutation = api.votes.vote.useMutation({
  onMutate: async () => {
- await utils.interactions.votes.getStats.cancel({ versionId, pageNumber });
+ await utils.votes.getStats.cancel({ versionId, pageNumber });
  },
  onSettled: () => {
- utils.interactions.votes.getStats.invalidate({ versionId, pageNumber });
+ utils.votes.getStats.invalidate({ versionId, pageNumber });
  },
  });
 
- const commentMutation = api.interactions.comments.create.useMutation({
+ const commentMutation = api.comments.create.useMutation({
  onSuccess: () => {
  setContent("");
- utils.interactions.comments.getByPage.invalidate({ versionId, pageNumber });
+ utils.comments.getByPage.invalidate({ versionId, pageNumber });
  },
  });
 
@@ -163,7 +162,7 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  <button
  onClick={() => setActiveTab("AI")}
  className={`flex-1 relative z-10 py-2 text-sm font-semibold rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 ${activeTab ==="AI"
- ?"text-blue-600 dark:text-blue-400"
+ ?"text-primary"
  :"text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
  }`}
  >
@@ -243,7 +242,7 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  <button
  type="submit"
  disabled={commentMutation.isPending || !content.trim()}
- className="px-5 py-2.5 rounded-xl text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+ className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-800 dark:text-gray-200 bg-gradient-to-br from-white/40 via-white/20 to-white/30 dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:opacity-90 hover:shadow-[var(--glow-color)] transition-all duration-300 shadow-[0_4px_16px_0_rgba(0,0,0,0.08)] border border-white/30 dark:border-white/15 hover:border-primary/50 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
  >
  {commentMutation.isPending ?"Posting..." :"Post Comment"}
  </button>
@@ -257,8 +256,8 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  {/* Page context info & Model Selector */}
  {/* Page context info & Model Selector */}
  <div className="p-4 border-b border-white/20 dark:border-white/10 bg-white/5 dark:bg-black/10 space-y-3">
- <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-400/20">
- <Sparkles className="w-4 h-4 text-blue-500" />
+ <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/10">
+ <Sparkles className="w-4 h-4 text-primary" />
  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
  Analyzing page {pageNumber}
  </span>
@@ -271,7 +270,7 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  <select
  value={selectedModel}
  onChange={(e) => setSelectedModel(e.target.value)}
- className="flex-1 text-xs px-2 py-1.5 rounded-lg bg-white/40 dark:bg-black/40 border border-white/30 dark:border-white/10 text-gray-800 dark:text-gray-200 outline-none focus:ring-1 focus:ring-blue-500/50"
+ className="flex-1 text-xs px-2 py-1.5 rounded-lg bg-white/40 dark:bg-black/40 border border-white/30 dark:border-white/10 text-gray-800 dark:text-gray-200 outline-none focus:ring-1 focus:ring-primary/50"
  disabled={!availableModels && !modelsError}
  >
  {availableModels && availableModels.length > 0 ? (
@@ -300,8 +299,8 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  <div className="flex-1 p-4 space-y-4 overflow-y-auto">
  {!aiAnswer ? (
  <div className="text-center text-gray-500 dark:text-gray-400 mt-10">
- <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-400/20 to-purple-400/20 flex items-center justify-center border border-white/20">
- <Sparkles className="w-8 h-8 text-blue-500" />
+ <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-via)] flex items-center justify-center border border-white/20">
+ <Sparkles className="w-8 h-8 text-primary" />
  </div>
  <p className="font-medium text-lg mb-1">Ask Gemini AI</p>
  <p className="text-sm opacity-75 max-w-[200px] mx-auto">Get summaries, explanations, or ask questions about what you see on this page.</p>
@@ -316,7 +315,7 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  <div className="mt-3">
  <button
  onClick={() => setShowApiKeyDialog(true)}
- className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-medium hover:bg-primary/20 transition-colors flex items-center gap-1.5"
+ className="text-xs px-3 py-1.5 rounded-lg bg-primary/15 text-primary font-medium hover:bg-primary/25 transition-colors flex items-center gap-1.5"
  >
  <Settings className="w-3 h-3" />
  Update API Key
@@ -337,13 +336,13 @@ export function InteractionsPanel({ versionId, pageNumber, getPageImage }: Inter
  value={aiQuestion}
  onChange={(e) => setAiQuestion(e.target.value)}
  placeholder="Ask about this document..."
- className="w-full text-sm p-3 rounded-xl border border-blue-200/30 dark:border-blue-500/15 focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400/50 focus:outline-none bg-white/40 dark:bg-black/30 text-gray-800 dark:text-gray-200 placeholder-gray-500 min-h-[80px] resize-none"
+ className="w-full text-sm p-3 rounded-xl border border-primary/20 focus:ring-2 focus:ring-primary/40 focus:border-primary/50 focus:outline-none bg-white/40 dark:bg-black/30 text-gray-800 dark:text-gray-200 placeholder-gray-500 min-h-[80px] resize-none"
  />
  <div className="flex justify-end mt-3">
  <button
  type="submit"
  disabled={aiMutation.isPending || !aiQuestion.trim()}
- className="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 transition-all duration-300 shadow-lg shadow-blue-500/20 border border-white/30 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
+ className="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-br from-[var(--brand-from)] to-[var(--brand-to)] hover:opacity-90 transition-all duration-300 shadow-lg shadow-[var(--glow-color)] border border-white/30 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2"
  >
  {aiMutation.isPending ? (
  <>

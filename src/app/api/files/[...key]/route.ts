@@ -28,7 +28,11 @@ function nodeStreamToWeb(nodeStream: NodeJS.ReadableStream): ReadableStream<Uint
  },
  });
 }
+import { GetObjectCommand } from"@aws-sdk/client-s3";
 
+
+// Force dynamic to allow streaming and reading headers
+export const dynamic ='force-dynamic';
 export async function GET(
  request: NextRequest,
  { params }: { params: Promise<{ key: string[] }> }
@@ -42,49 +46,39 @@ export async function GET(
  return new NextResponse("File key is missing", { status: 400 });
  }
 
- // Forward Range header for progressive PDF loading (pdfjs-dist uses this)
- const rangeHeader = request.headers.get("range") || undefined;
+ const command = new GetObjectCommand({
+ Bucket: process.env.S3_BUCKET_NAME ||"notes-bucket",
+ Key: key,
+ });
 
  try {
- const result = await downloadBlob(key, rangeHeader);
+ const response = await s3Client.send(command);
+
+ // Get content type from S3 or fallback to PDF
+ const contentType = response.ContentType ||"application/pdf";
+ const contentLength = response.ContentLength;
 
  // Create headers
  const headers = new Headers();
- headers.set("Content-Type", result.contentType);
+ headers.set("Content-Type", contentType);
  headers.set("Cache-Control","public, max-age=31536000, immutable");
- headers.set("Accept-Ranges","bytes");
 
- if (result.contentLength) {
- headers.set("Content-Length", result.contentLength.toString());
+ if (contentLength) {
+ headers.set("Content-Length", contentLength.toString());
  }
 
- if (!result.body) {
- return new NextResponse("Empty response from storage", { status: 500 });
- }
-
- // If this was a Range request and we got partial content
- if (result.isPartial && result.contentRange) {
- headers.set("Content-Range", result.contentRange);
-
- return new NextResponse(nodeStreamToWeb(result.body), {
- status: 206,
- headers,
- });
- }
-
- // Stream the file directly from Azure Blob to the client
- return new NextResponse(nodeStreamToWeb(result.body), {
+ // Stream the file directly from S3 to the client
+ return new NextResponse(response.Body as ReadableStream, {
  headers,
  });
 
- } catch (blobError: any) {
- console.error("Azure Blob Fetch Error:", blobError);
- if (blobError.statusCode === 404 || blobError.code === "BlobNotFound") {
+ } catch (s3Error: any) {
+ console.error("S3 Fetch Error:", s3Error);
+ if (s3Error.name ==="NoSuchKey") {
  return new NextResponse("File not found", { status: 404 });
  }
- throw blobError;
+ throw s3Error;
  }
-
  } catch (error) {
  console.error("Proxy Error:", error);
  return new NextResponse("Internal Server Error", { status: 500 });

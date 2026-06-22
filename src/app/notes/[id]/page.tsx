@@ -2,21 +2,18 @@
 
 import { use, useState, useEffect, useCallback } from"react";
 import { api } from"@/app/_trpc/client";
-import { InteractionsPanel } from"@/components/features/InteractionsPanel";
+import { InteractionsPanel } from"@/components/InteractionsPanel";
 import Link from"next/link";
 import dynamic from"next/dynamic";
-import { Maximize2, Eye } from"lucide-react";
-import { ReportButton } from"@/components/ui/ReportButton";
-import { toast } from"sonner";
+import { Maximize2, Eye, ChevronLeft } from"lucide-react";
+import { ReportButton } from"@/components/ReportButton";
 
 // Dynamically import PDF components with SSR disabled to avoid"DOMMatrix is not defined" error
-const PdfViewer = dynamic(() => import("@/components/features/PdfViewer").then(mod => mod.PdfViewer), {
- ssr: false,
+const PdfViewer = dynamic(() => import("@/components/PdfViewer").then(mod => mod.PdfViewer), { ssr: false,
  loading: () => <div className="animate-pulse h-[600px] bg-gray-100 dark:bg-zinc-800 rounded-xl" />
 });
 
-const FullPageNoteViewer = dynamic(() => import("@/components/features/FullPageNoteViewer").then(mod => mod.FullPageNoteViewer), {
- ssr: false
+const FullPageNoteViewer = dynamic(() => import("@/components/FullPageNoteViewer").then(mod => mod.FullPageNoteViewer), { ssr: false
 });
 
 import { useRouter, useSearchParams } from"next/navigation";
@@ -83,8 +80,13 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
  <div className="w-full max-w-7xl">
  <div className="mb-6 flex justify-between items-start">
  <div>
- <button onClick={() => router.back()} className="text-blue-500 hover:underline mb-4 inline-block">&larr; Back</button>
- <h1 className="text-3xl font-bold">{note.title}</h1>
+ <button
+ onClick={() => router.back()}
+ className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors group mb-4"
+ >
+ <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+ Back
+ </button> <h1 className="text-3xl font-bold">{note.title}</h1>
  <p className="text-gray-500 flex items-center gap-2">
  <span>By {note.author.name} • Version {currentVersion?.version}</span>
  <span className="flex items-center gap-1">
@@ -94,43 +96,14 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
  {note.description && <p className="mt-2 text-lg">{note.description}</p>}
  </div>
  <div className="flex items-center gap-2">
- {/* Download PDF */}
- {s3Url && (
- <a
- href={s3Url}
- download={`${note.title}.pdf`}
- className="px-4 py-2 rounded-lg text-sm font-medium bg-secondary text-foreground hover:bg-accent transition-all duration-200 border border-border"
- onClick={(e) => {
- if (!currentUser) {
- e.preventDefault();
- toast.info("Please sign in to download PDFs");
- }
- }}
- >
- Download
- </a>
- )}
- {/* Share */}
- {currentUser && (
- <button
- onClick={() => {
- const url = window.location.href;
- if (navigator.share) {
- navigator.share({ title: note.title, url });
- } else {
- navigator.clipboard.writeText(url);
- toast.success("Link copied to clipboard");
- }
- }}
- className="px-4 py-2 rounded-lg text-sm font-medium bg-secondary text-foreground hover:bg-accent transition-all duration-200 border border-border"
- >
- Share
- </button>
- )}
- <ReportButton noteId={note.id} isAuthor={currentUser?.id === note.authorId} />
+ {/* Report button - visible to non-authors */}
+ <ReportButton
+ noteId={note.id}
+ isAuthor={currentUser?.id === note.authorId}
+ />
+ {/* Only show Edit button if user owns the note */}
  {currentUser?.id === note.authorId && (
- <Link href={`/notes/${note.id}/edit`} className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-all duration-200">
- Edit Note
+ <Link href={`/notes/${note.id}/edit`} className="px-4 py-2 rounded-lg text-gray-800 dark:text-gray-200 relative bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/10 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-lg border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95]"> Edit Note
  </Link>
  )}
  </div>
@@ -141,8 +114,7 @@ export default function NotePage({ params }: { params: Promise<{ id: string }> }
  <div className="hidden md:flex justify-end mb-4">
  <button
  onClick={() => setIsFullPageOpen(true)}
- className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium bg-secondary text-foreground hover:bg-accent transition-all duration-200 border border-border"
- title="Open in Focus Mode"
+ className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-gray-800 dark:text-gray-200 relative bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/10 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-lg border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95]" title="Open in Focus Mode"
  >
  <Maximize2 className="w-5 h-5" />
  <span>Focus Mode</span>

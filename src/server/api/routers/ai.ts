@@ -15,21 +15,19 @@ export const aiRouter = createTRPCRouter({
  select: { geminiApiKey: true }
  });
 
- const apiKey = user?.geminiApiKey || process.env.GEMINI_API_KEY;
-
- if (!apiKey) {
- // Return default list of free tier models if no key set
+ if (!user?.geminiApiKey) {
+ // Return default list if no key set
  return [
- { id:"gemini-2.5-flash", displayName:"Gemini 2.5 Flash" },
  { id:"gemini-2.0-flash", displayName:"Gemini 2.0 Flash (Fast)" },
+ { id:"gemini-1.5-pro", displayName:"Gemini 1.5 Pro (Brain)" },
  { id:"gemini-1.5-flash", displayName:"Gemini 1.5 Flash" }
  ];
  }
 
  try {
- // Initialize Gemini with user's personal API key or system key
+ // Initialize Gemini with user's personal API key
  // Note: We're using the raw API to list models as SDK support might vary
- const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+ const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${user.geminiApiKey}`);
 
  if (!response.ok) {
  const errorText = await response.text();
@@ -86,8 +84,7 @@ export const aiRouter = createTRPCRouter({
  if (errMessage.includes("400") || errMessage.includes("INVALID_ARGUMENT") || errMessage.includes("API_KEY_INVALID")) {
  throw new TRPCError({
  code:"PRECONDITION_FAILED",
- message:"Invalid API Key. Please check your settings.",
- cause: error
+ message:"Invalid API Key. Please check your settings.", cause: error
  });
  }
 
@@ -120,17 +117,17 @@ export const aiRouter = createTRPCRouter({
  select: { geminiApiKey: true }
  });
 
- const apiKey = user?.geminiApiKey || process.env.GEMINI_API_KEY;
-
- if (!apiKey) {
+ // Require user to have their own API key for privacy
+ if (!user?.geminiApiKey) {
  throw new TRPCError({
  code:"FORBIDDEN",
  message:"API_KEY_REQUIRED"
  });
  }
 
- // Initialize Gemini with API key
- const genAI = new GoogleGenerativeAI(apiKey);
+ // Initialize Gemini with user's personal API key
+ console.log("DEBUG: Using API Key from DB:", user.geminiApiKey ? user.geminiApiKey.substring(0, 10) +"..." :"UNDEFINED");
+ const genAI = new GoogleGenerativeAI(user.geminiApiKey);
 
  // Verify the version exists and user has access
  const version = await ctx.prisma.noteVersion.findUnique({
@@ -156,7 +153,6 @@ export const aiRouter = createTRPCRouter({
  hasAccess = true;
  }
  }
-
  if (!hasAccess) {
  throw new TRPCError({ code:"UNAUTHORIZED", message:"You do not have access to this document" });
  }
@@ -166,10 +162,12 @@ export const aiRouter = createTRPCRouter({
  const modelName = input.model ||"gemini-2.5-flash";
 
  console.log(`[AI Debug] Using model: ${modelName}`);
- console.log(`[AI Debug] Using API Key: ${user?.geminiApiKey?.substring(0, 8)}... (Length: ${user?.geminiApiKey?.length})`);
+ console.log(`[AI Debug] Using API Key: ${user.geminiApiKey?.substring(0, 8)}... (Length: ${user.geminiApiKey?.length})`);
 
  const model = genAI.getGenerativeModel({ model: modelName });
 
+ const prompt = `You are an intelligent assistant helping a student understand a document.
+You are looking at page ${input.pageNumber} of a PDF document.
  const prompt = `Context: You are a helpful academic AI assistant analyzing page ${input.pageNumber} of a document.
 User Question: ${input.question}
 

@@ -215,8 +215,7 @@ export function AdminNotesTable() {
  switch (visibility) {
  case"PUBLIC": return"bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
  case"PRIVATE": return"bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
- case"GROUP": return"bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
- default: return"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400";
+ case"GROUP": return"bg-primary/10 text-primary"; default: return"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400";
  }
  };
 
@@ -239,8 +238,7 @@ export function AdminNotesTable() {
  placeholder="Search notes by title..."
  value={search}
  onChange={(e) => setSearch(e.target.value)}
- className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
- />
+ className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-primary focus:border-transparent" />
  </div>
 
  <div className="flex flex-wrap gap-2 items-center">
@@ -273,8 +271,7 @@ export function AdminNotesTable() {
  key={t}
  onClick={() => setFilter(t)}
  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${filter === t
- ?"bg-white dark:bg-zinc-700 text-blue-600 dark:text-blue-400 shadow-sm"
- :"text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+ ?"bg-white dark:bg-zinc-700 text-primary shadow-sm" :"text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
  }`}
  >
  {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -296,8 +293,7 @@ export function AdminNotesTable() {
  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
  >
  {filteredNotes && filteredNotes.length > 0 && selectedNotes.length === filteredNotes.length ? (
- <CheckSquare className="w-5 h-5 text-blue-600" />
- ) : (
+ <CheckSquare className="w-5 h-5 text-primary" /> ) : (
  <Square className="w-5 h-5" />
  )}
  </button>
@@ -334,15 +330,13 @@ export function AdminNotesTable() {
  const isPinned = (note as { isPinned?: boolean }).isPinned || false;
 
  return (
- <tr key={note.id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${selectedNotes.includes(note.id) ?"bg-blue-50/50 dark:bg-blue-900/10" :""}`}>
- <td className="px-6 py-4">
+ <tr key={note.id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${selectedNotes.includes(note.id) ?"bg-primary/5" :""}`}> <td className="px-6 py-4">
  <button
  onClick={() => toggleNoteSelection(note.id)}
  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
  >
  {selectedNotes.includes(note.id) ? (
- <CheckSquare className="w-5 h-5 text-blue-600" />
- ) : (
+ <CheckSquare className="w-5 h-5 text-primary" /> ) : (
  <Square className="w-5 h-5" />
  )}
  </button>
@@ -358,8 +352,7 @@ export function AdminNotesTable() {
  )}
  {isPinned && (
  <span title="Pinned">
- <Pin className="w-4 h-4 text-blue-500" />
- </span>
+ <Pin className="w-4 h-4 text-primary" /> </span>
  )}
  {isLocked && (
  <span title="Locked">
@@ -405,17 +398,14 @@ export function AdminNotesTable() {
  {note.viewCount} views • {note.voteScore} score
  </div>
  <div className="text-gray-500 dark:text-gray-400 text-xs">
- 
- {(note as any)._count?.comments || 0} comments
- </div>
+ {(note as any)._count?.comments ?? 0} comments </div>
  </td>
  <td className="px-6 py-4 whitespace-nowrap text-sm">
  <div className="flex items-center gap-1">
  <Link
  href={`/notes/${note.id}`}
  target="_blank"
- className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md"
- title="View note"
+ className="p-1.5 text-primary hover:bg-primary/10 rounded-md" title="View note"
  >
  <ExternalLink className="w-4 h-4" />
  </Link>
@@ -475,8 +465,7 @@ export function AdminNotesTable() {
  onClick={() => handlePin(note.id, isPinned)}
  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
  >
- <Pin className={`w-4 h-4 ${isPinned ?"text-blue-500" :""}`} />
- {isPinned ?"Unpin" :"Pin Note"}
+ <Pin className={`w-4 h-4 ${isPinned ?"text-primary" :""}`} /> {isPinned ?"Unpin" :"Pin Note"}
  </button>
  {(moderationStatus ==="HIDDEN" || moderationStatus ==="DELETED") && (
  <>

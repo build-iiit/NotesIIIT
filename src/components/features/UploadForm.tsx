@@ -137,9 +137,9 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  const { data: allFoldersData } = api.folders.getAllFlat.useQuery();
  const { data: courses } = api.course.getAll.useQuery();
  const { data: userGroups } = api.social.getGroups.useQuery();
- const { data: tags } = api.notes.tags.getAll.useQuery();
+ const { data: tags } = api.tags.getAll.useQuery();
  const createNoteMutation = api.notes.create.useMutation();
- const createTagMutation = api.notes.tags.create.useMutation();
+ const createTagMutation = api.tags.create.useMutation();
 
  const semesters = ["1-1","1-2","2-1","2-2","3-1","3-2","4-1","4-2","5-1","5-2"];
 
@@ -541,7 +541,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="relative" ref={courseDropdownRef}>
  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Course</label>
- <div className="flex items-center px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus-within:ring-2 focus-within:ring-orange-500/50 transition-all">
+ <div className="flex items-center px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus-within:ring-2 focus-within:ring-primary/50 transition-all">
  <Search className="h-4 w-4 text-gray-400 mr-2" />
  <input
  type="text"
@@ -551,7 +551,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  placeholder="Search..."
  className="bg-transparent outline-none w-full text-sm text-gray-900 dark:text-white"
  />
- {courseSearch && <X className="h-4 w-4 text-gray-400 cursor-pointer hover:text-red-500" onClick={() => { setCourseSearch(""); setSelectedCourseId(""); }} />}
+ {courseSearch && <X className="h-4 w-4 text-gray-400 cursor-pointer hover:text-destructive" onClick={() => { setCourseSearch(""); setSelectedCourseId(""); }} />}
  </div>
  {isCourseDropdownOpen && (
  <div className="absolute z-50 w-full mt-2 rounded-xl bg-white/90 dark:bg-zinc-900/95 border border-white/20 shadow-2xl max-h-48 overflow-y-auto">
@@ -560,9 +560,9 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  key={c.id}
  type="button"
  onClick={() => handleCourseSelect(c.id, `${c.code} - ${c.name}`)}
- className="w-full text-left px-4 py-3 hover:bg-orange-500/10 text-sm border-b border-gray-100 dark:border-white/5 last:border-0"
+ className="w-full text-left px-4 py-3 hover:bg-primary/10 text-sm border-b border-gray-100 dark:border-white/5 last:border-0"
  >
- <span className="font-bold text-orange-600 dark:text-orange-400">{c.code}</span> — <span className="text-gray-600 dark:text-gray-300">{c.name}</span>
+ <span className="font-bold text-primary">{c.code}</span> — <span className="text-gray-600 dark:text-gray-300">{c.name}</span>
  </button>
  ))}
  </div>
@@ -586,7 +586,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  key={sem}
  type="button"
  onClick={() => handleSemesterSelect(sem)}
- className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedSemester === sem ?"bg-orange-500/20 text-orange-600 font-bold" :"hover:bg-gray-100 dark:hover:bg-white/5"}`}
+ className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedSemester === sem ?"bg-primary/20 text-primary font-bold" :"hover:bg-gray-100 dark:hover:bg-white/5"}`}
  >
  Semester {sem}
  </button>
@@ -630,14 +630,14 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  return tag ? (
  <span
  key={tagId}
- className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-primary/20 to-purple-500/20 text-primary dark:text-primary border border-primary/30 shadow-sm"
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-primary/20 to-[var(--brand-to)]/20 text-primary dark:text-primary border border-primary/30 shadow-sm"
  >
  <Tag className="h-3 w-3" />
  {tag.name}
  <button
  type="button"
  onClick={() => handleTagToggle(tagId)}
- className="ml-0.5 hover:text-red-500 hover:scale-110 transition-all"
+ className="ml-0.5 hover:text-destructive hover:scale-110 transition-all"
  >
  <X className="h-3 w-3" />
  </button>
@@ -665,8 +665,8 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  {isTagDropdownOpen && (
  <div className="absolute z-20 w-full mt-2 bg-white/80 dark:bg-zinc-900/80 rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.2)] border border-white/40 dark:border-white/10 max-h-72 overflow-y-auto">
  {/* Decorative gradient blur */}
- <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-full blur-[60px] pointer-events-none" />
- <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-orange-400/20 to-pink-500/20 rounded-full blur-[60px] pointer-events-none" />
+ <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-primary/20 to-[var(--brand-to)]/20 rounded-full blur-[60px] pointer-events-none" />
+ <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-[var(--brand-from)]/25 to-[var(--brand-to)]/10 rounded-full blur-[60px] pointer-events-none" />
 
  {/* Default Tags */}
  <div className="relative p-3 border-b border-white/20 dark:border-white/10">
@@ -678,7 +678,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  type="button"
  onClick={() => handleTagToggle(tag.id)}
  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-300 ${selectedTagIds.includes(tag.id)
- ?"bg-gradient-to-r from-primary to-purple-500 text-white shadow-lg shadow-primary/30"
+ ?"bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white shadow-lg shadow-primary/30"
  :" bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
  }`}
  >
@@ -699,7 +699,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  type="button"
  onClick={() => handleTagToggle(tag.id)}
  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-300 ${selectedTagIds.includes(tag.id)
- ?"bg-gradient-to-r from-primary to-purple-500 text-white shadow-lg shadow-primary/30"
+ ?"bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white shadow-lg shadow-primary/30"
  :" bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
  }`}
  >
@@ -726,7 +726,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  type="button"
  onClick={handleAddCustomTag}
  disabled={!customTagInput.trim() || createTagMutation.isPending}
- className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary to-purple-500 text-white text-sm font-semibold disabled:opacity-50 hover:shadow-lg hover:shadow-primary/30 hover:scale-105 transition-all duration-300"
+ className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white text-sm font-semibold disabled:opacity-50 hover:shadow-lg hover:shadow-primary/30 hover:scale-105 transition-all duration-300"
  >
  <Plus className="h-4 w-4" />
  </button>
@@ -780,7 +780,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  <div className="mt-4 space-y-2">
  <div className="flex items-center justify-between text-sm">
  <span className="text-gray-600 dark:text-gray-400 font-medium">{driveUploadProgress}</span>
- <span className="text-orange-500 font-bold">{driveProgressPercent}%</span>
+ <span className="text-primary font-bold">{driveProgressPercent}%</span>
  </div>
  <div className="h-2 bg-white/20 dark:bg-black/30 rounded-full overflow-hidden">
  <div className="h-full bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] transition-all duration-300 ease-out rounded-full" style={{ width: `${driveProgressPercent}%` }} />
@@ -796,13 +796,13 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  placeholder="https://github.com/username/repo/blob/main/document.pdf"
  value={githubUrl}
  onChange={(e) => setGithubUrl(e.target.value)}
- className="flex-1 px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-orange-500/50 outline-none transition-all text-gray-900 dark:text-white text-sm"
+ className="flex-1 px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-primary/50 outline-none transition-all text-gray-900 dark:text-white text-sm"
  />
  <button
  type="button"
  onClick={handleGithubImport}
  disabled={isFetchingGithub || !githubUrl}
- className="px-6 py-3 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 font-bold text-sm transition-colors border border-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+ className="px-6 py-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-colors border border-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
  >
  {isFetchingGithub ? <Loader2 className="h-5 w-5 animate-spin" /> : <Github className="h-5 w-5" />}
  {isFetchingGithub ?"" :"Import"}
@@ -823,7 +823,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  type="text"
  value={selectedFile.title}
  onChange={(e) => handleTitleChange(e.target.value)}
- className="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-orange-500/50 outline-none transition-all text-gray-900 dark:text-white text-sm"
+ className="w-full px-4 py-3 rounded-xl bg-white/50 dark:bg-black/50 border border-white/40 dark:border-white/10 focus:ring-2 focus:ring-primary/50 outline-none transition-all text-gray-900 dark:text-white text-sm"
  placeholder="Enter a title for this note"
  />
  </div>
@@ -838,22 +838,22 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  className={`border rounded-xl p-3 transition-all cursor-pointer ${selectedFileIndex === index
  ?"bg-primary/10 border-primary ring-2 ring-primary/30"
  : qf.status ==="complete" ?"bg-green-500/10 border-green-500/30"
- : qf.status ==="error" ?"bg-red-500/10 border-red-500/30"
- : qf.status ==="uploading" ?"bg-orange-500/10 border-orange-500/30"
+ : qf.status ==="error" ?"bg-destructive/10 border-destructive/30"
+ : qf.status ==="uploading" ?"bg-primary/10 border-primary/30"
  :"bg-white/20 dark:bg-black/20 border-white/30 dark:border-white/10 hover:border-primary/50"
  }`}
  >
  <div className="flex items-center gap-3">
  <div className={`p-2 rounded-lg shrink-0 ${qf.status ==="complete" ?"bg-green-500/20" :
- qf.status ==="error" ?"bg-red-500/20" :
- selectedFileIndex === index ?"bg-primary/20" :"bg-orange-500/20"
+ qf.status ==="error" ?"bg-destructive/20" :
+ selectedFileIndex === index ?"bg-primary/20" :"bg-primary/20"
  }`}>
  {qf.status ==="complete" ? (
  <CheckCircle className="h-5 w-5 text-green-500" />
  ) : qf.status ==="uploading" ? (
- <Loader2 className="h-5 w-5 text-orange-500 animate-spin" />
+ <Loader2 className="h-5 w-5 text-primary animate-spin" />
  ) : (
- <FileText className={`h-5 w-5 ${selectedFileIndex === index ?"text-primary" :"text-orange-500"}`} />
+ <FileText className={`h-5 w-5 ${selectedFileIndex === index ?"text-primary" :"text-primary"}`} />
  )}
  </div>
  <div className="flex-1 min-w-0">
@@ -863,10 +863,10 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  <div className="flex items-center gap-2 text-xs text-gray-500">
  <span>{formatFileSize(qf.file.size)}</span>
  {qf.courseId && courses && (
- <span className="text-orange-500">• {courses.find(c => c.id === qf.courseId)?.code}</span>
+ <span className="text-primary">• {courses.find(c => c.id === qf.courseId)?.code}</span>
  )}
  {qf.semester && (
- <span className="text-blue-500">• Sem {qf.semester}</span>
+ <span className="text-muted-foreground">• Sem {qf.semester}</span>
  )}
  </div>
  </div>
@@ -874,7 +874,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  <button
  type="button"
  onClick={(e) => { e.stopPropagation(); removeFileFromQueue(index); if (selectedFileIndex === index) setSelectedFileIndex(queuedFiles.length > 1 ? 0 : null); }}
- className="p-1.5 rounded-lg hover:bg-red-500/20 shrink-0"
+ className="p-1.5 rounded-lg hover:bg-destructive/20 shrink-0"
  >
  <X className="h-4 w-4 text-gray-600 dark:text-gray-300" />
  </button>
@@ -882,7 +882,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  </div>
  {qf.status ==="uploading" && (
  <div className="h-1 bg-white/20 dark:bg-black/20 rounded-full overflow-hidden mt-2">
- <div className="h-full bg-orange-500 transition-all duration-300" style={{ width: `${qf.progress}%` }} />
+ <div className="h-full bg-primary transition-all duration-300" style={{ width: `${qf.progress}%` }} />
  </div>
  )}
  {qf.error && <p className="text-red-500 text-xs mt-2">{qf.error}</p>}
@@ -937,7 +937,7 @@ export function UploadForm({ initialFolderId = null, onSuccess, isFulfillmentMod
  type="checkbox"
  checked={selectedGroupIds.includes(group.id)}
  onChange={(e) => { e.target.checked ? setSelectedGroupIds([...selectedGroupIds, group.id]) : setSelectedGroupIds(selectedGroupIds.filter((id) => id !== group.id)); }}
- className="w-3.5 h-3.5 rounded text-orange-500"
+ className="w-3.5 h-3.5 rounded text-primary"
  />
  <span className="text-sm text-gray-900 dark:text-white truncate">{group.name}</span>
  </label>

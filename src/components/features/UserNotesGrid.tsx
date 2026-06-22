@@ -62,8 +62,8 @@ export function UserNotesGrid({ notes, userName }: UserNotesGridProps) {
  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors duration-300" />
  </>
  ) : (
- <div className="w-full h-full bg-gradient-to-br from-primary via-primary/80 to-primary/50 relative opacity-80">
- <div className="absolute inset-0 bg-background/20 group-hover:bg-background/10 transition-colors duration-300" />
+ <div className="w-full h-full bg-gradient-to-br from-[var(--brand-from)] via-[var(--brand-via)] to-black relative opacity-80">
+ <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-300" />
 
  {/* PDF icon overlay */}
  <div className="absolute inset-0 flex items-center justify-center">

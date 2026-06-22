@@ -116,17 +116,16 @@ export function AdminStatsCards() {
  ];
 
  const colorClasses: Record<string, string> = {
- blue:"bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
- purple:"bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400",
- green:"bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400",
- orange:"bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400",
- pink:"bg-pink-100 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400",
- indigo:"bg-indigo-100 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400",
- cyan:"bg-cyan-100 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400",
- red:"bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400",
- amber:"bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400",
- gray:"bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-400",
- };
+ blue:"bg-primary/10 text-primary",
+ purple:"bg-primary/15 text-primary",
+ green:"bg-primary/20 text-primary",
+ orange:"bg-primary/25 text-primary",
+ pink:"bg-primary/10 text-primary",
+ indigo:"bg-primary/15 text-primary",
+ cyan:"bg-primary/20 text-primary",
+ red:"bg-primary/10 text-primary",
+ amber:"bg-primary/15 text-primary",
+ gray:"bg-primary/5 text-primary", };
 
  const roleIcons: Record<string, React.ReactNode> = {
  SUPER_ADMIN: <Crown className="w-3 h-3" />,
@@ -136,10 +135,9 @@ export function AdminStatsCards() {
  };
 
  const roleColors: Record<string, string> = {
- SUPER_ADMIN:"bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
- ADMIN:"bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
- MODERATOR:"bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
- USER:"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
+ SUPER_ADMIN:"bg-primary/20 text-primary",
+ ADMIN:"bg-primary/10 text-primary",
+ MODERATOR:"bg-primary/10 text-primary", USER:"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
  };
 
  return (
@@ -249,14 +247,12 @@ export function AdminStatsCards() {
  <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">Last 30 Days</h3>
  <div className="grid grid-cols-3 gap-4">
  <div className="text-center">
- <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
- {stats.monthly?.notes || 0}
+ <p className="text-2xl font-bold text-primary"> {stats.monthly?.notes || 0}
  </p>
  <p className="text-xs text-gray-500">New Notes</p>
  </div>
  <div className="text-center">
- <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
- {stats.monthly?.users || 0}
+ <p className="text-2xl font-bold text-primary"> {stats.monthly?.users || 0}
  </p>
  <p className="text-xs text-gray-500">New Users</p>
  </div>
@@ -277,15 +273,13 @@ export function AdminStatsCards() {
  {stats.topContributors.map((contributor: { id: string, name: string | null, email: string | null, notesThisMonth: number }, index: number) => (
  <div key={contributor.id} className="flex items-center justify-between py-1">
  <div className="flex items-center gap-2">
- <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${index === 0 ?"bg-amber-100 text-amber-700" : index === 1 ?"bg-gray-200 text-gray-700" : index === 2 ?"bg-orange-100 text-orange-700" :"bg-gray-100 text-gray-600"}`}>
- {index + 1}
+ <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${index === 0 ?"bg-primary/20 text-primary" : index === 1 ?"bg-primary/15 text-primary" : index === 2 ?"bg-primary/10 text-primary" :"bg-gray-100 text-gray-600"}`}> {index + 1}
  </span>
  <span className="text-sm truncate max-w-[150px]">
  {contributor.name || contributor.email ||"Anonymous"}
  </span>
  </div>
- <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
- {contributor.notesThisMonth} notes
+ <span className="text-sm font-medium text-primary"> {contributor.notesThisMonth} notes
  </span>
  </div>
  ))}

@@ -18,8 +18,7 @@ import {
  AlertCircle,
  ChevronDown
 } from"lucide-react";
-import { ProfileImage } from'@/components/ui/ProfileImage';
-
+import { ProfileImage } from"../ProfileImage";
 type UserStatus ="ACTIVE" |"SUSPENDED" |"BANNED";
 
 const statusColors: Record<UserStatus, string> = {
@@ -30,9 +29,8 @@ const statusColors: Record<UserStatus, string> = {
 
 const roleColors: Record<string, string> = {
  SUPER_ADMIN:"bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
- ADMIN:"bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
- MODERATOR:"bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
- USER:"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
+ ADMIN:"bg-primary/10 text-primary",
+ MODERATOR:"bg-primary/10 text-primary", USER:"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
 };
 
 const roleIcons: Record<string, React.ReactNode> = {
@@ -257,8 +255,7 @@ export function AdminUsersTable() {
  placeholder="Search users by name or email..."
  value={search}
  onChange={(e) => setSearch(e.target.value)}
- className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
- />
+ className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-primary focus:border-transparent" />
  </div>
 
  <div className="flex flex-wrap gap-2 items-center">
@@ -279,8 +276,7 @@ export function AdminUsersTable() {
  <button
  onClick={() => handleBulkRoleUpdate("ADMIN")}
  disabled={isBulkLoading}
- className="px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 rounded-lg transition-colors flex items-center gap-2"
- >
+ className="px-3 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors flex items-center gap-2" >
  <Shield className="w-4 h-4" />
  Make Admin
  </button>
@@ -317,8 +313,7 @@ export function AdminUsersTable() {
  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
  >
  {filteredUsers && filteredUsers.length > 0 && selectedUsers.length === filteredUsers.length ? (
- <CheckSquare className="w-5 h-5 text-blue-600" />
- ) : (
+ <CheckSquare className="w-5 h-5 text-primary" /> ) : (
  <Square className="w-5 h-5" />
  )}
  </button>
@@ -354,15 +349,13 @@ export function AdminUsersTable() {
  const shadowBanned = (user as { shadowBanned?: boolean }).shadowBanned || false;
 
  return (
- <tr key={user.id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${selectedUsers.includes(user.id) ?"bg-blue-50/50 dark:bg-blue-900/10" :""}`}>
- <td className="px-6 py-4">
+ <tr key={user.id} className={`hover:bg-gray-50 dark:hover:bg-zinc-800/50 ${selectedUsers.includes(user.id) ?"bg-primary/5" :""}`}> <td className="px-6 py-4">
  <button
  onClick={() => toggleUserSelection(user.id)}
  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
  >
  {selectedUsers.includes(user.id) ? (
- <CheckSquare className="w-5 h-5 text-blue-600" />
- ) : (
+ <CheckSquare className="w-5 h-5 text-primary" /> ) : (
  <Square className="w-5 h-5" />
  )}
  </button>

@@ -1,8 +1,7 @@
 "use client";
 
 import { Suspense } from"react";
-import { UploadForm } from"@/components/features/UploadForm";
-import { useSearchParams } from"next/navigation";
+import { UploadForm } from"@/components/UploadForm";import { useSearchParams } from"next/navigation";
 
 function UploadContent() {
  const searchParams = useSearchParams();
@@ -19,8 +18,7 @@ export default function UploadPage() {
  return (
  <Suspense fallback={
  <div className="min-h-screen flex items-center justify-center">
- <div className="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full" />
- </div>
+ <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /> </div>
  }>
  <UploadContent />
  </Suspense>

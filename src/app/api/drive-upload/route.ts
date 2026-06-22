@@ -2,7 +2,19 @@ import { NextRequest, NextResponse } from"next/server";
 import { auth } from"@/auth";
 import { uploadFileToS3 } from"@/lib/storage";
 import { v4 as uuidv4 } from"uuid";
+import { S3Client, PutObjectCommand } from"@aws-sdk/client-s3";
+import { v4 as uuidv4 } from"uuid";
 
+// S3 Client
+const s3Client = new S3Client({
+ region: process.env.S3_REGION ||"us-east-1",
+ endpoint: process.env.S3_ENDPOINT,
+ credentials: {
+ accessKeyId: process.env.S3_ACCESS_KEY ||"",
+ secretAccessKey: process.env.S3_SECRET_KEY ||"",
+ },
+ forcePathStyle: true,
+});
 export async function POST(req: NextRequest) {
  try {
  // Verify auth
@@ -51,7 +63,6 @@ export async function POST(req: NextRequest) {
  await uploadFileToS3(buffer, s3Key,"application/pdf");
 
  console.log(`[Drive Upload] Uploaded to Azure Blob: ${s3Key}`);
-
  return NextResponse.json({
  success: true,
  s3Key,

@@ -1,6 +1,7 @@
 import { createCanvas } from'canvas';
 import { uploadFileToS3 } from'@/lib/storage';
 
+import { PutObjectCommand } from'@aws-sdk/client-s3';
 const THUMBNAIL_WIDTH = 1200;
 const THUMBNAIL_HEIGHT = 630;
 const ACCENT_COLOR ='#3b82f6'; // blue-500
@@ -199,8 +200,7 @@ export async function uploadThumbnail(noteId: string, itemBuffer: Buffer): Promi
  const key = `thumbnails/${noteId}.png`;
 
  try {
- await uploadFileToS3(itemBuffer, key,'image/png');
- console.log(`Successfully uploaded thumbnail for note ${noteId}`);
+ await uploadFileToS3(itemBuffer, key,'image/png'); console.log(`Successfully uploaded thumbnail for note ${noteId}`);
  return key;
  } catch (error) {
  console.error("Error uploading thumbnail:", error);

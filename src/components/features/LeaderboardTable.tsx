@@ -2,7 +2,7 @@
 
 import { api } from"@/app/_trpc/client";
 import Link from"next/link";
-import { ProfileImage } from'@/components/ui/ProfileImage';
+import { ProfileImage } from"./ProfileImage";
 
 type UserWithScore = {
  id: string;

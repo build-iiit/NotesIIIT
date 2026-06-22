@@ -76,10 +76,9 @@ export function DashboardDndWrapper({ children }: DashboardDndWrapperProps) {
  {children}
  <DragOverlay>
  {activeItem?.type ==="NOTE" ? (
- <div className="w-64 p-4 rounded-xl bg-white dark:bg-zinc-900 border border-orange-500 shadow-2xl flex items-center gap-3 opacity-90 cursor-grabbing">
- <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
- <FileText className="w-6 h-6 text-orange-600" />
- </div>
+ <div className="w-64 p-4 rounded-xl bg-white dark:bg-zinc-900 border border-primary shadow-2xl flex items-center gap-3 opacity-90 cursor-grabbing">
+ <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg">
+ <FileText className="w-6 h-6 text-primary" /> </div>
  <div className="flex-1 min-w-0">
  <h4 className="font-bold text-sm truncate text-gray-900 dark:text-white">{activeItem.data.title}</h4>
  <p className="text-xs text-gray-500">Moving note...</p>

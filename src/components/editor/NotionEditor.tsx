@@ -4,18 +4,25 @@ import { useEditor, EditorContent } from'@tiptap/react';
 import StarterKit from'@tiptap/starter-kit';
 import Placeholder from'@tiptap/extension-placeholder';
 import Typography from'@tiptap/extension-typography';
-import { Bold, Italic, Strikethrough, Heading1, Heading2, List, ListOrdered, Quote, Code, Download, Undo2, Redo2 } from'lucide-react';
-import { useCallback, useEffect, useMemo } from'react';
-
+import { useCallback, useEffect, useMemo, useState, useRef } from'react';
 import { MathInline } from'./extensions/MathInline';
 import { MathBlock } from'./extensions/MathBlock';
 import { SlashCommand } from'./extensions/SlashCommand';
 import'./EditorStyles.css';
 import'katex/dist/katex.min.css';
 
+import { Point, Stroke } from'../annotations/types';
+import { UnifiedAnnotationToolbar } from'../annotations/UnifiedAnnotationToolbar';
 import type { MarkdownDocument } from'@/types/markdownSchema';
 import { EMPTY_DOCUMENT } from'@/types/markdownSchema';
 
+// Hex to RGBA helper for highlighter
+const hexToRgba = (hex: string, alpha: number) => {
+ const r = parseInt(hex.slice(1, 3), 16) || 0;
+ const g = parseInt(hex.slice(3, 5), 16) || 0;
+ const b = parseInt(hex.slice(5, 7), 16) || 0;
+ return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 /**
  * NotionEditor - A Notion-style block-based editor using TipTap
  * 
@@ -76,6 +83,19 @@ export function NotionEditor({
  placeholder ="Press'/' for commands, or start typing...",
  className ='',
 }: NotionEditorProps) {
+ // Annotation / Drawing State
+ const [activeTool, setActiveTool] = useState<string>('keyboard');
+ const [activeColor, setActiveColor] = useState<string>('#ef4444');
+ const [annotations, setAnnotations] = useState<Stroke[]>([]);
+ const [currentStroke, setCurrentStroke] = useState<Point[] | null>(null);
+ const [isErasing, setIsErasing] = useState(false);
+ const [history, setHistory] = useState<Stroke[][]>([]);
+ const [future, setFuture] = useState<Stroke[][]>([]);
+
+ const containerRef = useRef<HTMLDivElement>(null);
+ const canvasRef = useRef<HTMLCanvasElement>(null);
+ const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
+
  // Memoize initial content to avoid re-renders
  const initialContent = useMemo(() => {
  if (!content) return EMPTY_DOCUMENT;
@@ -167,9 +187,162 @@ export function NotionEditor({
  event.preventDefault();
  editor?.chain().focus().toggleCode().run();
  }
+ 
+ // Undo/Redo for drawings
+ if ((event.ctrlKey || event.metaKey) && event.key ==='z') {
+ if (activeTool !=='keyboard') {
+ event.preventDefault();
+ if (event.shiftKey) handleRedo();
+ else handleUndo();
+ }
+ }
  },
- [editor]
+ [editor, activeTool, history, future, annotations] // Needs proper deps if extracted further
  );
+
+ // Resize observer for canvas
+ useEffect(() => {
+ if (!containerRef.current) return;
+ const resizeObserver = new ResizeObserver(entries => {
+ for (let entry of entries) {
+ const { width, height } = entry.contentRect;
+ setCanvasSize({ width, height });
+ if (canvasRef.current) {
+ canvasRef.current.width = width;
+ canvasRef.current.height = height;
+ }
+ }
+ });
+ resizeObserver.observe(containerRef.current);
+ return () => resizeObserver.disconnect();
+ }, []);
+
+ // Drawing loop
+ useEffect(() => {
+ const canvas = canvasRef.current;
+ if (!canvas || canvasSize.width === 0 || canvasSize.height === 0) return;
+ const ctx = canvas.getContext('2d');
+ if (!ctx) return;
+
+ ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+ const drawStroke = (points: Point[], color: string, strokeType: string, width_val?: number) => {
+ if (points.length < 2) return;
+ ctx.beginPath();
+ ctx.lineWidth = width_val || (strokeType ==="highlighter" ? 20 : 2);
+ ctx.lineJoin ='round';
+ ctx.lineCap ='round';
+ ctx.strokeStyle = strokeType ==="highlighter" ? hexToRgba(color, 0.3) : color;
+
+ ctx.moveTo(points[0].x * canvasSize.width, points[0].y * canvasSize.height);
+ for (let i = 1; i < points.length; i++) {
+ ctx.lineTo(points[i].x * canvasSize.width, points[i].y * canvasSize.height);
+ }
+ ctx.stroke();
+ };
+
+ annotations.forEach(stroke => {
+ drawStroke(stroke.points, stroke.color, stroke.type, stroke.width);
+ });
+
+ if (currentStroke) {
+ const isHighlighter = activeTool ==='highlighter';
+ drawStroke(currentStroke, activeColor, isHighlighter ?'highlighter' :'pen', isHighlighter ? 20 : 2);
+ }
+ }, [annotations, currentStroke, canvasSize, activeColor, activeTool]);
+
+ // Undo / Redo Logic
+ const addToHistory = useCallback(() => {
+ setHistory(prev => [...prev, annotations]);
+ setFuture([]);
+ }, [annotations]);
+
+ const handleUndo = useCallback(() => {
+ if (history.length === 0) return;
+ const previousState = history[history.length - 1];
+ setFuture(prev => [...prev, annotations]);
+ setHistory(prev => prev.slice(0, -1));
+ setAnnotations(previousState);
+ }, [history, annotations]);
+
+ const handleRedo = useCallback(() => {
+ if (future.length === 0) return;
+ const nextState = future[future.length - 1];
+ setHistory(prev => [...prev, annotations]);
+ setFuture(prev => prev.slice(0, -1));
+ setAnnotations(nextState);
+ }, [future, annotations]);
+
+ // Pointer Handlers
+ const getPoint = (e: React.PointerEvent): Point | null => {
+ const canvas = canvasRef.current;
+ if (!canvas || canvasSize.width === 0 || canvasSize.height === 0) return null;
+ const rect = canvas.getBoundingClientRect();
+ const x = (e.clientX - rect.left) / rect.width;
+ const y = (e.clientY - rect.top) / rect.height;
+ return {
+ x: Math.max(0, Math.min(x, 1)),
+ y: Math.max(0, Math.min(y, 1))
+ };
+ };
+
+ const performErase = useCallback((p: Point) => {
+ setAnnotations(prev => {
+ const radius = 0.02;
+ return prev.filter(stroke => 
+ !stroke.points.some(sp => Math.abs(sp.x - p.x) < radius && Math.abs(sp.y - p.y) < radius)
+ );
+ });
+ }, []);
+
+ const handlePointerDown = useCallback((e: React.PointerEvent) => {
+ if (activeTool ==='keyboard') return;
+ const point = getPoint(e);
+ if (!point) return;
+
+ if (activeTool ==='pen' || activeTool ==='highlighter') {
+ setCurrentStroke([point]);
+ if (canvasRef.current) canvasRef.current.setPointerCapture(e.pointerId);
+ } else if (activeTool ==='eraser') {
+ setIsErasing(true);
+ addToHistory();
+ performErase(point);
+ if (canvasRef.current) canvasRef.current.setPointerCapture(e.pointerId);
+ }
+ }, [activeTool, addToHistory, performErase]);
+
+ const handlePointerMove = useCallback((e: React.PointerEvent) => {
+ if (activeTool ==='keyboard') return;
+ if (e.buttons !== 1) return;
+ const point = getPoint(e);
+ if (!point) return;
+
+ if (activeTool ==='pen' || activeTool ==='highlighter') {
+ setCurrentStroke(prev => prev ? [...prev, point] : [point]);
+ } else if (activeTool ==='eraser' && isErasing) {
+ performErase(point);
+ }
+ }, [activeTool, isErasing, performErase]);
+
+ const handlePointerUp = useCallback((e: React.PointerEvent) => {
+ if (activeTool ==='keyboard') return;
+ if (canvasRef.current && canvasRef.current.hasPointerCapture(e.pointerId)) {
+ canvasRef.current.releasePointerCapture(e.pointerId);
+ }
+
+ if ((activeTool ==='pen' || activeTool ==='highlighter') && currentStroke && currentStroke.length > 1) {
+ addToHistory();
+ const strokeColor = activeColor;
+ const strokeType = activeTool ==='highlighter' ?"highlighter" :"pen";
+ const strokeWidth = activeTool ==='highlighter' ? 20 : 2;
+ setAnnotations(prev => [
+ ...prev, 
+ { points: currentStroke, color: strokeColor, type: strokeType as"pen" |"highlighter", width: strokeWidth }
+ ]);
+ }
+ setCurrentStroke(null);
+ setIsErasing(false);
+ }, [activeTool, currentStroke, activeColor, addToHistory]);
 
  if (!editor) {
  return (
@@ -182,81 +355,34 @@ export function NotionEditor({
  }
 
  return (
- <div className={`notion-editor flex relative ${className}`} onKeyDown={handleKeyDown}>
- {/* Samsung Notes Style Tool Rail */}
- <div className="w-11 flex-shrink-0 print:hidden sticky top-24 h-max self-start ml-1 my-4">
- <div className="bg-zinc-900 dark:bg-zinc-950 rounded-2xl py-2 px-1.5 flex flex-col items-center gap-0.5 shadow-lg border border-zinc-800 dark:border-zinc-800/50">
+ <div ref={containerRef} className={`notion-editor relative ${className}`} onKeyDown={handleKeyDown}>
  {editable && (
- <>
- {/* Text Formatting */}
- <SidebarBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Bold (⌘B)">
- <Bold className="w-[18px] h-[18px]" />
- </SidebarBtn>
- <SidebarBtn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} title="Italic (⌘I)">
- <Italic className="w-[18px] h-[18px]" />
- </SidebarBtn>
- <SidebarBtn active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} title="Strikethrough">
- <Strikethrough className="w-[18px] h-[18px]" />
- </SidebarBtn>
-
- <div className="w-5 h-px bg-zinc-700 my-1" />
-
- {/* Headings */}
- <SidebarBtn active={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} title="Heading 1">
- <Heading1 className="w-[18px] h-[18px]" />
- </SidebarBtn>
- <SidebarBtn active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} title="Heading 2">
- <Heading2 className="w-[18px] h-[18px]" />
- </SidebarBtn>
-
- <div className="w-5 h-px bg-zinc-700 my-1" />
-
- {/* Lists */}
- <SidebarBtn active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()} title="Bullet List">
- <List className="w-[18px] h-[18px]" />
- </SidebarBtn>
- <SidebarBtn active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()} title="Numbered List">
- <ListOrdered className="w-[18px] h-[18px]" />
- </SidebarBtn>
-
- <div className="w-5 h-px bg-zinc-700 my-1" />
-
- {/* Blocks */}
- <SidebarBtn active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()} title="Quote">
- <Quote className="w-[18px] h-[18px]" />
- </SidebarBtn>
- <SidebarBtn active={editor.isActive('codeBlock')} onClick={() => editor.chain().focus().toggleCodeBlock().run()} title="Code Block">
- <Code className="w-[18px] h-[18px]" />
- </SidebarBtn>
-
- <div className="w-5 h-px bg-zinc-700 my-1" />
-
- {/* Undo / Redo */}
- <SidebarBtn active={false} onClick={() => editor.chain().focus().undo().run()} title="Undo (⌘Z)" disabled={!editor.can().undo()}>
- <Undo2 className="w-[18px] h-[18px]" />
- </SidebarBtn>
- <SidebarBtn active={false} onClick={() => editor.chain().focus().redo().run()} title="Redo (⌘⇧Z)" disabled={!editor.can().redo()}>
- <Redo2 className="w-[18px] h-[18px]" />
- </SidebarBtn>
-
- <div className="w-5 h-px bg-zinc-700 my-1" />
- </>
+ <div className="fixed right-8 bottom-8 z-50">
+ <UnifiedAnnotationToolbar 
+ activeTool={activeTool}
+ setActiveTool={setActiveTool}
+ activeColor={activeColor}
+ setActiveColor={setActiveColor}
+ onUndo={handleUndo}
+ onRedo={handleRedo}
+ />
+ </div>
  )}
-
- {/* Export */}
- <SidebarBtn active={false} onClick={() => window.print()} title="Export to PDF">
- <Download className="w-[18px] h-[18px]" />
- </SidebarBtn>
- </div>
- </div>
-
- {/* Editor Content Area */}
- <div className="flex-1 w-full max-w-full print:w-full print:max-w-none print:m-0 print:p-0">
+ <div className={`${activeTool !=='keyboard' ?'opacity-50 pointer-events-none transition-opacity' :'transition-opacity'}`}>
  <EditorContent editor={editor} />
  </div>
+ {/* Canvas Overlay */}
+ <canvas
+ ref={canvasRef}
+ className={`absolute inset-0 z-10 ${activeTool !=='keyboard' ?'pointer-events-auto cursor-crosshair' :'pointer-events-none'}`}
+ onPointerDown={handlePointerDown}
+ onPointerMove={handlePointerMove}
+ onPointerUp={handlePointerUp}
+ onPointerCancel={handlePointerUp}
+ style={{ touchAction: activeTool !=='keyboard' ?'none' :'auto' }}
+ />
  </div>
- );
-}
+ );}
 
 /**
  * Get plain text from editor content for thumbnails

@@ -5,8 +5,7 @@ import Link from"next/link";
 import { Bookmark, FileText, ArrowRight, Loader2 } from"lucide-react";
 
 export default function BookmarksPage() {
- const { data: bookmarks, isLoading } = api.interactions.bookmarks.getAll.useQuery();
-
+ const { data: bookmarks, isLoading } = api.bookmarks.getAll.useQuery();
  // Group bookmarks by note
  type BookmarkWithNote = NonNullable<typeof bookmarks>[number];
  type GroupedBookmarks = Record<string, { note: { id: string; title: string }; bookmarks: BookmarkWithNote[] }>;
@@ -111,8 +110,7 @@ export default function BookmarksPage() {
  <div className="absolute top-2 right-2 opacity-0 group-hover/page:opacity-100 transition-opacity">
  <ArrowRight className="w-3 h-3 text-primary" />
  </div>
- <Bookmark className="w-8 h-8 text-primary/50 group-hover/page:text-primary fill-current mb-2 transition-colors" />
- <span className="font-bold text-gray-700 dark:text-gray-300 group-hover/page:text-primary">
+ <Bookmark className="w-8 h-8 text-primary/40 group-hover/page:text-primary fill-current mb-2 transition-colors" /> <span className="font-bold text-gray-700 dark:text-gray-300 group-hover/page:text-primary">
  Page {bookmark.pageNumber}
  </span>
  </Link>

@@ -5,7 +5,7 @@ import { useRouter } from"next/navigation";
 import { api } from"@/app/_trpc/client";
 import { Camera, Image as ImageIcon, Loader2 } from"lucide-react";
 import Image from"next/image";
-import { ProfileImage } from"@/components/ui/ProfileImage";
+import { ProfileImage } from"@/components/ProfileImage";
 
 interface EditProfileDialogProps {
  user: {
@@ -178,7 +178,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
  unoptimized
  />
  ) : (
- <div className="absolute inset-0 bg-primary/20" />
+ <div className="absolute inset-0 bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)]" />
  )}
 
  <button
@@ -257,7 +257,7 @@ export function EditProfileDialog({ user, onClose }: EditProfileDialogProps) {
  <button
  onClick={handleSave}
  disabled={isSaving}
- className="px-4 py-2 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 relative bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/20 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_rgba(var(--primary-rgb),0.3)] border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+ className="px-4 py-2 rounded-lg text-sm font-medium text-gray-800 dark:text-gray-200 relative bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/10 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[var(--glow-color)] border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
  >
  {isSaving && <Loader2 size={16} className="animate-spin" />}
  Save Changes

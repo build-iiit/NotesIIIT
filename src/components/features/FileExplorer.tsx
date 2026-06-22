@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from"react";
@@ -15,7 +14,6 @@ export function FileExplorer({ }: FileExplorerProps) {
  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
  const [newFolderName, setNewFolderName] = useState("");
 
- // const router = useRouter();
  const utils = api.useUtils();
 
  // Data fetching
@@ -150,8 +148,8 @@ export function FileExplorer({ }: FileExplorerProps) {
 
  return (
  <div className="relative">
- {/* Sunset Gradient Background */}
- <div className={`absolute inset-0 rounded-xl -z-10 bg-primary/5`} />
+ {/* Theme Gradient Background */}
+ <div className="absolute inset-0 rounded-xl -z-10 bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] opacity-30" />
 
  {/* Layered Glass Container - iOS Style */}
  <div className="relative bg-gradient-to-br from-white/10 via-white/5 to-white/10 dark:from-white/[0.07] dark:via-white/[0.03] dark:to-white/[0.07] rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.4)] border border-white/30 dark:border-white/20 p-6">
@@ -159,12 +157,12 @@ export function FileExplorer({ }: FileExplorerProps) {
  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
  <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
- <Folder className={`h-5 w-5 text-primary`} />
+ <Folder className="h-5 w-5 text-primary" />
  My Files
  </h3>
  <button
  onClick={() => setIsCreateModalOpen(true)}
- className={`relative flex items-center justify-center gap-2 px-4 py-2 text-sm text-white rounded-xl transition-all border border-white/30 hover:scale-[1.02] duration-300 w-full sm:w-auto bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-primary/30`}
+ className="relative flex items-center justify-center gap-2 px-4 py-2 text-sm text-white rounded-xl transition-all border border-white/30 hover:scale-[1.02] duration-300 w-full sm:w-auto bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-lg shadow-[var(--glow-color)]"
  >
  <FolderPlus className="h-4 w-4" />
  New Folder
@@ -176,7 +174,7 @@ export function FileExplorer({ }: FileExplorerProps) {
  <button
  onClick={() => setCurrentFolderId(null)}
  className={`px-3 py-1 rounded-lg transition-all ${!currentFolderId
- ?"bg-primary text-primary-foreground font-bold border border-white/30"
+ ?"bg-primary text-primary-foreground font-bold border border-white/20"
  :"hover:bg-white/20 dark:hover:bg-white/10"
  }`}
  >
@@ -188,7 +186,7 @@ export function FileExplorer({ }: FileExplorerProps) {
  <button
  onClick={() => setCurrentFolderId(crumb.id)}
  className={`px-3 py-1 rounded-lg transition-all ${currentFolderId === crumb.id
- ?"bg-primary text-primary-foreground font-bold border border-white/30"
+ ?"bg-primary text-primary-foreground font-bold border border-white/20"
  :"hover:bg-white/20 dark:hover:bg-white/10"
  }`}
  >
@@ -249,8 +247,8 @@ export function FileExplorer({ }: FileExplorerProps) {
  onDrop={(e) => handleDrop(e, folder.id)}
  className={`group relative flex flex-col items-center p-5 rounded-2xl transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border cursor-pointer
  ${dragOverTarget === folder.id
- ?"bg-primary/20 border-primary scale-[1.05] shadow-lg shadow-primary/20"
- :"bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border-white/25 active:scale-[0.98] hover:bg-primary/5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.05]"
+ ?"bg-primary/20 border-primary scale-[1.05] shadow-lg shadow-[var(--glow-color)]"
+ :"bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] border-white/25 active:scale-[0.98] hover:bg-primary/5 hover:border-primary/50 hover:shadow-xl hover:scale-[1.05] hover:shadow-[0_12px_32px_0_var(--glow-color)]"
  }`}
  >
  {/* Inner glow layer */}
@@ -265,7 +263,7 @@ export function FileExplorer({ }: FileExplorerProps) {
 
  <Folder className={`h-10 w-10 mb-2 drop-shadow-lg transition-colors ${dragOverTarget === folder.id
  ?"text-primary fill-primary/30"
- :"text-gray-400 group-hover:text-primary fill-primary/5 group-hover:fill-primary/20"
+ :"text-primary fill-primary/10"
  }`} />
  <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200">{folder.name}</span>
  </div>
@@ -278,7 +276,7 @@ export function FileExplorer({ }: FileExplorerProps) {
  href={`/notes/${note.id}`}
  draggable
  onDragStart={(e) => handleDragStart(e,'note', note.id)}
- className={`group relative flex flex-col items-center p-5 rounded-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border border-white/25 active:scale-[0.98] cursor-grab active:cursor-grabbing hover:bg-primary/5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 hover:scale-[1.05]`}
+ className="group relative flex flex-col items-center p-5 rounded-2xl bg-gradient-to-br from-white/[0.18] via-white/[0.12] to-white/[0.15] dark:from-white/[0.1] dark:via-white/[0.05] dark:to-white/[0.08] transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] border border-white/25 active:scale-[0.98] cursor-grab active:cursor-grabbing hover:bg-primary/5 hover:border-primary/50 hover:scale-[1.05] hover:shadow-[0_12px_32px_0_var(--glow-color)]"
  >
  {/* Inner glow layer */}
  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -286,24 +284,20 @@ export function FileExplorer({ }: FileExplorerProps) {
  {/* Thumbnail or Icon */}
  {note.thumbnailS3Key ? (
  <div className="h-16 w-16 mb-2 rounded-lg shadow-md overflow-hidden bg-white/50">
- {/* Note: In a real app we'd use Next.js Image with a proper loader. 
- Using a raw img tag here for simplicity but it should be optimized.
- We can generate a signed URL on the backend or use a public URL if public.
- */}
  <div
  className="w-full h-full bg-cover bg-center"
  style={{ backgroundImage: `url(https://d36u8i333158ha.cloudfront.net/${note.thumbnailS3Key})` }}
  />
  </div>
  ) : (
- <FileText className={`h-10 w-10 mb-2 transition-colors drop-shadow-lg text-gray-500 group-hover:text-primary`} />
+ <FileText className="h-10 w-10 mb-2 transition-colors drop-shadow-lg text-gray-500 group-hover:text-primary" />
  )}
 
  <div className="absolute -bottom-1 -right-1 bg-white/60 dark:bg-black/40 text-[10px] px-1.5 py-0.5 rounded border border-white/40 text-gray-700 dark:text-gray-300 font-semibold">
  PDF
  </div>
  </div>
- <span className={`text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200 group-hover:text-primary`}>
+ <span className="text-sm font-medium text-center truncate w-full text-gray-800 dark:text-gray-200 group-hover:text-primary">
  {note.title}
  </span>
  </Link>
@@ -331,8 +325,9 @@ export function FileExplorer({ }: FileExplorerProps) {
  placeholder="Folder Name"
  value={newFolderName}
  onChange={(e) => setNewFolderName(e.target.value)}
- className="w-full px-4 py-2 mb-4 rounded-lg bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-orange-500/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+ className="w-full px-4 py-2 mb-4 rounded-lg bg-white/40 dark:bg-black/25 border border-white/30 focus:outline-none focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
  autoFocus
+ 
  />
  <div className="flex justify-end gap-2">
  <button
@@ -345,7 +340,7 @@ export function FileExplorer({ }: FileExplorerProps) {
  <button
  type="submit"
  disabled={!newFolderName.trim() || createFolderMutation.isPending}
- className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 transition-all shadow-lg border border-white/30 bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)]`}
+ className="px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 transition-all shadow-lg border border-white/30 bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)]"
  >
  {createFolderMutation.isPending ?"Creating..." :"Create"}
  </button>

@@ -3,18 +3,16 @@
 import { useState, useEffect } from"react";
 import Image from"next/image"; // Keep Image for background checks if needed, but we used it for background too
 import Link from"next/link";
-import { ProfileImage } from"@/components/ui/ProfileImage";
-import { UserStatsCard } from"@/components/features/UserStatsCard";
-import { UserNotesGrid, type Note } from"@/components/features/UserNotesGrid";
-import { EditProfileDialog } from"@/components/ui/EditProfileDialog";
-import { FileExplorer } from"@/components/features/FileExplorer"; // Features from main
-import { api } from"@/app/_trpc/client";
+import { ProfileImage } from"@/components/ProfileImage";
+import { UserStatsCard } from"@/components/UserStatsCard";
+import { UserNotesGrid, type Note } from"@/components/UserNotesGrid";
+import { EditProfileDialog } from"@/components/EditProfileDialog";
+import { FileExplorer } from"@/components/FileExplorer"; // Features from mainimport { api } from"@/app/_trpc/client";
 import {
  FileText, Eye, TrendingUp, Trophy, Award,
  Sparkles, Medal, Edit, Folder, Search, Settings, Key
 } from"lucide-react";
-
-
+import { useThemeStyle } from"@/components/ThemeStyleProvider";
 // Types from main for safety and search logic
 interface UserProfile {
  id: string;
@@ -53,15 +51,16 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 export function UserProfileClient({ user, achievements, isOwnProfile }: UserProfileClientProps) {
  const [isEditOpen, setIsEditOpen] = useState(false);
-
  return (
  <div className="min-h-screen pb-12 relative overflow-hidden">
+ {/* UI from Feature-additions: Background Decorations */}
+ <div className="fixed top-0 left-0 w-full h-full bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] -z-20 opacity-20" />
 
  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
  {/* Header Section */}
  <div className="relative pt-8 pb-12">
- {/* Banner */}
- <div className="absolute inset-x-0 top-0 h-48 rounded-3xl shadow-sm overflow-hidden -z-10 bg-primary/10">
+ {/* Glassy Banner */}
+ <div className={`absolute inset-x-0 top-0 h-48 rounded-3xl shadow-2xl overflow-hidden -z-10 bg-gradient-to-r from-[var(--brand-from)] via-[var(--brand-via)] to-[var(--brand-to)] opacity-90`}>
  {user.backgroundImage && (
  <Image
  src={user.backgroundImage}
@@ -76,8 +75,10 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
  </div>
 
  <div className="relative pt-24 text-center">
+ {/* Avatar with Glow */}
  <div className="relative inline-block">
- <div className="relative w-32 h-32 rounded-full border-4 border-border shadow-sm overflow-hidden bg-card">
+ <div className="absolute inset-0 bg-gradient-to-br from-[var(--brand-from)] to-[var(--brand-to)] rounded-full blur-2xl opacity-40 animate-pulse" />
+ <div className="relative w-32 h-32 rounded-full border-4 border-white/50 dark:border-zinc-900/50 shadow-2xl bg-white/20 overflow-hidden">
  <ProfileImage
  src={user.image}
  alt={user.name ||"User"}
@@ -137,7 +138,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
  href="/my-files"
  className="group flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-gray-800 dark:text-white bg-gradient-to-br from-white/40 to-white/10 dark:from-white/10 dark:to-transparent border border-white/50 dark:border-white/10 shadow-2xl hover:shadow-primary/20 transition-all hover:-translate-y-1"
  >
- <div className="p-2 rounded-lg group-hover:scale-110 transition-transform bg-primary/10">
+ <div className="p-2 rounded-lg group-hover:scale-110 transition-transform bg-primary/20 text-primary">
  <Folder className="h-6 w-6 text-primary" />
  </div>
  <div className="text-left">
@@ -156,10 +157,26 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
 
  {/* Stats Grid */}
  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
- <UserStatsCard icon={FileText} value={user._count.notes} label="Notes" gradientFrom="primary" gradientTo="primary" />
- <UserStatsCard icon={Eye} value={user.totalViews} label="Views" gradientFrom="primary" gradientTo="primary" />
- <UserStatsCard icon={TrendingUp} value={user.totalKarma} label="Karma" gradientFrom="primary" gradientTo="primary" />
- <UserStatsCard icon={Trophy} value={`#${user.rank}`} label="Rank" gradientFrom="primary" gradientTo="primary" />
+ <UserStatsCard
+ icon={FileText}
+ value={user._count.notes}
+ label="Notes"
+ />
+ <UserStatsCard
+ icon={Eye}
+ value={user.totalViews}
+ label="Views"
+ />
+ <UserStatsCard
+ icon={TrendingUp}
+ value={user.totalKarma}
+ label="Karma"
+ />
+ <UserStatsCard
+ icon={Trophy}
+ value={`#${user.rank}`}
+ label="Rank"
+ />
  </div>
 
  {/* Notes Section with UserNotesGrid (which handles the search/filter features) */}
@@ -182,7 +199,6 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
 
  {/* Settings Section (Own Profile Only) */}
  {isOwnProfile && <SettingsSection />}
-
  {isEditOpen && (
  <EditProfileDialog
  user={user}
@@ -193,8 +209,7 @@ export function UserProfileClient({ user, achievements, isOwnProfile }: UserProf
  );
 }
 
-import { ApiKeyDialog } from"@/components/ui/ApiKeyDialog";
-
+import { ApiKeyDialog } from"@/components/ApiKeyDialog";
 // ...
 
 // Settings Section Component
@@ -210,8 +225,13 @@ function SettingsSection() {
  }
  });
 
+ // Theme Style Logic
+ const { themeStyle, setThemeStyle } = useThemeStyle();
+ // Local storage and class toggling is now handled in ThemeStyleProvider
 
-
+ const toggleThemeStyle = (style:"sunset" |"monochrome") => {
+ setThemeStyle(style);
+ };
  return (
  <div className="mb-12 space-y-6">
  <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2 px-2">
@@ -273,8 +293,7 @@ function SettingsSection() {
  {!apiKeyStatus?.hasKey && (
  <button
  onClick={() => setIsEditKeyOpen(true)}
- className="px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground bg-primary hover:opacity-90 transition-all flex items-center gap-2"
- >
+ className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-via)] hover:opacity-90 transition-all shadow-md hover:shadow-lg flex items-center gap-2" >
  <Key className="w-4 h-4" />
  Add API Key
  </button>
@@ -282,8 +301,38 @@ function SettingsSection() {
  </div>
  </div>
 
+ {/* Theme Style Toggle */}
+ <div className="bg-white/20 dark:bg-white/5 rounded-3xl border border-white/30 dark:border-white/10 p-6 shadow-xl">
+ <div className="flex items-center justify-between">
+ <div>
+ <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">Theme Style</h3>
+ <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+ Choose between the vibrant Sunset theme or a clean Black & White look
+ </p>
+ </div>
 
-
+ <div className="flex bg-gray-100 dark:bg-black/40 p-1 rounded-xl border border-white/20 dark:border-white/5">
+ <button
+ onClick={() => toggleThemeStyle("sunset")}
+ className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${themeStyle ==="sunset"
+ ?"bg-white dark:bg-zinc-800 text-primary shadow-md"
+ :"text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+ }`}
+ >
+ Sunset
+ </button>
+ <button
+ onClick={() => toggleThemeStyle("monochrome")}
+ className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${themeStyle ==="monochrome"
+ ?"bg-white dark:bg-white text-black shadow-md border border-gray-200"
+ :"text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+ }`}
+ >
+ Monochrome
+ </button>
+ </div>
+ </div>
+ </div>
  {isEditKeyOpen && (
  <ApiKeyDialog
  onClose={() => setIsEditKeyOpen(false)}

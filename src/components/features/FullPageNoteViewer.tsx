@@ -5,18 +5,15 @@ import * as pdfjsLib from"pdfjs-dist";
 import { v4 as uuidv4 } from"uuid";
 import {
  X, ZoomIn, ZoomOut, Maximize2, Minimize2, ChevronLeft, ChevronRight, Info,
- Pen, Eraser, RotateCcw, Highlighter, StickyNote, ChevronDown, ChevronUp, Plus, Save, Square, Circle, Minus, MoveUpRight, Download, Search
+ Pen, Eraser, RotateCcw, Highlighter, StickyNote, ChevronDown, ChevronUp, Plus, Save
 } from"lucide-react";
 import { api } from"@/app/_trpc/client";
-import { Point, Stroke, TextNote, PageAnnotations } from"@/components/annotations/types";
-import { TextNoteOverlay } from"@/components/annotations/TextNoteOverlay";
-import { VirtualPage } from"./VirtualPage";
-import { exportAnnotatedPdf } from"@/lib/pdfExport";
-import { ShapeType } from"@/components/annotations/types";
-import { UnifiedAnnotationToolbar } from"@/components/annotations/UnifiedAnnotationToolbar";
+import { Point, Stroke, TextNote, PageAnnotations } from"./annotations/types";
+import { TextNoteOverlay } from"./annotations/TextNoteOverlay";
+import { UnifiedAnnotationToolbar } from"./annotations/UnifiedAnnotationToolbar";
 
-// Use local worker copy (copied by scripts/copy-pdf-worker.js at build time)
-pdfjsLib.GlobalWorkerOptions.workerSrc ="/pdf.worker.min.mjs";
+// Set worker URL to the CDN matching the installed version
+pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.mjs`;
 
 interface FullPageNoteViewerProps {
  url: string;
@@ -28,8 +25,7 @@ interface FullPageNoteViewerProps {
 }
 
 type ZoomMode ="fit-width" |"fit-height" |"custom";
-type Tool ="pen" |"eraser" |"highlighter" |"text" |"shape";
-
+type Tool ="pen" |"eraser" |"highlighter" |"text" |"keyboard" |"lasso" |"thickness" |"magic" |"text-pen" |"rainbow" |"spacing" |"shapes" |"lock";
 
 const COLORS = [
  { name:"Black", value:"#000000" },
@@ -100,11 +96,10 @@ export function FullPageNoteViewer({
 
  // Annotation State
  const [tool, setTool] = useState<Tool>("pen");
- const [shape, setShape] = useState<ShapeType>("rect");
- const [searchQuery, setSearchQuery] = useState("");
- const [activePage, setActivePage] = useState(initialPage);
  const [penColor, setPenColor] = useState(COLORS[0].value);
  const [highlightColor, setHighlightColor] = useState(HIGHLIGHT_COLORS[0].value);
+ const [activeColorHex, setActiveColorHex] = useState("#000000");
+ const [showSettings, setShowSettings] = useState(false);
  const [annotations, setAnnotations] = useState<Record<number, Stroke[]>>({});
  const [penWidth, setPenWidth] = useState(2);
  const [highlightWidth, setHighlightWidth] = useState(20);
@@ -413,27 +408,6 @@ export function FullPageNoteViewer({
  };
  };
 
- const handleVirtualPointerDown = (e: React.PointerEvent, pNum: number, point: Point) => {
- if (tool ==='pen' || tool ==='highlighter' || tool ==='shape') {
- setCurrentStroke([point]);
- } else if (tool ==='eraser') {
- setIsErasing(true);
- addToHistory(pNum);
- performErase(point, pNum);
- }
- };
- 
- const handleVirtualTextNoteClick = (e: React.PointerEvent, pNum: number, point: Point) => {
- const newNote: TextNote = {
- id: uuidv4(), x: point.x, y: point.y, content:"", color: textColor, bold: textBold,
- italic: textItalic, underline: textUnderline, width: 0.3, fontSize: textFontSize,
- displayMode:"open", collapsed: false, createdAt: Date.now(), updatedAt: Date.now()
- };
- setTextNotes(prev => ({ ...prev, [pNum]: [...(prev[pNum] || []), newNote] }));
- setEditingNote({ pageNum: pNum, noteId: newNote.id });
- setUnsavedChanges(true);
- };
-
  const handlePointerDown = (e: React.PointerEvent) => {
  const point = getPoint(e);
  if (!point) return;
@@ -449,19 +423,19 @@ export function FullPageNoteViewer({
  }
  };
 
- const performErase = (p: Point, pNum: number = pageNum) => {
+ const performErase = (p: Point) => {
  setAnnotations(prev => {
- const pageStrokes = prev[pNum] || [];
+ const pageStrokes = prev[pageNum] || [];
  const radius = 0.02;
  const remaining = pageStrokes.filter(stroke => !stroke.points.some(sp => Math.abs(sp.x - p.x) < radius && Math.abs(sp.y - p.y) < radius));
+
  if (remaining.length !== pageStrokes.length) {
  setUnsavedChanges(true);
- return { ...prev, [pNum]: remaining };
+ return { ...prev, [pageNum]: remaining };
  }
  return prev;
  });
  };
-
 
  const [showColorPicker, setShowColorPicker] = useState(false);
  const colorPickerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -501,15 +475,6 @@ export function FullPageNoteViewer({
  };
  }, []);
 
- const handleVirtualPointerMove = (e: React.PointerEvent, pNum: number, point: Point) => {
- if (e.buttons !== 1) return;
- if (tool ==='pen' || tool ==='highlighter' || tool ==='shape') {
- setCurrentStroke(prev => prev ? [...prev, point] : [point]);
- } else if (tool ==='eraser' && isErasing) {
- performErase(point, pNum);
- }
- };
-
  const handlePointerMove = (e: React.PointerEvent) => {
  if (e.buttons !== 1) return;
  const point = getPoint(e);
@@ -520,30 +485,6 @@ export function FullPageNoteViewer({
  } else if (tool ==='eraser' && isErasing) {
  performErase(point);
  }
- };
-
- const handleVirtualPointerUp = (e: React.PointerEvent, pNum: number) => {
- if ((tool ==='pen' || tool ==='highlighter' || tool ==='shape') && currentStroke) {
- if (currentStroke.length > 1) {
- addToHistory(pNum);
- const strokeColor = tool ==='highlighter' ? highlightColor : penColor;
- const strokeType = tool ==='highlighter' ?"highlighter" :"pen";
- const strokeWidth = tool ==='highlighter' ? highlightWidth : penWidth;
- setAnnotations(prev => ({
- ...prev,
- [pNum]: [...(prev[pNum] || []), {
- points: currentStroke,
- color: strokeColor,
- type: strokeType,
- shape: tool ==='shape' ? shape :"freehand",
- width: strokeWidth
- }]
- }));
- setUnsavedChanges(true);
- }
- setCurrentStroke(null);
- }
- if (tool ==='eraser') setIsErasing(false);
  };
 
  const handlePointerUp = () => {
@@ -638,6 +579,16 @@ export function FullPageNoteViewer({
  setUnsavedChanges(true);
  };
 
+ const handleSetActiveColor = (colorHex: string) => {
+ setActiveColorHex(colorHex);
+ if (tool ==="pen") setPenColor(colorHex);
+ else if (tool ==="highlighter") setHighlightColor(hexToRgba(colorHex, 0.3));
+ else if (tool ==="text") {
+ setTextColor(colorHex);
+ if (editingNote) handleUpdateTextNote(editingNote.noteId, { color: colorHex });
+ }
+ };
+
  const handleCanvasClick = (e: React.PointerEvent) => {
  if (tool !=='text') return;
 
@@ -692,32 +643,6 @@ export function FullPageNoteViewer({
  setShowSavePrompt(true);
  } else {
  onClose(pageNum);
- }
- };
-
- 
- const [isExporting, setIsExporting] = useState(false);
- const handleDownload = async () => {
- if (!pdfDoc) return;
- try {
- setIsExporting(true);
- const response = await fetch(url);
- const pdfBytes = await response.arrayBuffer();
- const newBytes = await exportAnnotatedPdf(pdfBytes, annotations, textNotes);
- const blob = new Blob([newBytes as any], { type:"application/pdf" });
- const downloadUrl = URL.createObjectURL(blob);
- const a = document.createElement("a");
- a.href = downloadUrl;
- a.download = `${noteTitle ||'annotated_note'}.pdf`;
- document.body.appendChild(a);
- a.click();
- document.body.removeChild(a);
- URL.revokeObjectURL(downloadUrl);
- } catch (err) {
- console.error("Export failed", err);
- alert("Failed to export PDF.");
- } finally {
- setIsExporting(false);
  }
  };
 
@@ -858,11 +783,11 @@ export function FullPageNoteViewer({
  >
  {/* --- SAVE PROMPT (Home Page Theme Alignment) --- */}
  {showSavePrompt && (
- <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60">
- <div className="relative group overflow-hidden bg-white/80 dark:bg-zinc-900/60 p-10 rounded-[3rem] shadow-[0_32px_80px_rgba(0,0,0,0.5)] max-w-md w-full border border-white/40 dark:border-white/10 animate-in fade-in zoom-in-95 duration-500">
+ <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80">
+ <div className="relative group overflow-hidden bg-zinc-900 p-10 rounded-[3rem] shadow-[0_32px_80px_rgba(0,0,0,0.5)] max-w-md w-full border border-zinc-800 animate-in fade-in zoom-in-95 duration-500">
  {/* Subtle Home Page Themed Gradients */}
- <div className="absolute -top-32 -left-32 w-80 h-80 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
- <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-[100px] pointer-events-none" />
+ <div className="absolute -top-32 -left-32 w-80 h-80 bg-[var(--gradient-from)] rounded-full blur-[100px] pointer-events-none" />
+ <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-[var(--gradient-to)] rounded-full blur-[100px] pointer-events-none" />
 
  <div className="relative z-10 text-center">
  <div className="w-24 h-24 mx-auto mb-8 rounded-[2rem] bg-gradient-to-br from-white/20 via-white/5 to-white/10 dark:from-white/10 dark:via-transparent dark:to-white/5 flex items-center justify-center shadow-xl border border-white/40 dark:border-white/10">
@@ -877,7 +802,7 @@ export function FullPageNoteViewer({
  <div className="flex flex-col gap-4">
  <button
  onClick={handleSaveExit}
- className="w-full py-5 rounded-2xl transition-all border shadow-2xl bg-primary/10 dark:bg-primary/5 border-primary/40 text-primary font-black hover:bg-primary hover:text-primary-foreground hover:border-primary hover:scale-[1.03] hover:shadow-primary/30 active:scale-95 uppercase tracking-[0.2em] text-xs"
+ className="w-full py-5 rounded-2xl transition-all border shadow-2xl bg-zinc-800 border-zinc-700 text-white font-black hover:opacity-90 hover:scale-[1.03] active:scale-95 uppercase tracking-[0.2em] text-xs"
  >
  {saveMutation.isPending ?"Syncing..." :"Save & Exit"}
  </button>
@@ -885,13 +810,13 @@ export function FullPageNoteViewer({
  <div className="flex gap-4 px-2">
  <button
  onClick={handleDiscardExit}
- className="flex-1 py-4 bg-red-500/5 hover:bg-red-500/10 text-red-600 dark:text-red-400 font-bold rounded-2xl border border-red-500/10 hover:border-red-500/20 transition-all active:scale-95 text-sm"
+ className="flex-1 py-4 bg-destructive/5 hover:bg-destructive/10 text-destructive font-bold rounded-2xl border border-destructive/10 hover:border-destructive/20 transition-all active:scale-95 text-sm"
  >
  Discard
  </button>
  <button
  onClick={() => setShowSavePrompt(false)}
- className="flex-1 py-4 bg-gray-500/5 hover:bg-gray-500/10 text-gray-600 dark:text-gray-400 font-bold rounded-2xl border border-gray-500/10 hover:border-gray-500/20 transition-all active:scale-95 text-sm"
+ className="flex-1 py-4 bg-gray-500/5 hover:bg-gray-500/10 text-gray-500 dark:text-gray-400 font-bold rounded-2xl border border-gray-500/10 hover:border-gray-500/20 transition-all active:scale-95 text-sm"
  >
  Cancel
  </button>
@@ -909,52 +834,23 @@ export function FullPageNoteViewer({
 
  {/* --- TOP RIGHT BUTTONS --- */}
  <div className="absolute top-6 right-6 z-50 flex gap-3">
- <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-2 shadow-2xl">
- <Search className="w-4 h-4 text-white/50" />
- <input 
- type="text" 
- value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
- onKeyDown={(e) => {
- if (e.key ==='Enter') {
- if (searchQuery) (window as any).find(searchQuery);
- }
- }}
- placeholder="Search..." 
- className="bg-transparent border-none text-white text-sm focus:ring-0 w-32 px-2 py-2 placeholder-white/30"
- />
- <button 
- onClick={() => (window as any).find(searchQuery)}
- className="p-1.5 hover:bg-white/20 rounded-lg text-white/70 hover:text-white transition-colors"
- >
- <ChevronDown className="w-4 h-4" />
- </button>
- </div>
  <button
  onClick={handleSaveOnly}
  disabled={!unsavedChanges || saveMutation.isPending}
  className={`p-3.5 rounded-[1.25rem] transition-all flex items-center gap-3 group border shadow-2xl ${unsavedChanges
- ?"bg-primary/10 dark:bg-primary/5 border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground hover:scale-[1.05] hover:shadow-primary/20"
- :"bg-white/5 border-white/10 text-white/30 cursor-not-allowed"
+ ?"bg-primary/10 dark:bg-primary/5 border-primary/40 text-primary hover:bg-primary/20 hover:scale-[1.05] hover:shadow-[0_4px_16px_0_var(--glow-color)]"
+ :"bg-zinc-900 border-zinc-800 text-white/30 cursor-not-allowed"
  }`}
  title="Save Annotations"
  >
- <Save className={`w-6 h-6 ${saveMutation.isPending ?"animate-spin-slow" :"group-hover:drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]"}`} />
+ <Save className={`w-6 h-6 ${saveMutation.isPending ?"animate-spin-slow" :"group-hover:drop-shadow-[0_0_8px_var(--glow-color)]"}`} />
  <span className="max-w-0 overflow-hidden group-hover:max-w-[120px] transition-all duration-500 text-xs font-black uppercase tracking-widest whitespace-nowrap">
  {saveMutation.isPending ?"Syncing..." :"Save Now"}
  </span>
  </button>
  <button
- onClick={handleDownload}
- disabled={isExporting}
- className="p-3.5 bg-white/5 rounded-[1.25rem] hover:bg-blue-500/20 text-white/80 hover:text-blue-400 border border-white/10 hover:border-blue-500/30 transition-all shadow-2xl active:scale-90"
- title="Download PDF"
- >
- <Download className="w-6 h-6" />
- </button>
- <button
  onClick={handleCloseRequest}
- className="p-3.5 bg-white/5 rounded-[1.25rem] hover:bg-red-500/20 text-white/80 hover:text-red-400 border border-white/10 hover:border-red-500/30 transition-all shadow-2xl active:scale-90"
+ className="p-3.5 bg-zinc-900 rounded-[1.25rem] hover:bg-destructive/20 text-white/80 hover:text-destructive border border-zinc-800 hover:border-destructive/30 transition-all shadow-2xl active:scale-90"
  >
  <X className="w-6 h-6" />
  </button>
@@ -988,67 +884,256 @@ export function FullPageNoteViewer({
  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
  }
  `}</style>
- <div ref={containerRef} className="custom-scrollbar w-full h-full overflow-auto relative bg-neutral-100 dark:bg-neutral-900/50" onScroll={(e) => {
- const target = e.target as HTMLDivElement;
- const pageNodes = document.querySelectorAll('[data-page-number]');
- for (let i = 0; i < pageNodes.length; i++) {
- const rect = pageNodes[i].getBoundingClientRect();
- if (rect.top >= 0 && rect.top < window.innerHeight / 2) {
- const p = parseInt(pageNodes[i].getAttribute('data-page-number') ||"1");
- if (p !== activePage) {
- setActivePage(p);
- setPageNum(p);
- }
- break;
- }
- }
- }}>
- {loading && <div className="text-gray-400 text-xl m-auto flex justify-center mt-20">Loading PDF...</div>}
- {error && <div className="text-red-400 text-xl m-auto flex justify-center mt-20">{error}</div>}
+ <div ref={containerRef} className="custom-scrollbar w-full h-full overflow-auto relative bg-neutral-100 dark:bg-neutral-900/50">
+ <div className="p-8 min-w-full min-h-full flex py-20 pb-40 w-fit">
+ {loading && <div className="text-white text-xl m-auto">Loading PDF...</div>}
+ {error && <div className="text-red-400 text-xl m-auto">{error}</div>}
 
- {!loading && !error && pdfDoc && (
- <div className="flex flex-col items-center gap-8 py-20 pb-40 px-4">
- {Array.from({ length: pdfDoc.numPages }).map((_, idx) => (
- <VirtualPage
- key={idx}
- pageNum={idx + 1}
- pdfDoc={pdfDoc}
- scale={scale}
- zoomMode={zoomMode}
- containerWidth={containerRef.current?.clientWidth || window.innerWidth - 100}
- annotations={annotations[idx + 1] || []}
- textNotes={textNotes[idx + 1] || []}
- currentStroke={activePage === idx + 1 ? currentStroke : null}
- tool={tool}
- penColor={penColor}
- highlightColor={highlightColor}
- penWidth={penWidth}
- highlightWidth={highlightWidth}
- shape={shape}
- onPointerDown={(e, p, pt) => {
- if (p !== activePage) { setActivePage(p); setPageNum(p); }
- handleVirtualPointerDown(e, p, pt);
- }}
- onPointerMove={handleVirtualPointerMove}
- onPointerUp={handleVirtualPointerUp}
- onTextNoteClick={(e, p, pt) => {
- if (p !== activePage) { setActivePage(p); setPageNum(p); }
- handleVirtualTextNoteClick(e, p, pt);
- }}
- searchQuery={searchQuery}
+ {!loading && !error && (
+ <div className="shadow-2xl rounded-lg overflow-hidden bg-white relative cursor-crosshair block m-auto">
+ <canvas ref={canvasRef} className="block" />
+ <canvas
+ ref={annotationCanvasRef}
+ className={`absolute inset-0 z-10 touch-none ${tool ==="eraser" ?"cursor-no-drop" : tool ==="text" ?"cursor-text" :"cursor-crosshair"}`}
+ onPointerDown={handlePointerDown}
+ onPointerMove={handlePointerMove}
+ onPointerUp={handlePointerUp}
+ onPointerLeave={handlePointerUp}
+ />
+
+ {/* Text Notes Overlay */}
+ {viewportDimensions && textNotes[pageNum]?.map(note => (
+ <TextNoteOverlay
+ key={note.id}
+ note={note}
+ viewportDimensions={viewportDimensions}
+ isEditing={editingNote?.noteId === note.id}
+ onSave={handleSaveTextNote}
+ onUpdate={handleUpdateTextNote}
+ onCancel={handleCancelTextNote}
+ onClick={(id) => setEditingNote({ pageNum, noteId: id })}
+ onDelete={handleDeleteTextNote}
+ onToggleCollapse={handleToggleCollapse}
  />
  ))}
  </div>
  )}
  </div>
+ </div>
 
- {/* --- BOTTOM TOOLBAR (Navigation & Zoom) --- */}
+ {/* --- LEFT FLOATING TOOLBAR & PERSISTENT SETTINGS --- */}
+ <div className={`fixed left-6 top-1/2 -translate-y-1/2 z-40 flex gap-4 items-start transition-all duration-200 ${showControls ?"opacity-100 translate-x-0" :"opacity-0 -translate-x-4 pointer-events-none"}`}>
+ <UnifiedAnnotationToolbar
+ activeTool={tool}
+ setActiveTool={(t) => setTool(t as Tool)}
+ activeColor={activeColorHex}
+ setActiveColor={handleSetActiveColor}
+ onUndo={handleUndo}
+ onRedo={handleRedo}
+ onSettingsClick={() => setShowSettings(!showSettings)}
+ />
+
+ {/* Persistent Options Sidebar */}
+ {showSettings && (
+ <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 shadow-2xl flex flex-col gap-4 w-48 text-white animate-in slide-in-from-left duration-200">
+ {/* Tool Title */}
+ <div className="flex items-center justify-between pb-2 border-b border-zinc-850">
+ <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+ {tool ==="pen" &&"Pen Settings"}
+ {tool ==="highlighter" &&"Highlighter"}
+ {tool ==="text" &&"Text Settings"}
+ </span>
+ <div
+ className="w-4 h-4 rounded-full border border-white/20"
+ style={{
+ backgroundColor: tool ==="highlighter" ? highlightColor :
+ tool ==="text" ? textColor : penColor
+ }}
+ />
+ </div>
+
+ {/* Colors */}
+ <div className="flex flex-col gap-1.5">
+ <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-wider">Colors</span>
+ <div className="flex flex-wrap gap-1.5">
+ {tool ==="pen" && COLORS.map(c => (
+ <button
+ key={c.name}
+ onClick={() => setPenColor(c.value)}
+ className={`w-6 h-6 rounded-full border-2 ${penColor === c.value ?"border-white scale-110 shadow-md" :"border-transparent"} hover:scale-115 transition-all`}
+ style={{ backgroundColor: c.value }}
+ title={c.name}
+ />
+ ))}
+ {tool ==="highlighter" && HIGHLIGHT_COLORS.map(c => (
+ <button
+ key={c.name}
+ onClick={() => setHighlightColor(c.value)}
+ className={`w-6 h-6 rounded-full border-2 ${highlightColor === c.value ?"border-white scale-110 shadow-md" :"border-transparent"} hover:scale-115 transition-all`}
+ style={{ backgroundColor: c.value }}
+ title={c.name}
+ />
+ ))}
+ {tool ==="text" && TEXT_COLORS.map(c => (
+ <button
+ key={c.name}
+ onClick={() => {
+ setTextColor(c.value);
+ if (editingNote) {
+ handleUpdateTextNote(editingNote.noteId, { color: c.value });
+ }
+ }}
+ className={`w-6 h-6 rounded-full border-2 ${textColor === c.value ?"border-white scale-110 shadow-md" :"border-transparent"} hover:scale-115 transition-all`}
+ style={{ backgroundColor: c.value }}
+ title={c.name}
+ />
+ ))}
+ 
+ {/* Custom Color Button */}
+ <button
+ onClick={() => {
+ if (tool ==="pen") penColorInputRef.current?.click();
+ else if (tool ==="highlighter") highlightColorInputRef.current?.click();
+ else if (tool ==="text") textColorInputRef.current?.click();
+ }}
+ className="w-6 h-6 rounded-full border border-zinc-700 hover:border-zinc-500 flex items-center justify-center bg-zinc-800 text-zinc-400 hover:text-white transition-all cursor-pointer"
+ title="Custom Color"
+ >
+ <Plus className="w-3.5 h-3.5" />
+ </button>
+ 
+ {/* Hidden Inputs */}
+ <input
+ ref={penColorInputRef}
+ type="color"
+ className="hidden"
+ onChange={(e) => setPenColor(e.target.value)}
+ />
+ <input
+ ref={highlightColorInputRef}
+ type="color"
+ className="hidden"
+ onChange={(e) => {
+ const rgbaColor = hexToRgba(e.target.value, 0.3);
+ setHighlightColor(rgbaColor);
+ }}
+ />
+ <input
+ ref={textColorInputRef}
+ type="color"
+ className="hidden"
+ onChange={(e) => {
+ const newColor = e.target.value;
+ setTextColor(newColor);
+ if (editingNote) {
+ handleUpdateTextNote(editingNote.noteId, { color: newColor });
+ }
+ }}
+ />
+ </div>
+ </div>
+
+ {/* Size Slider for Pen or Highlighter */}
+ {(tool ==="pen" || tool ==="highlighter") && (
+ <div className="flex flex-col gap-1.5">
+ <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-wider">
+ Size: {tool ==="pen" ? penWidth : highlightWidth}px
+ </span>
+ <input
+ type="range"
+ min={tool ==="pen" ?"1" :"10"}
+ max={tool ==="pen" ?"20" :"60"}
+ step={tool ==="pen" ?"1" :"2"}
+ value={tool ==="pen" ? penWidth : highlightWidth}
+ onChange={(e) => {
+ if (tool ==="pen") setPenWidth(parseInt(e.target.value));
+ else setHighlightWidth(parseInt(e.target.value));
+ }}
+ className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-primary"
+ />
+ </div>
+ )}
+
+ {/* Text options for Text Note */}
+ {tool ==="text" && (
+ <div className="flex flex-col gap-2 pt-2 border-t border-zinc-850">
+ <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-wider">Text Style</span>
+ 
+ {/* Font Size Select */}
+ <div className="flex items-center justify-between gap-2">
+ <span className="text-xs text-zinc-400">Size</span>
+ <select
+ value={textFontSize}
+ onChange={(e) => {
+ const newSize = parseInt(e.target.value);
+ setTextFontSize(newSize);
+ if (editingNote) {
+ handleUpdateTextNote(editingNote.noteId, { fontSize: newSize });
+ }
+ }}
+ className="px-1.5 py-0.5 bg-zinc-800 text-white rounded text-xs border border-zinc-700 outline-none focus:border-zinc-500"
+ >
+ {FONT_SIZES.map(size => (
+ <option key={size} value={size}>{size}px</option>
+ ))}
+ </select>
+ </div>
+
+ {/* Bold/Italic/Underline */}
+ <div className="flex gap-1 mt-1">
+ <button
+ onClick={() => {
+ const newBold = !textBold;
+ setTextBold(newBold);
+ if (editingNote) {
+ handleUpdateTextNote(editingNote.noteId, { bold: newBold });
+ }
+ }}
+ className={`flex-1 py-1 rounded text-xs font-bold border transition-all ${textBold ?"bg-primary text-primary-foreground border-primary" :"text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-white"}`}
+ title="Bold"
+ >
+ B
+ </button>
+ <button
+ onClick={() => {
+ const newItalic = !textItalic;
+ setTextItalic(newItalic);
+ if (editingNote) {
+ handleUpdateTextNote(editingNote.noteId, { italic: newItalic });
+ }
+ }}
+ className={`flex-1 py-1 rounded text-xs italic border transition-all ${textItalic ?"bg-primary text-primary-foreground border-primary" :"text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-white"}`}
+ title="Italic"
+ >
+ I
+ </button>
+ <button
+ onClick={() => {
+ const newUnderline = !textUnderline;
+ setTextUnderline(newUnderline);
+ if (editingNote) {
+ handleUpdateTextNote(editingNote.noteId, { underline: newUnderline });
+ }
+ }}
+ className={`flex-1 py-1 rounded text-xs underline border transition-all ${textUnderline ?"bg-primary text-primary-foreground border-primary" :"text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-white"}`}
+ title="Underline"
+ >
+ U
+ </button>
+ </div>
+ </div>
+ )}
+ </div>
+ )}
+ </div>
+
+ {/* --- BOTTOM TOOLBAR --- */}
  <div className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-200 ${showControls ?"opacity-100 translate-y-0" :"opacity-0 translate-y-4 pointer-events-none"}`}>
- <div className="bg-white/10 dark:bg-black/40 rounded-full px-4 py-2 border border-white/20 dark:border-white/10 shadow-2xl flex items-center gap-4">
+ <div className="bg-zinc-900 rounded-full px-4 py-2 border border-zinc-800 shadow-2xl flex items-center gap-4">
 
  {/* Navigation */}
- <div className="flex items-center gap-1 px-2 border-r border-white/20">
- <button onClick={() => changePage(-1)} disabled={pageNum <= 1} className="p-2 text-gray-800 dark:text-gray-100 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
+ <div className="flex items-center gap-1 px-2 border-r border-zinc-800">
+ <button onClick={() => changePage(-1)} disabled={pageNum <= 1} className="p-2 text-gray-100 hover:bg-zinc-800 rounded-full disabled:opacity-30 transition-colors"><ChevronLeft className="w-5 h-5" /></button>
  <div className="flex items-center gap-1">
  <input
  type="text"
@@ -1090,7 +1175,7 @@ export function FullPageNoteViewer({
  e.stopPropagation(); // Allow cursor movement
  }
  }}
- className="w-12 text-gray-800 dark:text-gray-100 font-bold font-mono text-sm text-center bg-white/10 dark:bg-black/20 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-orange-400/50 border border-transparent hover:border-white/20"
+ className="w-12 text-gray-100 font-bold font-mono text-sm text-center bg-zinc-950 rounded px-1 py-0.5 focus:outline-none focus:ring-2 focus:ring-primary/50 border border-transparent hover:border-zinc-700"
  placeholder={pageNum.toString()}
  />
  <button
@@ -1105,47 +1190,29 @@ export function FullPageNoteViewer({
  }
  }
  }}
- className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-orange-500/20 hover:bg-orange-500/40 text-orange-400 border border-orange-500/30 transition-all ${isPageInputFocused ?"opacity-100 w-auto ml-1" :"opacity-0 w-0 ml-0 pointer-events-none overflow-hidden border-0 p-0"}`}
+ className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-primary/20 hover:bg-primary/40 text-primary border border-primary/30 transition-all ${isPageInputFocused ?"opacity-100 w-auto ml-1" :"opacity-0 w-0 ml-0 pointer-events-none overflow-hidden border-0 p-0"}`}
  >
  GO
  </button>
- <span className="text-gray-800 dark:text-gray-100 font-bold font-mono text-sm">/</span>
- <span className="text-gray-800 dark:text-gray-100 font-bold font-mono text-sm">{pdfDoc?.numPages ||"-"}</span>
+ <span className="text-gray-100 font-bold font-mono text-sm">/</span>
+ <span className="text-gray-100 font-bold font-mono text-sm">{pdfDoc?.numPages ||"-"}</span>
  </div>
- <button onClick={() => changePage(1)} disabled={!pdfDoc || pageNum >= pdfDoc.numPages} className="p-2 text-gray-800 dark:text-gray-100 hover:bg-white/20 rounded-full disabled:opacity-30 transition-colors"><ChevronRight className="w-5 h-5" /></button>
+ <button onClick={() => changePage(1)} disabled={!pdfDoc || pageNum >= pdfDoc.numPages} className="p-2 text-gray-100 hover:bg-zinc-800 rounded-full disabled:opacity-30 transition-colors"><ChevronRight className="w-5 h-5" /></button>
+ </div>
+
  {/* Zoom */}
  <div className="flex items-center gap-1 px-2">
- <button onClick={() => { setZoomMode("custom"); setScale(s => Math.max(s - 0.2, 0.5)); }} className="p-2 text-white hover:bg-white/10 rounded-lg"><ZoomOut className="w-5 h-5" /></button>
- <span className="text-white text-sm min-w-[3rem] text-center">{Math.round(scale * 100)}%</span>
- <button onClick={() => { setZoomMode("custom"); setScale(s => Math.min(s + 0.2, 5.0)); }} className="p-2 text-white hover:bg-white/10 rounded-lg"><ZoomIn className="w-5 h-5" /></button>
- <button onClick={() => setZoomMode(z => z ==="fit-width" ?"fit-height" :"fit-width")} className="p-2 text-white hover:bg-white/10 rounded-lg" title="Toggle Fit">
+ <button onClick={() => { setZoomMode("custom"); setScale(s => Math.max(s - 0.2, 0.5)); }} className="p-2 text-zinc-300 hover:bg-zinc-800 rounded-lg"><ZoomOut className="w-5 h-5" /></button>
+ <span className="text-zinc-100 text-sm min-w-[3rem] text-center font-bold">{Math.round(scale * 100)}%</span>
+ <button onClick={() => { setZoomMode("custom"); setScale(s => Math.min(s + 0.2, 5.0)); }} className="p-2 text-zinc-300 hover:bg-zinc-800 rounded-lg"><ZoomIn className="w-5 h-5" /></button>
+ <button onClick={() => setZoomMode(z => z ==="fit-width" ?"fit-height" :"fit-width")} className="p-2 text-zinc-300 hover:bg-zinc-800 rounded-lg" title="Toggle Fit">
  {zoomMode ==="fit-width" ? <Maximize2 className="w-5 h-5" /> : <Minimize2 className="w-5 h-5" />}
  </button>
  </div>
+
  </div>
  </div>
 
- 
-            {/* --- UNIFIED ANNOTATION TOOLBAR --- */}
-            <div className="absolute right-8 bottom-8 z-50">
-                <UnifiedAnnotationToolbar 
-                    activeTool={tool === 'shape' ? 'shapes' : tool}
-                    setActiveTool={(t) => {
-                        if (t === 'shapes') setTool('shape');
-                        else if (['pen', 'highlighter', 'eraser', 'text'].includes(t)) setTool(t as Tool);
-                        else setTool('pen'); // Fallback
-                    }}
-                    activeColor={tool === 'highlighter' ? highlightColor : tool === 'text' ? textColor : penColor}
-                    setActiveColor={(c) => {
-                        if (tool === 'highlighter') setHighlightColor(c);
-                        else if (tool === 'text') setTextColor(c);
-                        else setPenColor(c);
-                    }}
-                    onUndo={handleUndo}
-                    onRedo={handleRedo}
-                />
-            </div>
-        </div>
-        </div>
-    );
+ </div>
+ );
 }

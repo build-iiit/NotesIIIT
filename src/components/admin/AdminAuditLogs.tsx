@@ -22,9 +22,8 @@ import {
 type AuditCategory ="USER_MANAGEMENT" |"CONTENT_MODERATION" |"SETTINGS" |"SYSTEM" |"REPORTS";
 
 const categoryColors: Record<AuditCategory, string> = {
- USER_MANAGEMENT:"bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
- CONTENT_MODERATION:"bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
- SETTINGS:"bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+ USER_MANAGEMENT:"bg-primary/10 text-primary",
+ CONTENT_MODERATION:"bg-primary/10 text-primary", SETTINGS:"bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
  SYSTEM:"bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-gray-400",
  REPORTS:"bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 };
@@ -325,8 +324,7 @@ export function AdminAuditLogs() {
  <button
  onClick={() => fetchNextPage()}
  disabled={isFetchingNextPage}
- className="px-6 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg disabled:opacity-50"
- >
+ className="px-6 py-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg disabled:opacity-50" >
  {isFetchingNextPage ? (
  <span className="flex items-center gap-2">
  <Loader2 className="w-4 h-4 animate-spin" />

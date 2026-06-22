@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import"tailwindcss";
+@plugin"tailwindcss-animate";
 @import"tailwindcss";
 @plugin"tailwindcss-animate";
 
@@ -11,31 +14,51 @@
 
  --color-card: var(--card);
  --color-card-foreground: var(--card-foreground);
+ --color-card: var(--card);
+ --color-card-foreground: var(--card-foreground);
 
+ --color-popover: var(--popover);
+ --color-popover-foreground: var(--popover-foreground);
  --color-popover: var(--popover);
  --color-popover-foreground: var(--popover-foreground);
 
  --color-primary: var(--primary);
  --color-primary-foreground: var(--primary-foreground);
+ --color-primary: var(--primary);
+ --color-primary-foreground: var(--primary-foreground);
 
+ --color-secondary: var(--secondary);
+ --color-secondary-foreground: var(--secondary-foreground);
  --color-secondary: var(--secondary);
  --color-secondary-foreground: var(--secondary-foreground);
 
  --color-muted: var(--muted);
  --color-muted-foreground: var(--muted-foreground);
+ --color-muted: var(--muted);
+ --color-muted-foreground: var(--muted-foreground);
 
  --color-accent: var(--accent);
  --color-accent-foreground: var(--accent-foreground);
+ --color-accent: var(--accent);
+ --color-accent-foreground: var(--accent-foreground);
 
+ --color-destructive: var(--destructive);
+ --color-destructive-foreground: var(--destructive-foreground);
  --color-destructive: var(--destructive);
  --color-destructive-foreground: var(--destructive-foreground);
 
  --color-border: var(--border);
  --color-input: var(--input);
  --color-ring: var(--ring);
+ --color-border: var(--border);
+ --color-input: var(--input);
+ --color-ring: var(--ring);
 }
 
 @layer base {
+ :root {
+ /* Global Radius */
+ --radius: 0.75rem;
  :root {
  /* Global Radius */
  --radius: 0.75rem;
@@ -132,6 +155,9 @@
  * {
  @apply border-border;
  }
+ * {
+ @apply border-border;
+ }
 
  body {
  @apply bg-background text-foreground;
@@ -189,4 +215,4 @@
  white-space: pre;
  cursor: text;
  transform-origin: 0% 0%;
-}
+}}

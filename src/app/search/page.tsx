@@ -110,15 +110,17 @@ export default function SearchPage() {
 
  useEffect(() => {
  if (suggestions.length > 0 && document.activeElement === searchRef.current?.querySelector('input')) {
- // eslint-disable-next-line react-hooks/set-state-in-effect
+>>>>>>> main
  setShowSuggestions(true);
  }
  }, [suggestions]);
 
  return (
  <div className="container mx-auto px-4 py-8 min-h-screen pt-24">
+<<<<<<< HEAD
  <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">&nbsp;&nbsp;&nbsp;Find Notes</h1>
-
+=======
+ <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6">Find Notes</h1>
  {/* Search and Filters */}
  <div className="flex flex-col md:flex-row gap-4 mb-12 max-w-5xl relative z-20">
  <div className="relative flex-grow" ref={searchRef}>
@@ -151,8 +153,7 @@ export default function SearchPage() {
  router.push(`/notes/${item.id}`);
  }
  }}
- className="w-full text-left px-4 py-3 hover:bg-primary/10 dark:hover:bg-white/5 flex items-center gap-3 transition-colors border-b border-gray-100 dark:border-white/5 last:border-0"
- >
+ className="w-full text-left px-4 py-3 hover:bg-primary/5 dark:hover:bg-white/5 flex items-center gap-3 transition-colors border-b border-gray-100 dark:border-white/5 last:border-0" >
  {item.type ==='course' ? <BookOpen className="h-5 w-5 text-primary" /> : <FileText className="h-5 w-5 text-primary" />}
  <div className="flex-1 min-w-0">
  <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{item.label}</p>
@@ -231,8 +232,7 @@ export default function SearchPage() {
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
  {allNotes.map((note) => (
  <Link href={`/notes/${note.id}`} key={note.id} className="group">
- <div className="bg-white/40 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-xl hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col overflow-hidden">
-
+ <div className="bg-white/40 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-xl hover:shadow-[0_0_20px_var(--glow-color)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col overflow-hidden">
  {/* Thumbnail */}
  <div className="relative h-40 w-full bg-gray-100 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-800 overflow-hidden">
  {(note as any).thumbnailUrl || (note as any).versions?.[0]?.thumbnailKey ? (
@@ -282,8 +282,7 @@ export default function SearchPage() {
  <button
  onClick={() => fetchNextPage()}
  disabled={isFetchingNextPage}
- className="px-8 py-3 rounded-full font-bold bg-primary text-primary-foreground hover:bg-primary/80 transition-all shadow-lg disabled:opacity-50 flex items-center gap-2"
- >
+ className="px-8 py-3 rounded-full font-bold bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] text-white hover:opacity-90 transition-all shadow-lg shadow-[var(--glow-color)] disabled:opacity-50 flex items-center gap-2" >
  {isFetchingNextPage ? <Loader2 className="h-5 w-5 animate-spin" /> :"Show More Notes"}
  </button>
  </div>

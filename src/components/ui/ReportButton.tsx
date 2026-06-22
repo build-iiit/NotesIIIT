@@ -54,7 +54,7 @@ export function ReportButton({ noteId, isAuthor }: ReportButtonProps) {
  <>
  <button
  onClick={() => setIsOpen(true)}
- className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+ className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
  title="Report this note"
  >
  <Flag className="w-4 h-4" />
@@ -89,8 +89,8 @@ export function ReportButton({ noteId, isAuthor }: ReportButtonProps) {
  ) : (
  <>
  <div className="flex items-center gap-3 mb-4">
- <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
- <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+ <div className="p-2 bg-destructive/10 rounded-full">
+ <AlertTriangle className="w-5 h-5 text-destructive" />
  </div>
  <h3 className="text-lg font-semibold">Report Content</h3>
  </div>
@@ -103,7 +103,7 @@ export function ReportButton({ noteId, isAuthor }: ReportButtonProps) {
  <select
  value={reportType}
  onChange={(e) => setReportType(e.target.value as ReportType)}
- className="w-full px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-red-500"
+ className="w-full px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-destructive"
  >
  {reportTypes.map((type) => (
  <option key={type.value} value={type.value}>
@@ -122,12 +122,12 @@ export function ReportButton({ noteId, isAuthor }: ReportButtonProps) {
  onChange={(e) => setReason(e.target.value)}
  placeholder="Please describe the issue..."
  rows={4}
- className="w-full px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+ className="w-full px-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-destructive resize-none"
  />
  </div>
 
  {reportMutation.error && (
- <p className="text-sm text-red-500">
+ <p className="text-sm text-destructive">
  {reportMutation.error.message ||"Failed to submit report"}
  </p>
  )}
@@ -143,7 +143,7 @@ export function ReportButton({ noteId, isAuthor }: ReportButtonProps) {
  <button
  onClick={handleSubmit}
  disabled={reportMutation.isPending || !reason.trim()}
- className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+ className="px-4 py-2 text-sm font-medium text-white bg-destructive hover:opacity-90 rounded-lg transition-colors disabled:opacity-50"
  >
  {reportMutation.isPending ?"Submitting..." :"Submit Report"}
  </button>

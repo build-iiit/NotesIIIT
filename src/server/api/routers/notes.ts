@@ -102,13 +102,19 @@ export const notesRouter = createTRPCRouter({
  };
 
  if (input.search) {
- whereClause.OR = [
- { title: { contains: input.search, mode:'insensitive' } },
- { course: { code: { contains: input.search, mode:'insensitive' } } },
- { course: { name: { contains: input.search, mode:'insensitive' } } },
- { tags: { some: { name: { contains: input.search, mode:'insensitive' } } } },
- ];
- }
+ const searchTerms = input.search.trim().split(/\s+/).filter(Boolean);
+ if (searchTerms.length > 0) {
+ whereClause.AND = searchTerms.map(term => ({
+ OR: [
+ { title: { contains: term, mode:'insensitive' } },
+ { description: { contains: term, mode:'insensitive' } },
+ { course: { code: { contains: term, mode:'insensitive' } } },
+ { course: { name: { contains: term, mode:'insensitive' } } },
+ { tags: { some: { name: { contains: term, mode:'insensitive' } } } },
+ { author: { name: { contains: term, mode:'insensitive' } } },
+ ]
+ }));
+ } }
 
  const items = await ctx.prisma.note.findMany({
  take: limit + 1,
@@ -221,12 +227,13 @@ export const notesRouter = createTRPCRouter({
  const isAuthor = userId === note.authorId;
  const isAdmin = ["SUPER_ADMIN","ADMIN","MODERATOR"].includes(userRole ||"");
 
- // Safely access moderation fields
- const moderationStatus = note.moderationStatus as string | undefined;
- const isLocked = note.isLocked as boolean | undefined;
- const isFeatured = note.isFeatured as boolean | undefined;
- const isPinned = note.isPinned as boolean | undefined;
-
+ // Safely access moderation fields with type assertion
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ const noteAny = note as any;
+ const moderationStatus = noteAny.moderationStatus as string | undefined;
+ const isLocked = noteAny.isLocked as boolean | undefined;
+ const isFeatured = noteAny.isFeatured as boolean | undefined;
+ const isPinned = noteAny.isPinned as boolean | undefined;
  // Check moderation status - hidden/deleted notes only visible to author or admins
  if (moderationStatus) {
  const hiddenStatuses = ["HIDDEN","DELETED","UNDER_REVIEW"];
@@ -534,10 +541,12 @@ export const notesRouter = createTRPCRouter({
  /**
  * Annotation Features from Main branch.
  */
- getAnnotations: protectedProcedure
+ getAnnotations: publicProcedure
  .input(z.object({ versionId: z.string() }))
  .query(async ({ ctx, input }) => {
- const annotations = await ctx.prisma.annotation.findMany({
+ if (!ctx.session?.user) {
+ return {};
+ } const annotations = await ctx.prisma.annotation.findMany({
  where: {
  userId: ctx.session.user.id,
  page: { versionId: input.versionId }
@@ -634,30 +643,5 @@ export const notesRouter = createTRPCRouter({
  throw new TRPCError({ code:"UNAUTHORIZED", message:"Not authorized to delete this note" });
  }
  return ctx.prisma.note.delete({ where: { id: input.id } });
- }),
-
- tags: createTRPCRouter({
- getAll: publicProcedure.query(async ({ ctx }) => {
- return ctx.prisma.tag.findMany({
- orderBy: [{ isDefault:'desc' }, { name:'asc' }]
- });
- }),
-
- getDefaults: publicProcedure.query(async ({ ctx }) => {
- return ctx.prisma.tag.findMany({
- where: { isDefault: true },
- orderBy: { name:'asc' }
- });
- }),
-
- create: protectedProcedure
- .input(z.object({ name: z.string().min(1).max(50) }))
- .mutation(async ({ ctx, input }) => {
- const existing = await ctx.prisma.tag.findUnique({ where: { name: input.name } });
- if (existing) return existing;
- return ctx.prisma.tag.create({
- data: { name: input.name, isDefault: false }
- });
- }),
  }),
 });

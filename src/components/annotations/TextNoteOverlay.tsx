@@ -143,8 +143,7 @@ export const TextNoteOverlay = ({
  <div
  className={`transition-all duration-300 rounded-2xl ${isIconMode
  ?'p-2 hover:scale-110 cursor-pointer drop-shadow-lg'
- : `-[2px] backdrop-saturate-150 border p-3 shadow-lg ${isEditing ?'ring-2 ring-orange-400 z-30 scale-105' : !readOnly ?'hover:scale-[1.01] cursor-move select-none hover:shadow-xl' :''}`
- }`}
+ : `-[2px] backdrop-saturate-150 border p-3 shadow-lg ${isEditing ?'ring-2 ring-primary z-30 scale-105' : !readOnly ?'hover:scale-[1.01] cursor-move select-none hover:shadow-xl' :''}` }`}
  style={{
  backgroundColor: (isIconMode || isLineMode) ?'transparent' : bgColor,
  borderColor: (isIconMode || isLineMode) ?'transparent' : borderColor,
@@ -215,8 +214,7 @@ export const TextNoteOverlay = ({
  </button>
  <button
  onClick={(e) => { e.stopPropagation(); handleSave(); }}
- className="px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-orange-500 to-pink-500 text-white hover:from-orange-600 hover:to-pink-600 rounded-lg shadow-md"
- >
+ className="px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] text-white hover:bg-primary/90 rounded-lg shadow-md" >
  Save
  </button>
  </div>
@@ -228,8 +226,7 @@ export const TextNoteOverlay = ({
  className="w-8 h-8 drop-shadow-md transition-transform group-hover:scale-110"
  style={{ color: noteColor, fill: `${noteColor}20` }}
  />
- <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-orange-500 rounded-full ring-2 ring-white dark:ring-black animate-pulse" />
- </div>
+ <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full ring-2 ring-white dark:ring-black animate-pulse" /> </div>
  ) : isLineMode ? (
  /* Collapsed Line Mode - Now matching theme */
  <div
@@ -264,8 +261,7 @@ export const TextNoteOverlay = ({
  className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity"
  onMouseDown={handleResizeMouseDown}
  >
- <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-gray-400/50 rounded-full hover:bg-orange-500 transition-colors" />
- </div>
+ <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-gray-400/50 rounded-full hover:bg-primary transition-colors" /> </div>
  )}
  </div>
  )}
