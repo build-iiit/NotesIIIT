@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from"next/server";
 import { auth } from"@/auth";
+import { uploadFileToS3 } from"@/lib/storage";
+import { v4 as uuidv4 } from"uuid";
 import { S3Client, PutObjectCommand } from"@aws-sdk/client-s3";
 import { v4 as uuidv4 } from"uuid";
 
@@ -13,7 +15,6 @@ const s3Client = new S3Client({
  },
  forcePathStyle: true,
 });
-
 export async function POST(req: NextRequest) {
  try {
  // Verify auth
@@ -52,24 +53,16 @@ export async function POST(req: NextRequest) {
  const arrayBuffer = await driveResponse.arrayBuffer();
  const buffer = Buffer.from(arrayBuffer);
 
- console.log(`[Drive Upload] Downloaded ${buffer.length} bytes, uploading to S3...`);
+ console.log(`[Drive Upload] Downloaded ${buffer.length} bytes, uploading to Azure Blob...`);
 
- // Generate S3 key
+ // Generate blob key
  const fileExt = fileName.split(".").pop() ||"pdf";
  const s3Key = `uploads/${session.user.id}/${uuidv4()}.${fileExt}`;
 
- // Upload to S3
- await s3Client.send(
- new PutObjectCommand({
- Bucket: process.env.S3_BUCKET_NAME ||"notes-bucket",
- Key: s3Key,
- Body: buffer,
- ContentType:"application/pdf",
- })
- );
+ // Upload to Azure Blob Storage
+ await uploadFileToS3(buffer, s3Key,"application/pdf");
 
- console.log(`[Drive Upload] Uploaded to S3: ${s3Key}`);
-
+ console.log(`[Drive Upload] Uploaded to Azure Blob: ${s3Key}`);
  return NextResponse.json({
  success: true,
  s3Key,

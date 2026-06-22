@@ -4,8 +4,7 @@ import { useState, useRef, useEffect } from"react";
 import { api } from"@/app/_trpc/client";
 import { UserPlus, Search, MoreHorizontal, UserMinus, ExternalLink } from"lucide-react";
 import { AddFriendDialog } from"./AddFriendDialog";
-import { ProfileImage } from"@/components/ProfileImage";
-import Link from"next/link";
+import { ProfileImage } from"@/components/ProfileImage";import Link from"next/link";
 
 // import Link from"next/link";
 export function FriendsList() {
@@ -58,8 +57,7 @@ export function FriendsList() {
  {/* Action Bar */}
  <div className="flex justify-between items-center bg-white/40 dark:bg-black/40 p-4 rounded-3xl border border-white/40 dark:border-white/10 shadow-lg">
  <div className="flex items-center gap-3">
- <div className="p-2 rounded-xl text-white shadow-lg bg-gradient-to-tr from-[var(--brand-from)] to-[var(--brand-to)] shadow-primary/20">
- <Search className="w-5 h-5" />
+ <div className="p-2 rounded-xl text-white shadow-lg bg-gradient-to-tr from-[var(--brand-from)] to-[var(--brand-to)] shadow-primary/20"> <Search className="w-5 h-5" />
  </div>
  <input
  type="text"
@@ -69,8 +67,7 @@ export function FriendsList() {
  </div>
  <button
  onClick={() => setShowAddDialog(true)}
- className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-transform bg-gradient-to-tr from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-primary/20"
- >
+ className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-transform bg-gradient-to-tr from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-primary/20" >
  <UserPlus className="w-4 h-4" />
  <span className="hidden sm:inline">Add Friend</span>
  </button>
@@ -103,8 +100,7 @@ export function FriendsList() {
  />
  </div>
  <div className="flex-1 min-w-0 text-left">
- <h4 className="font-bold text-gray-900 dark:text-gray-100 truncate hover:text-primary transition-colors">{friend.name}</h4>
- <p className="text-xs text-gray-500 truncate">Online recently</p>
+ <h4 className="font-bold text-gray-900 dark:text-gray-100 truncate hover:text-primary transition-colors">{friend.name}</h4> <p className="text-xs text-gray-500 truncate">Online recently</p>
  </div>
  </Link>
 
@@ -131,8 +127,7 @@ export function FriendsList() {
  onClick={() => handleRemoveFriend(friend.id)}
  disabled={removeFriendMutation.isPending}
  className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${confirmRemove === friend.id
- ?"text-destructive bg-destructive/10"
- :"text-gray-700 dark:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-white/5"
+ ?"text-destructive bg-destructive/10" :"text-gray-700 dark:text-gray-200 hover:bg-gray-100/50 dark:hover:bg-white/5"
  }`}
  >
  <UserMinus className="w-4 h-4" />
@@ -183,8 +178,7 @@ export function FriendsList() {
  <div className="flex gap-2">
  <button
  onClick={() => respondMutation.mutate({ requestId: req.id, status:"ACCEPTED" })}
- className="flex-1 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-md hover:opacity-90 transition-all"
- >
+ className="flex-1 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-lg shadow-md hover:opacity-90 transition-all" >
  Accept
  </button>
  <button

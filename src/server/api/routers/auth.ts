@@ -1,6 +1,74 @@
 import { z } from"zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from"@/server/api/trpc";
-import { getPresignedUrl, getPresignedDownloadUrl } from"@/lib/s3";
+import { getPresignedUrl, getPresignedDownloadUrl } from"@/lib/storage";
+import { v4 as uuidv4 } from"uuid";
+import bcrypt from"bcryptjs";
+
+export const authRouter = createTRPCRouter({
+ /**
+ * Register a new user with email and password.
+ * Auth: Public
+ */
+ register: publicProcedure
+ .input(z.object({
+ name: z.string().min(1),
+ email: z.string().email(),
+ password: z.string().min(6),
+ }))
+ .mutation(async ({ ctx, input }) => {
+ const existingUser = await ctx.prisma.user.findUnique({
+ where: { email: input.email },
+ });
+
+ if (existingUser) {
+ throw new Error("User already exists with this email");
+ }
+
+ const hashedPassword = await bcrypt.hash(input.password, 10);
+
+ const user = await ctx.prisma.user.create({
+ data: {
+ name: input.name,
+ email: input.email,
+ password: hashedPassword,
+ },
+ });
+
+ return { success: true, userId: user.id };
+ }),
+ /**
+ * Get the current user's profile.
+ * Auth: Public (returns null if not logged in) or Protected
+ */
+ getMe: publicProcedure.query(async ({ ctx }) => {
+ if (!ctx.session?.user?.id) return null;
+
+ // Fetch fresh user data from database
+ const user = await ctx.prisma.user.findUnique({
+ where: { id: ctx.session.user.id },
+ select: {
+ id: true,
+ name: true,
+ email: true,
+ image: true,
+ role: true,
+ }
+ });
+
+ if (!user) return null;
+
+ // Resolve S3 URL for profile image
+ let imageUrl = user.image;
+ if (user.image && !user.image.startsWith("http")) {
+ try {
+ imageUrl = await getPresignedDownloadUrl(user.image);
+ } catch (e) {
+ console.error("Failed to resolve profile image in getMe:", e);
+ // Keep original string (or set to null)
+ }
+ }
+
+
 import { v4 as uuidv4 } from"uuid";
 
 export const authRouter = createTRPCRouter({
@@ -35,7 +103,6 @@ export const authRouter = createTRPCRouter({
  // Keep original string (or set to null)
  }
  }
-
  return {
  ...user,
  image: imageUrl,

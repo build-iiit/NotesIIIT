@@ -3,8 +3,7 @@
 import { useState } from"react";
 import { api } from"@/app/_trpc/client";
 import { Plus, Users } from"lucide-react";
-import { ProfileImage } from"../ProfileImage";
-import { GroupDetailsDialog } from"./GroupDetailsDialog";
+import { ProfileImage } from"../ProfileImage";import { GroupDetailsDialog } from"./GroupDetailsDialog";
 export function GroupsList() {
  const { data: groups, isLoading, refetch } = api.social.getGroups.useQuery();
  const createGroupMutation = api.social.createGroup.useMutation({
@@ -30,8 +29,7 @@ export function GroupsList() {
  {/* Header / Actions */}
  <div className="flex justify-between items-center bg-white/40 dark:bg-black/40 p-4 rounded-3xl border border-white/40 dark:border-white/10 shadow-lg">
  <div className="flex items-center gap-3">
- <div className="p-2 rounded-xl text-white shadow-lg bg-gradient-to-tr from-[var(--brand-from)] to-[var(--brand-to)] shadow-primary/20">
- <Users className="w-5 h-5" />
+ <div className="p-2 rounded-xl text-white shadow-lg bg-gradient-to-tr from-[var(--brand-from)] to-[var(--brand-to)] shadow-primary/20"> <Users className="w-5 h-5" />
  </div>
  <h2 className="text-lg font-bold text-gray-800 dark:text-white hidden sm:block">Your Groups</h2>
  </div>
@@ -42,15 +40,13 @@ export function GroupsList() {
  value={newGroupName}
  onChange={(e) => setNewGroupName(e.target.value)}
  placeholder="Group Name"
- className="px-4 py-2 rounded-xl bg-white/50 dark:bg-black/50 border border-primary/25 focus:outline-none focus:ring-2 focus:ring-primary w-48"
- autoFocus
+ className="px-4 py-2 rounded-xl bg-white/50 dark:bg-black/50 border border-primary/25 focus:outline-none focus:ring-2 focus:ring-primary w-48" autoFocus
  onKeyDown={(e) => e.key ==='Enter' && handleCreate()}
  />
  <button
  onClick={handleCreate}
  disabled={createGroupMutation.isPending}
- className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-bold text-sm shadow-lg"
- >
+ className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-bold text-sm shadow-lg" >
  Create
  </button>
  <button
@@ -63,8 +59,7 @@ export function GroupsList() {
  ) : (
  <button
  onClick={() => setIsCreating(true)}
- className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-transform bg-gradient-to-tr from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-primary/20"
- >
+ className="flex items-center gap-2 px-5 py-2.5 text-white rounded-xl font-bold shadow-lg hover:scale-105 transition-transform bg-gradient-to-tr from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] shadow-primary/20" >
  <Plus className="w-4 h-4" />
  <span>Create Group</span>
  </button>
@@ -90,8 +85,7 @@ export function GroupsList() {
  <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -z-10 transition-all bg-primary/5 group-hover:bg-primary/10" />
 
  <div className="flex justify-between items-start mb-4">
- <div className="p-3 rounded-2xl bg-primary/10 text-primary">
- <Users className="w-6 h-6" />
+ <div className="p-3 rounded-2xl bg-primary/10 text-primary"> <Users className="w-6 h-6" />
  </div>
  <span className="text-xs font-bold px-2 py-1 bg-white/50 dark:bg-black/50 rounded-lg text-gray-500">
  {group._count.members} Members
@@ -119,8 +113,7 @@ export function GroupsList() {
  )}
  </div>
 
- <button className="w-full py-2.5 rounded-xl transition-colors text-sm font-bold bg-white/50 dark:bg-white/5 hover:bg-primary hover:text-primary-foreground text-gray-600 dark:text-gray-300">
- View Details
+ <button className="w-full py-2.5 rounded-xl transition-colors text-sm font-bold bg-white/50 dark:bg-white/5 hover:bg-primary hover:text-primary-foreground text-gray-600 dark:text-gray-300"> View Details
  </button>
  </div>
  ))}

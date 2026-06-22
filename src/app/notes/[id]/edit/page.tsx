@@ -3,8 +3,7 @@
 import { use, useState, useRef, useEffect } from"react";
 import { api } from"@/app/_trpc/client";
 import { useRouter } from"next/navigation";
-import DeleteNoteButton from"@/components/DeleteNoteButton";
-import { Folder, Tag, Plus } from"lucide-react";
+import DeleteNoteButton from"@/components/DeleteNoteButton";import { Folder, Tag, Plus } from"lucide-react";
 import { Search, X, ChevronDown, CheckCircle } from"lucide-react";
 
 export default function EditNotePage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +20,6 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  const { data: courses } = api.course.getAll.useQuery();
  const { data: tags, refetch: refetchTags } = api.tags.getAll.useQuery();
  const createTagMutation = api.tags.create.useMutation();
-
  const [title, setTitle] = useState(note?.title ||"");
  const [description, setDescription] = useState(note?.description ||"");
 
@@ -83,16 +81,14 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  <div className="min-h-screen flex items-center justify-center">
  <div className="max-w-md text-center">
  <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-destructive/10 flex items-center justify-center">
- <X className="h-12 w-12 text-destructive" />
- </div>
+ <X className="h-12 w-12 text-destructive" /> </div>
  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">Unauthorized</h1>
  <p className="text-gray-500 dark:text-gray-400 mb-6">
  You don&apos;t have permission to edit this note. Only the note owner can make changes.
  </p>
  <button
  onClick={() => router.push(`/notes/${id}`)}
- className="px-6 py-3 rounded-lg font-semibold text-sm bg-primary text-primary-foreground hover:opacity-90 transition-all duration-200"
- >
+ className="px-6 py-3 rounded-lg font-semibold text-sm bg-primary text-primary-foreground hover:opacity-90 transition-all duration-200" >
  Back to Note
  </button>
  </div>
@@ -241,8 +237,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  Course
  </label>
  <div className="relative">
- <div className="flex items-center border rounded-lg bg-white dark:bg-zinc-800 dark:border-zinc-700 focus-within:ring-2 focus-within:ring-primary transition-all">
- <Search className="h-5 w-5 text-gray-500 ml-3" />
+ <div className="flex items-center border rounded-lg bg-white dark:bg-zinc-800 dark:border-zinc-700 focus-within:ring-2 focus-within:ring-primary transition-all"> <Search className="h-5 w-5 text-gray-500 ml-3" />
  <input
  type="text"
  value={courseSearch}
@@ -262,8 +257,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  setCourseSearch("");
  setSelectedCourseId("");
  }}
- className="p-2 mr-1 hover:text-destructive text-gray-500"
- >
+ className="p-2 mr-1 hover:text-destructive text-gray-500" >
  <X className="h-4 w-4" />
  </button>
  )}
@@ -306,8 +300,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  <button
  type="button"
  onClick={() => setIsSemesterDropdownOpen(!isSemesterDropdownOpen)}
- className="w-full flex items-center justify-between p-2 border rounded-lg bg-white dark:bg-zinc-800 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
- >
+ className="w-full flex items-center justify-between p-2 border rounded-lg bg-white dark:bg-zinc-800 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-primary transition-all" >
  <span className={selectedSemester ?"text-gray-900 dark:text-gray-100" :"text-gray-500"}>
  {selectedSemester ? `Semester ${selectedSemester}` :"Select a semester..."}
  </span>
@@ -324,8 +317,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  setSelectedSemester(sem);
  setIsSemesterDropdownOpen(false);
  }}
- className={`w-full text-left px-4 py-2 rounded-md transition-colors flex items-center justify-between ${selectedSemester === sem ?"bg-primary/10 text-primary" :"hover:bg-gray-100 dark:hover:bg-zinc-800"
- }`}
+ className={`w-full text-left px-4 py-2 rounded-md transition-colors flex items-center justify-between ${selectedSemester === sem ?"bg-primary/10 text-primary" :"hover:bg-gray-100 dark:hover:bg-zinc-800" }`}
  >
  <span>Semester {sem}</span>
  {selectedSemester === sem && <CheckCircle className="h-4 w-4" />}
@@ -348,8 +340,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  {/* Folder Selection */}
  <div>
  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300 flex items-center gap-2">
- <Folder className="h-4 w-4 text-primary" />
- Folder
+ <Folder className="h-4 w-4 text-primary" /> Folder
  </label>
  <select
  value={selectedFolderId ||""}
@@ -383,14 +374,12 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  return tag ? (
  <span
  key={tagId}
- className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-primary/20 to-[var(--brand-to)]/20 text-primary dark:text-primary border border-primary/30 shadow-sm"
- >
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-primary/20 to-[var(--brand-to)]/20 text-primary dark:text-primary border border-primary/30 shadow-sm" >
  {tag.name}
  <button
  type="button"
  onClick={() => setSelectedTagIds(prev => prev.filter(id => id !== tagId))}
- className="ml-0.5 hover:text-destructive hover:scale-110 transition-all"
- >
+ className="ml-0.5 hover:text-destructive hover:scale-110 transition-all" >
  <X className="h-3 w-3" />
  </button>
  </span>
@@ -418,7 +407,6 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  {/* Decorative gradient blur */}
  <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-[var(--gradient-from)] to-[var(--gradient-via)] rounded-full blur-[60px] pointer-events-none" />
  <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-gradient-to-br from-[var(--gradient-via)] to-[var(--gradient-to)] rounded-full blur-[60px] pointer-events-none" />
-
  {/* Default Tags */}
  <div className="relative p-3 border-b border-white/20 dark:border-white/10">
  <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 px-1 py-1 mb-2">Default Tags</p>
@@ -435,8 +423,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  }
  }}
  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-300 ${selectedTagIds.includes(tag.id)
- ?"bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white shadow-lg shadow-primary/30"
- :" bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
+ ?"bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white shadow-lg shadow-primary/30" :" bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
  }`}
  >
  {tag.name}
@@ -462,8 +449,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  }
  }}
  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-300 ${selectedTagIds.includes(tag.id)
- ?"bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white shadow-lg shadow-primary/30"
- :" bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
+ ?"bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white shadow-lg shadow-primary/30" :" bg-white/40 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/30 dark:border-white/10 hover:bg-primary/20 hover:border-primary/40 hover:scale-105"
  }`}
  >
  {tag.name}
@@ -512,8 +498,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  }
  }}
  disabled={!customTagInput.trim() || createTagMutation.isPending}
- className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white text-sm font-semibold disabled:opacity-50 hover:shadow-lg hover:shadow-primary/30 hover:scale-105 transition-all duration-300"
- >
+ className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white text-sm font-semibold disabled:opacity-50 hover:shadow-lg hover:shadow-primary/30 hover:scale-105 transition-all duration-300" >
  <Plus className="h-4 w-4" />
  </button>
  </div>
@@ -592,8 +577,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  <button
  type="submit"
  disabled={updateNote.isPending}
- className="bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white px-4 py-2 rounded-lg disabled:opacity-50 hover:opacity-95 transition-all font-medium"
- >
+ className="bg-gradient-to-r from-[var(--button-gradient-from)] to-[var(--button-gradient-to)] text-white px-4 py-2 rounded-lg disabled:opacity-50 hover:opacity-95 transition-all font-medium" >
  {updateNote.isPending ?"Saving..." :"Save Changes"}
  </button>
  </form>
@@ -606,8 +590,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  </p>
  <div className="border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg p-8 text-center">
  {uploading ? (
- <div className="text-primary font-bold">Uploading...</div>
- ) : (
+ <div className="text-primary font-bold">Uploading...</div> ) : (
  <input
  type="file"
  accept=".pdf"
@@ -617,8 +600,7 @@ export default function EditNotePage({ params }: { params: Promise<{ id: string 
  file:rounded-full file:border-0
  file:text-sm file:font-semibold
  file:bg-primary/10 file:text-primary
- hover:file:bg-primary/20"
- />
+ hover:file:bg-primary/20" />
  )}
  </div>
  </section>

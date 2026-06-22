@@ -1,11 +1,38 @@
 
 import { NextRequest, NextResponse } from"next/server";
-import { GetObjectCommand } from"@aws-sdk/client-s3";
-import { s3Client } from"@/lib/s3";
+import { downloadBlob } from"@/lib/storage";
+import { Readable } from"stream";
 
 // Force dynamic to allow streaming and reading headers
 export const dynamic ='force-dynamic';
 
+/**
+ * Convert a Node.js Readable stream to a web ReadableStream.
+ */
+function nodeStreamToWeb(nodeStream: NodeJS.ReadableStream): ReadableStream<Uint8Array> {
+ const readable = nodeStream as Readable;
+ return new ReadableStream<Uint8Array>({
+ start(controller) {
+ readable.on("data", (chunk: Buffer) => {
+ controller.enqueue(new Uint8Array(chunk));
+ });
+ readable.on("end", () => {
+ controller.close();
+ });
+ readable.on("error", (err) => {
+ controller.error(err);
+ });
+ },
+ cancel() {
+ readable.destroy();
+ },
+ });
+}
+import { GetObjectCommand } from"@aws-sdk/client-s3";
+
+
+// Force dynamic to allow streaming and reading headers
+export const dynamic ='force-dynamic';
 export async function GET(
  request: NextRequest,
  { params }: { params: Promise<{ key: string[] }> }
@@ -52,7 +79,6 @@ export async function GET(
  }
  throw s3Error;
  }
-
  } catch (error) {
  console.error("Proxy Error:", error);
  return new NextResponse("Internal Server Error", { status: 500 });

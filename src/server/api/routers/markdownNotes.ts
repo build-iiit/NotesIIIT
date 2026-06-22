@@ -1,7 +1,7 @@
 import { z } from"zod";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from"@/server/api/trpc";
 import { TRPCError } from"@trpc/server";
-import { getPresignedDownloadUrl } from"@/lib/s3";
+import { getPresignedDownloadUrl } from"@/lib/storage";
 import { generateThumbnail, uploadThumbnail } from"@/server/utils/thumbnail-generator";
 
 /**

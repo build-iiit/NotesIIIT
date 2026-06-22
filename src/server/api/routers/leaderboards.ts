@@ -1,5 +1,5 @@
 import { createTRPCRouter, publicProcedure } from"@/server/api/trpc";
-import { getPresignedDownloadUrl } from"@/lib/s3";
+import { getPresignedDownloadUrl } from"@/lib/storage";
 
 /**
  * Type definitions for raw SQL results

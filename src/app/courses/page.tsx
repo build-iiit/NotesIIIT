@@ -42,14 +42,12 @@ export default function CoursesPage() {
  </div>
  </div>
  ))}
- </div>
- </div>
+ </div> </div>
  );
  }
 
  return (
- <div className="container mx-auto px-4 py-8 pt-24">
- <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Courses</h1>
+ <div className="container mx-auto px-4 py-8 pt-24"> <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Courses</h1>
  <p className="text-gray-600 dark:text-gray-400 mb-8">Browse notes by branch and course.</p>
 
  {/* Search Bar */}
@@ -74,8 +72,7 @@ export default function CoursesPage() {
  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
  {branchCourses?.map((course) => (
  <Link href={`/courses/${course.id}`} key={course.id} className="group">
- <div className="bg-white/40 dark:bg-zinc-900/60 border border-white/30 dark:border-white/10 rounded-xl p-6 hover:shadow-[0_8px_30px_var(--glow-color)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
- <div className="flex items-start justify-between mb-4">
+ <div className="bg-white/40 dark:bg-zinc-900/60 border border-white/30 dark:border-white/10 rounded-xl p-6 hover:shadow-[0_8px_30px_var(--glow-color)] transition-all duration-300 hover:-translate-y-1 h-full flex flex-col"> <div className="flex items-start justify-between mb-4">
  <div className="bg-primary/20 p-2 rounded-lg group-hover:bg-primary/30 transition-colors">
  <BookOpen className="h-6 w-6 text-primary" />
  </div>

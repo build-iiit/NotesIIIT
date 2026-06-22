@@ -1,13 +1,16 @@
 export interface Point {
- x: number; // 0-1 relative to page width
- y: number; // 0-1 relative to page height
+    x: number; // 0-1 relative to page width
+    y: number; // 0-1 relative to page height
 }
 
+export type ShapeType = "freehand" | "line" | "rect" | "circle" | "arrow";
+
 export interface Stroke {
- points: Point[];
- color: string;
- type:"pen" |"highlighter";
- width: number;
+    points: Point[];
+    color: string;
+    type: "pen" | "highlighter"; // keep as tool type basically
+    shape?: ShapeType;
+    width?: number;
 }
 
 export interface TextNote {

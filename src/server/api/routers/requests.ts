@@ -7,7 +7,7 @@ import {
 } from"@/server/api/trpc";
 import { TRPCError } from"@trpc/server";
 import { BoardRequestStatus } from"@prisma/client";
-import { getPresignedDownloadUrl } from"@/lib/s3";
+import { getPresignedDownloadUrl } from"@/lib/storage";
 
 export const requestsRouter = createTRPCRouter({
 

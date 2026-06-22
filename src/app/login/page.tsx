@@ -31,18 +31,15 @@ export default async function SignIn(props: { searchParams: Promise<{ callbackUr
 
  <div className="flex flex-col items-center justify-center space-y-6 relative z-10">
  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Sign in to your account</h2>
-
  <form
  className="w-full"
  action={async () => {
 "use server"
- await signIn("github", { redirectTo: callbackUrl })
- }}
+ await signIn("github", { redirectTo: callbackUrl }) }}
  >
  <button
  type="submit"
- className="w-full flex items-center justify-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200 relative rounded-xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/10 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_var(--glow-color)] border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95] gap-2"
- >
+ className="w-full flex items-center justify-center py-3 px-4 text-sm font-bold text-gray-800 dark:text-gray-200 relative rounded-xl bg-gradient-to-br from-white/[0.15] via-white/[0.08] to-white/[0.12] dark:from-white/[0.08] dark:via-white/[0.04] dark:to-white/[0.06] hover:bg-primary/10 transition-all duration-500 shadow-[0_8px_24px_0_rgba(0,0,0,0.08)] hover:shadow-[0_16px_40px_0_var(--glow-color)] border border-white/25 hover:border-primary/50 hover:scale-[1.08] active:scale-[0.95] gap-2" >
  <Github className="h-5 w-5" />
  <span>Sign in with GitHub</span>
  </button>
@@ -56,8 +53,7 @@ export default async function SignIn(props: { searchParams: Promise<{ callbackUr
  <span className="inline-block px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-wider">
  Rejected by OSDG IIITH
  </span>
- </div>
- </div>
+ </div> </div>
  </div>
  )
 }

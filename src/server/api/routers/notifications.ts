@@ -1,6 +1,6 @@
 import { z } from"zod";
 import { createTRPCRouter, protectedProcedure } from"@/server/api/trpc";
-import { getPresignedDownloadUrl } from"@/lib/s3";
+import { getPresignedDownloadUrl } from"@/lib/storage";
 
 export const notificationsRouter = createTRPCRouter({
  /**

@@ -1,14 +1,26 @@
 import type { Metadata, Viewport } from"next";
 import"./globals.css";
 import { TRPCReactProvider } from"@/app/_trpc/client";
-import { ThemeProvider } from"@/components/theme-provider";
-import { ThemeStyleProvider } from"@/components/ThemeStyleProvider";
-import { NavbarWrapper } from"@/components/NavbarWrapper";
+import { ThemeProvider } from"@/components/ui/ThemeProvider";
+import { Navbar } from"@/components/layout/Navbar";
 import { Toaster } from"sonner";
-import { SessionProviderWrapper } from"@/components/SessionProviderWrapper";
-import { GoogleScripts } from"@/components/GoogleScripts";
+import { SessionProviderWrapper } from"@/components/layout/SessionProviderWrapper";
+import { GoogleScripts } from"@/components/layout/GoogleScripts";
 
 export const metadata: Metadata = {
+ title:"NotesIIIT - Share Notes, Ace Exams",
+ description:"The ultimate platform for IIIT students to share lecture notes and collaborate",
+ manifest:"/manifest.json",
+ icons: {
+ icon:"/favicon.ico",
+ shortcut:"/favicon.ico",
+ apple:"/apple-icon.png",
+ },
+ appleWebApp: {
+ capable: true,
+ statusBarStyle:"black-translucent",
+ title:"NotesIIIT",
+ },
  title:"NotesIIIT - Share Notes, Ace Exams",
  description:"The ultimate platform for IIIT students to share lecture notes and collaborate",
  manifest:"/manifest.json",
@@ -25,17 +37,18 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
- themeColor:"#f97316",
+ themeColor:"#5c4033",
  width:"device-width",
  initialScale: 1,
  maximumScale: 1,
  userScalable: false,
- // interactiveWidget:'resizes-visual',
 };
 
 export default function RootLayout({
  children,
+ children,
 }: Readonly<{
+ children: React.ReactNode;
  children: React.ReactNode;
 }>) {
  return (
@@ -44,11 +57,9 @@ export default function RootLayout({
  className={`antialiased min-h-screen relative overflow-x-hidden`}
  suppressHydrationWarning
  >
- {/* Liquid Glass Background */}
+ {/* Clean background */}
  <div className="fixed inset-0 -z-10">
- <div className="absolute inset-0 bg-background transition-colors duration-500" />
- <div className="absolute inset-0 bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] pointer-events-none" />
- <div className="absolute top-0 left-0 right-0 h-[50vh] bg-gradient-to-b from-white/40 to-transparent dark:from-black/40 dark:to-transparent pointer-events-none" />
+ <div className="absolute inset-0 bg-background transition-colors duration-300" />
  </div>
 
  <ThemeProvider
@@ -57,17 +68,20 @@ export default function RootLayout({
  enableSystem={false}
  disableTransitionOnChange
  >
- <ThemeStyleProvider>
  <SessionProviderWrapper>
  <TRPCReactProvider>
- <NavbarWrapper />
+ <Navbar />
  <main className="pt-16">{children}</main>
  <Toaster richColors position="bottom-right" />
  </TRPCReactProvider>
  </SessionProviderWrapper>
- </ThemeStyleProvider>
  </ThemeProvider>
 
+ {/* Google API Scripts */}
+ <GoogleScripts />
+ </body>
+ </html>
+ );
  {/* Google API Scripts */}
  <GoogleScripts />
  </body>

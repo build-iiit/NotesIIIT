@@ -49,8 +49,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  const timer = setTimeout(() => {
  setTitle(initialTitle);
  }, 0);
- return () => clearTimeout(timer);
- }
+ return () => clearTimeout(timer); }
  }, [isOpen, initialTitle]);
 
  // Click outside handler
@@ -87,8 +86,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-200 dark:border-gray-800">
  <div className="p-6">
  <div className="flex items-center justify-between mb-6">
- <h2 className="text-2xl font-bold bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] bg-clip-text text-transparent">
- Save Note
+ <h2 className="text-2xl font-bold bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] bg-clip-text text-transparent"> Save Note
  </h2>
  <button
  onClick={onClose}
@@ -107,8 +105,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  value={title}
  onChange={(e) => setTitle(e.target.value)}
  required
- className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:ring-2 focus:ring-primary/50 outline-none transition-all text-gray-900 dark:text-white"
- placeholder="Note Title"
+ className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:ring-2 focus:ring-primary/50 outline-none transition-all text-gray-900 dark:text-white" placeholder="Note Title"
  />
  </div>
 
@@ -118,8 +115,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  <textarea
  value={description}
  onChange={(e) => setDescription(e.target.value)}
- className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:ring-2 focus:ring-primary/50 outline-none transition-all text-gray-900 dark:text-white resize-none h-24"
- placeholder="Brief description of what this note is about..."
+ className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus:ring-2 focus:ring-primary/50 outline-none transition-all text-gray-900 dark:text-white resize-none h-24" placeholder="Brief description of what this note is about..."
  />
  </div>
 
@@ -127,8 +123,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="relative" ref={courseDropdownRef}>
  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Course (Optional)</label>
- <div className="flex items-center px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus-within:ring-2 focus-within:ring-primary/50 transition-all">
- <Search className="h-4 w-4 text-gray-400 mr-2" />
+ <div className="flex items-center px-4 py-3 rounded-xl bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 focus-within:ring-2 focus-within:ring-primary/50 transition-all"> <Search className="h-4 w-4 text-gray-400 mr-2" />
  <input
  type="text"
  value={courseSearch}
@@ -148,8 +143,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  onClick={() => { setSelectedCourseId(c.id); setCourseSearch(`${c.code} - ${c.name}`); setIsCourseDropdownOpen(false); }}
  className="w-full text-left px-4 py-3 hover:bg-primary/5 dark:hover:bg-zinc-800 text-sm border-b border-gray-100 dark:border-zinc-800 last:border-0"
  >
- <span className="font-bold text-primary">{c.code}</span> — <span className="text-gray-600 dark:text-gray-300">{c.name}</span>
- </button>
+ <span className="font-bold text-primary">{c.code}</span> — <span className="text-gray-600 dark:text-gray-300">{c.name}</span> </button>
  ))}
  </div>
  )}
@@ -172,8 +166,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  key={sem}
  type="button"
  onClick={() => { setSelectedSemester(sem); setIsSemesterDropdownOpen(false); }}
- className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedSemester === sem ?"bg-primary/5 dark:bg-primary/15 text-primary font-bold" :"hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300"}`}
- >
+ className={`w-full text-left px-3 py-2 rounded-lg text-sm ${selectedSemester === sem ?"bg-primary/5 dark:bg-primary/15 text-primary font-bold" :"hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300"}`} >
  Semester {sem}
  </button>
  ))}
@@ -199,8 +192,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  <div className="animate-in slide-in-from-top-2">
  <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-gray-500 dark:text-gray-400">Groups</label>
  <div className="max-h-32 overflow-y-auto p-2 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl space-y-1">
- {userGroups?.map((group: { id: string; name: string }) => (
- <label key={group.id} className="flex items-center gap-2 p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg cursor-pointer">
+ {userGroups?.map((group: { id: string; name: string }) => ( <label key={group.id} className="flex items-center gap-2 p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg cursor-pointer">
  <input
  type="checkbox"
  checked={selectedGroupIds.includes(group.id)}
@@ -211,8 +203,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  setSelectedGroupIds(selectedGroupIds.filter((id) => id !== group.id));
  }
  }}
- className="w-3.5 h-3.5 rounded text-primary focus:ring-primary"
- />
+ className="w-3.5 h-3.5 rounded text-primary focus:ring-primary" />
  <span className="text-sm text-gray-900 dark:text-white truncate">{group.name}</span>
  </label>
  ))}
@@ -231,8 +222,7 @@ export function NoteMetadataDialog({ isOpen, onClose, onSave, initialTitle, isSa
  <button
  type="submit"
  disabled={isSaving || !title || (visibility ==="GROUP" && selectedGroupIds.length === 0)}
- className="flex-[2] px-4 py-3 rounded-xl bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] text-white font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
- >
+ className="flex-[2] px-4 py-3 rounded-xl bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] text-white font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" >
  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
  <span>Save Note</span>
  </button>

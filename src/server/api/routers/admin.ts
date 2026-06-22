@@ -1,9 +1,10 @@
 import { z } from"zod";
 import { createTRPCRouter, adminProcedure, superAdminProcedure, createRoleProcedure, canActOnRole } from"@/server/api/trpc";
 import { TRPCError } from"@trpc/server";
-import { getPresignedDownloadUrl } from"@/lib/s3";
-import { AuditCategory, Role, UserStatus, NoteVisibility } from"@prisma/client";
+import { getPresignedDownloadUrl } from"@/lib/storage";
+import { AuditCategory, Role, UserStatus } from"@prisma/client";
 
+import { AuditCategory, Role, UserStatus, NoteVisibility } from"@prisma/client";
 export const adminRouter = createTRPCRouter({
  /**
  * Get platform-wide statistics with growth trends
@@ -330,8 +331,7 @@ export const adminRouter = createTRPCRouter({
  const cursor = input?.cursor;
 
  const where: {
- visibility?: NoteVisibility;
- OR?: { title: { contains: string; mode:"insensitive" } }[];
+ visibility?: NoteVisibility; OR?: { title: { contains: string; mode:"insensitive" } }[];
  } = {};
 
  if (input?.isPublic !== undefined) {

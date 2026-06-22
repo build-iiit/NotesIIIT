@@ -7,7 +7,6 @@ import Image from"next/image";
 import Link from"next/link";
 import { ProfileImage } from"../ProfileImage";
 
-
 interface GroupDetailsDialogProps {
  isOpen: boolean;
  onClose: () => void;
@@ -55,8 +54,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-white/20 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
 
  {/* Header */}
- <div className="relative h-32 bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] shrink-0">
- <div className="absolute inset-0 bg-black/10" />
+ <div className="relative h-32 bg-gradient-to-r from-[var(--brand-from)] to-[var(--brand-to)] shrink-0"> <div className="absolute inset-0 bg-black/10" />
  <button
  onClick={onClose}
  className="absolute top-4 right-4 p-2 bg-black/20 text-white hover:bg-black/40 rounded-full transition-colors z-10"
@@ -66,8 +64,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
 
  <div className="absolute -bottom-10 left-8 flex items-end gap-4">
  <div className="w-24 h-24 rounded-3xl bg-white dark:bg-zinc-900 p-1 shadow-xl">
- <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary/10 to-[var(--brand-to)]/15 flex items-center justify-center text-primary">
- {group?.image ? (
+ <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary/10 to-[var(--brand-to)]/15 flex items-center justify-center text-primary"> {group?.image ? (
  <div className="relative w-full h-full rounded-2xl overflow-hidden">
  <Image src={group.image} fill alt={group.name} className="object-cover" unoptimized />
  </div>
@@ -78,8 +75,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  </div>
  <div className="mb-2">
  <h2 className="text-2xl font-black text-white drop-shadow-md">{group?.name}</h2>
- <p className="text-white/80 text-sm font-medium">{group?.members.length || 0} Members</p>
- </div>
+ <p className="text-white/80 text-sm font-medium">{group?.members.length || 0} Members</p> </div>
  </div>
  </div>
 
@@ -118,15 +114,13 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  {/* Stats Row */}
  <div className="grid grid-cols-3 gap-3">
  <div className="p-4 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border border-white/20 dark:border-white/5">
- <div className="flex items-center gap-2 text-muted-foreground mb-1">
- <FileText className="w-4 h-4" />
+ <div className="flex items-center gap-2 text-muted-foreground mb-1"> <FileText className="w-4 h-4" />
  <span className="text-xs font-bold uppercase tracking-wider">Total Files</span>
  </div>
  <p className="text-2xl font-black text-gray-900 dark:text-white">{groupFiles?.length || 0}</p>
  </div>
  <div className="p-4 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border border-white/20 dark:border-white/5">
- <div className="flex items-center gap-2 text-muted-foreground mb-1">
- <Users className="w-4 h-4" />
+ <div className="flex items-center gap-2 text-muted-foreground mb-1"> <Users className="w-4 h-4" />
  <span className="text-xs font-bold uppercase tracking-wider">Your Files</span>
  </div>
  <p className="text-2xl font-black text-gray-900 dark:text-white">
@@ -135,8 +129,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  </p>
  </div>
  <div className="p-4 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border border-white/20 dark:border-white/5">
- <div className="flex items-center gap-2 text-muted-foreground mb-1">
- <Trophy className="w-4 h-4" />
+ <div className="flex items-center gap-2 text-muted-foreground mb-1"> <Trophy className="w-4 h-4" />
  <span className="text-xs font-bold uppercase tracking-wider">Top Member</span>
  </div>
  <p className="text-lg font-black text-gray-900 dark:text-white truncate">
@@ -164,8 +157,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  {isAdmin && !isAdding && (
  <button
  onClick={() => setIsAdding(true)}
- className="text-sm font-bold text-primary hover:opacity-90 bg-primary/10 px-3 py-1.5 rounded-lg transition-colors"
- >
+ className="text-sm font-bold text-primary hover:opacity-90 bg-primary/10 px-3 py-1.5 rounded-lg transition-colors" >
  + Add Member
  </button>
  )}
@@ -209,8 +201,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  </div>
  <div>
  <p className="font-bold text-gray-900 dark:text-gray-100">{member.user.name}</p>
- {member.role ==='ADMIN' && <span className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">Admin</span>}
- </div>
+ {member.role ==='ADMIN' && <span className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">Admin</span>} </div>
  </div>
  </div>
  ))
@@ -234,8 +225,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  groupFiles?.map((file: any) => (
  <div key={file.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-2xl border border-gray-100 dark:border-white/5">
  <div className="flex items-center gap-4">
- <div className="p-3 bg-primary/10 rounded-xl text-primary">
- <FileText className="w-5 h-5" />
+ <div className="p-3 bg-primary/10 rounded-xl text-primary"> <FileText className="w-5 h-5" />
  </div>
  <div>
  <h4 className="font-bold text-gray-900 dark:text-white">{file.title}</h4>
@@ -273,8 +263,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  <button
  onClick={handleUpdateName}
  disabled={updateGroupMutation.isPending || editName === group?.name}
- className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
- >
+ className="px-4 py-2 bg-primary text-primary-foreground rounded-xl font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed" >
  Save
  </button>
  </div>
@@ -287,8 +276,7 @@ export function GroupDetailsDialog({ isOpen, onClose, groupId, defaultTab ='MEMB
  <div className="p-4 bg-destructive/5 dark:bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-between">
  <div>
  <h4 className="font-bold text-destructive">Delete Group</h4>
- <p className="text-sm text-muted-foreground">Permanently delete this group and remove all members.</p>
- </div>
+ <p className="text-sm text-muted-foreground">Permanently delete this group and remove all members.</p> </div>
  <button
  onClick={() => {
  if (confirm("Are you sure you want to delete this group?")) {
@@ -337,8 +325,7 @@ function MemberSearch({ query, group, onAdd }: { query: string, group: any, onAd
  ) : (
  <button
  onClick={() => onAdd(user.id)}
- className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md hover:bg-primary/95"
- >
+ className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md hover:bg-primary/95" >
  Add
  </button>
  )}

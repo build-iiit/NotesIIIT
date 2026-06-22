@@ -1,4 +1,4 @@
-import { getPresignedUrl } from"@/lib/s3";
+import { getPresignedUrl } from"@/lib/storage";
 import { NextResponse } from"next/server";
 import { v4 as uuidv4 } from"uuid";
 

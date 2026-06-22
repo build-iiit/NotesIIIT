@@ -97,8 +97,7 @@ export function AdminLeaderboardControl() {
  placeholder="Search notes..."
  value={searchTerm}
  onChange={(e) => setSearchTerm(e.target.value)}
- className="pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary"
- />
+ className="pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-primary" />
  </div>
  </div>
  </div>
@@ -129,8 +128,7 @@ export function AdminLeaderboardControl() {
  <div className="flex items-center justify-between mb-4">
  <div className="flex items-center gap-2">
  <div className="p-2 rounded-lg bg-primary/10">
- <Pin className="w-5 h-5 text-primary" />
- </div>
+ <Pin className="w-5 h-5 text-primary" /> </div>
  <h3 className="font-medium">Pinned Notes</h3>
  </div>
  <span className="text-2xl font-bold">{pinned?.length || 0}</span>
@@ -138,8 +136,7 @@ export function AdminLeaderboardControl() {
  {(pinned?.length || 0) > 0 && (
  <button
  onClick={() => setConfirmDialog({ isOpen: true, action:"clearPinned" })}
- className="w-full py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors"
- >
+ className="w-full py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors" >
  Clear All Pinned
  </button>
  )}
@@ -200,8 +197,7 @@ export function AdminLeaderboardControl() {
  <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800">
  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-800">
  <div className="flex items-center gap-2">
- <Pin className="w-5 h-5 text-primary" />
- <h3 className="font-medium">Pinned Notes</h3>
+ <Pin className="w-5 h-5 text-primary" /> <h3 className="font-medium">Pinned Notes</h3>
  </div>
  </div>
 
@@ -225,8 +221,7 @@ export function AdminLeaderboardControl() {
  <button
  onClick={() => handleUnpin(note.id)}
  disabled={pinMutation.isPending}
- className="px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
- >
+ className="px-3 py-1.5 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50" >
  Unpin
  </button>
  </div>

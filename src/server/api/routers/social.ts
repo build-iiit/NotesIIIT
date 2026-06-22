@@ -1,7 +1,7 @@
 import { z } from"zod";
 import { createTRPCRouter, protectedProcedure } from"@/server/api/trpc";
 import { TRPCError } from"@trpc/server";
-import { getPresignedDownloadUrl } from"@/lib/s3";
+import { getPresignedDownloadUrl } from"@/lib/storage";
 
 export const socialRouter = createTRPCRouter({
  // --- 1. User Search & Friends ---
